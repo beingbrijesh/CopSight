@@ -1,0 +1,4 @@
+OPENAI_API_KEY=key here
+OPENAI_MODEL=gpt-3.5-turbo
+VITE_OPENAI_API_KEY=key here
+VITE_OPENAI_MODEL=gpt-3.5-turbo

@@ -1,0 +1,163 @@
+version: '3.8'
+
+services:
+  # Database Services
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: ufdr-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - ufdr-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: ufdr-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - ufdr-network
+
+  postgresql:
+    image: postgres:15
+    container_name: ufdr-postgres
+    environment:
+      POSTGRES_DB: ufdr_db
+      POSTGRES_USER: ufdr_user
+      POSTGRES_PASSWORD: ufdr_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - ufdr-network
+
+  neo4j:
+    image: neo4j:5.13
+    container_name: ufdr-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/ufdr_password
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - ufdr-network
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: ufdr-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chromadb_data:/chroma/chroma
+    networks:
+      - ufdr-network
+
+  # Backend Services
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: ufdr-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://ufdr_user:ufdr_password@postgresql:5432/ufdr_db
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - PARSER_SERVICE_URL=http://parser-service:8001
+      - INDEXER_SERVICE_URL=http://indexer-service:8002
+      - SEARCH_SERVICE_URL=http://search-service:8003
+      - GRAPH_SERVICE_URL=http://graph-service:8004
+    depends_on:
+      - postgresql
+    networks:
+      - ufdr-network
+
+  parser-service:
+    build:
+      context: ./backend/parser-service
+      dockerfile: Dockerfile
+    container_name: ufdr-parser
+    ports:
+      - "8001:8001"
+    environment:
+      - INDEXER_SERVICE_URL=http://indexer-service:8002
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - ufdr-network
+
+  indexer-service:
+    build:
+      context: ./backend/indexer-service
+      dockerfile: Dockerfile
+    container_name: ufdr-indexer
+    ports:
+      - "8002:8002"
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - DATABASE_URL=postgresql://ufdr_user:ufdr_password@postgresql:5432/ufdr_db
+      - GRAPH_SERVICE_URL=http://graph-service:8004
+    depends_on:
+      - elasticsearch
+      - postgresql
+    networks:
+      - ufdr-network
+
+  search-service:
+    build:
+      context: ./backend/search-service
+      dockerfile: Dockerfile
+    container_name: ufdr-search
+    ports:
+      - "8003:8003"
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CHROMADB_URL=http://chromadb:8000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - elasticsearch
+      - chromadb
+    networks:
+      - ufdr-network
+
+  graph-service:
+    build:
+      context: ./backend/graph-service
+      dockerfile: Dockerfile
+    container_name: ufdr-graph
+    ports:
+      - "8004:8004"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=ufdr_password
+    depends_on:
+      - neo4j
+    networks:
+      - ufdr-network
+
+volumes:
+  elasticsearch_data:
+  postgres_data:
+  neo4j_data:
+  chromadb_data:
+
+networks:
+  ufdr-network:
+    driver: bridge
