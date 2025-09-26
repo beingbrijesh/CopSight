@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <case_info>
+    <case_number>CASE-2024-002</case_number>
+    <case_name>Cybercrime Investigation - Data Breach</case_name>
+    <examiner>Forensic Analyst Mike Rodriguez</examiner>
+    <date_created>2024-02-01T09:00:00Z</date_created>
+    <device_info>
+      <make>Samsung</make>
+      <model>Galaxy S23 Ultra</model>
+      <imei>123456789012345</imei>
+      <serial_number>RF8NC1234AB</serial_number>
+      <os_version>Android 14</os_version>
+    </device_info>
+  </case_info>
+  
+  <contacts>
+    <contact id="1">
+      <name>Alex Turner</name>
+      <phone_numbers>
+        <number type="mobile">+1-555-1001</number>
+        <number type="work">+1-555-1002</number>
+      </phone_numbers>
+      <email>alex.turner@cybertech.com</email>
+      <organization>CyberTech Solutions</organization>
+      <title>Senior Developer</title>
+      <notes>Primary suspect in data breach incident</notes>
+    </contact>
+    
+    <contact id="2">
+      <name>Maria Santos</name>
+      <phone_numbers>
+        <number type="mobile">+1-555-2001</number>
+      </phone_numbers>
+      <email>maria.santos@cybertech.com</email>
+      <organization>CyberTech Solutions</organization>
+      <title>Database Administrator</title>
+      <notes>Has administrative access to customer databases</notes>
+    </contact>
+    
+    <contact id="3">
+      <name>Jake Morrison</name>
+      <phone_numbers>
+        <number type="mobile">+1-555-3001</number>
+        <number type="home">+1-555-3002</number>
+      </phone_numbers>
+      <email>j.morrison@darkweb.onion</email>
+      <organization>Unknown</organization>
+      <title>Unknown</title>
+      <notes>Suspected buyer of stolen data - dark web contact</notes>
+    </contact>
+    
+    <contact id="4">
+      <name>Dr. Emily Chen</name>
+      <phone_numbers>
+        <number type="mobile">+1-555-4001</number>
+      </phone_numbers>
+      <email>e.chen@cybersec.gov</email>
+      <organization>FBI Cybercrime Division</organization>
+      <title>Special Agent</title>
+      <notes>Law enforcement contact - investigating cyber crimes</notes>
+    </contact>
+    
+    <contact id="5">
+      <name>Ryan Mitchell</name>
+      <phone_numbers>
+        <number type="mobile">+1-555-5001</number>
+      </phone_numbers>
+      <email>ryan.mitchell@cybertech.com</email>
+      <organization>CyberTech Solutions</organization>
+      <title>Security Manager</title>
+      <notes>Reported the initial security breach</notes>
+    </contact>
+  </contacts>
+  
+  <messages>
+    <message id="1">
+      <timestamp>2024-01-25T10:30:00Z</timestamp>
+      <from>+1-555-1001</from>
+      <to>+1-555-2001</to>
+      <content>The database backup is complete. I've stored it in the usual location.</content>
+      <type>WhatsApp</type>
+      <direction>outgoing</direction>
+      <thread_id>thread_001</thread_id>
+      <attachment>false</attachment>
+    </message>
+    
+    <message id="2">
+      <timestamp>2024-01-25T10:35:00Z</timestamp>
+      <from>+1-555-2001</from>
+      <to>+1-555-1001</to>
+      <content>Are you sure about this? We could lose our jobs if anyone finds out.</content>
+      <type>WhatsApp</type>
+      <direction>incoming</direction>
+      <thread_id>thread_001</thread_id>
+      <attachment>false</attachment>
+    </message>
+    
+    <message id="3">
+      <timestamp>2024-01-25T10:40:00Z</timestamp>
+      <from>+1-555-1001</from>
+      <to>+1-555-2001</to>
+      <content>Trust me, I've done this before. The encryption will protect us. Just follow the plan.</content>
+      <type>WhatsApp</type>
+      <direction>outgoing</direction>
+      <thread_id>thread_001</thread_id>
+      <attachment>false</attachment>
+    </message>
+    
+    <message id="4">
+      <timestamp>2024-01-26T14:15:00Z</timestamp>
+      <from>+1-555-1001</from>
+      <to>+1-555-3001</to>
+      <content>The merchandise is ready for pickup. 500GB of premium customer data as discussed.</content>
+      <type>Telegram</type>
+      <direction>outgoing</direction>
+      <thread_id>thread_002</thread_id>
+      <attachment>false</attachment>
+    </message>
+    
+    <message id="5">
+      <timestamp>2024-01-26T14:20:00Z</timestamp>
+      <from>+1-555-3001</from>
+      <to>+1-555-1001</to>
+      <content>Excellent. Bitcoin payment of 50 BTC will be transferred once I verify the data quality.</content>
+      <type>Telegram</type>
+      <direction>incoming</direction>
+      <thread_id>thread_002</thread_id>
+      <attachment>false</attachment>
+    </message>
+    
+    <message id="6">
+      <timestamp>2024-01-27T09:00:00Z</timestamp>
+      <from>+1-555-5001</from>
+      <to>+1-555-1001</to>
+      <content>Alex, we've detected unusual database activity. Can you explain the large data exports from your account?</content>
+      <type>SMS</type>
+      <direction>incoming</direction>
+      <thread_id>thread_003</thread_id>
+      <attachment>false</attachment>
+    </message>
+    
+    <message id="7">
+      <timestamp>2024-01-27T09:15:00Z</timestamp>
+      <from>+1-555-1001</from>
+      <to>+1-555-5001</to>
+      <content>Just routine maintenance and backup procedures. Nothing to worry about.</content>
+      <type>SMS</type>
+      <direction>outgoing</direction>
+      <thread_id>thread_003</thread_id>
+      <attachment>false</attachment>
+    </message>
+    
+    <message id="8">
+      <timestamp>2024-01-28T16:45:00Z</timestamp>
+      <from>+1-555-1001</from>
+      <to>+1-555-3001</to>
+      <content>Payment confirmed. Data transfer complete. Delete all traces as agreed.</content>
+      <type>Telegram</type>
+      <direction>outgoing</direction>
+      <thread_id>thread_002</thread_id>
+      <attachment>false</attachment>
+    </message>
+    
+    <message id="9">
+      <timestamp>2024-01-29T11:30:00Z</timestamp>
+      <from>+1-555-4001</from>
+      <to>+1-555-1001</to>
+      <content>Mr. Turner, this is Special Agent Chen. We need to speak with you regarding a cybersecurity investigation.</content>
+      <type>SMS</type>
+      <direction>incoming</direction>
+      <thread_id>thread_004</thread_id>
+      <attachment>false</attachment>
+    </message>
+    
+    <message id="10">
+      <timestamp>2024-01-29T11:35:00Z</timestamp>
+      <from>+1-555-1001</from>
+      <to>+1-555-2001</to>
+      <content>They're onto us. We need to destroy all evidence immediately. Meet me at the usual place tonight.</content>
+      <type>WhatsApp</type>
+      <direction>outgoing</direction>
+      <thread_id>thread_001</thread_id>
+      <attachment>false</attachment>
+    </message>
+  </messages>
+  
+  <call_logs>
+    <call id="1">
+      <timestamp>2024-01-24T20:30:00Z</timestamp>
+      <from>+1-555-1001</from>
+      <to>+1-555-3001</to>
+      <duration>720</duration>
+      <type>outgoing</type>
+      <status>completed</status>
+      <notes>Initial negotiation for data sale</notes>
+    </call>
+    
+    <call id="2">
+      <timestamp>2024-01-25T08:00:00Z</timestamp>
+      <from>+1-555-2001</from>
+      <to>+1-555-1001</to>
+      <duration>480</duration>
+      <type>incoming</type>
+      <status>completed</status>
+      <notes>Discussion about database access procedures</notes>
+    </call>
+    
+    <call id="3">
+      <timestamp>2024-01-26T12:00:00Z</timestamp>
+      <from>+1-555-1001</from>
+      <to>+1-555-3001</to>
+      <duration>300</duration>
+      <type>outgoing</type>
+      <status>completed</status>
+      <notes>Coordination of data transfer logistics</notes>
+    </call>
+    
+    <call id="4">
+      <timestamp>2024-01-27T18:30:00Z</timestamp>
+      <from>+1-555-5001</from>
+      <to>+1-555-1001</to>
+      <duration>180</duration>
+      <type>incoming</type>
+      <status>completed</status>
+      <notes>Security inquiry about suspicious activities</notes>
+    </call>
+    
+    <call id="5">
+      <timestamp>2024-01-29T12:00:00Z</timestamp>
+      <from>+1-555-1001</from>
+      <to>+1-555-2001</to>
+      <duration>600</duration>
+      <type>outgoing</type>
+      <status>completed</status>
+      <notes>Emergency coordination after FBI contact</notes>
+    </call>
+  </call_logs>
+  
+  <applications>
+    <app name="WhatsApp">
+      <version>2.24.1.78</version>
+      <install_date>2023-05-15T10:00:00Z</install_date>
+      <last_used>2024-01-29T11:40:00Z</last_used>
+      <data_usage>2.5GB</data_usage>
+    </app>
+    
+    <app name="Telegram">
+      <version>10.5.2</version>
+      <install_date>2023-08-20T14:30:00Z</install_date>
+      <last_used>2024-01-28T16:50:00Z</last_used>
+      <data_usage>1.2GB</data_usage>
+    </app>
+    
+    <app name="Tor Browser">
+      <version>13.0.8</version>
+      <install_date>2023-12-01T09:15:00Z</install_date>
+      <last_used>2024-01-28T17:00:00Z</last_used>
+      <data_usage>500MB</data_usage>
+    </app>
+    
+    <app name="Bitcoin Wallet">
+      <version>8.2.1</version>
+      <install_date>2023-11-10T16:45:00Z</install_date>
+      <last_used>2024-01-28T16:55:00Z</last_used>
+      <data_usage>100MB</data_usage>
+    </app>
+  </applications>
+  
+  <web_history>
+    <entry id="1">
+      <timestamp>2024-01-24T19:30:00Z</timestamp>
+      <url>https://darkmarket.onion/data-sales</url>
+      <title>Premium Database Sales - Dark Market</title>
+      <visit_count>15</visit_count>
+    </entry>
+    
+    <entry id="2">
+      <timestamp>2024-01-26T13:45:00Z</timestamp>
+      <url>https://blockchain.info/address/1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</url>
+      <title>Bitcoin Address Lookup</title>
+      <visit_count>3</visit_count>
+    </entry>
+    
+    <entry id="3">
+      <timestamp>2024-01-27T10:15:00Z</timestamp>
+      <url>https://www.cybertech.com/employee-handbook/data-security</url>
+      <title>CyberTech Data Security Policies</title>
+      <visit_count>2</visit_count>
+    </entry>
+    
+    <entry id="4">
+      <timestamp>2024-01-29T08:30:00Z</timestamp>
+      <url>https://www.google.com/search?q=how+to+permanently+delete+files</url>
+      <title>How to permanently delete files - Google Search</title>
+      <visit_count>1</visit_count>
+    </entry>
+  </web_history>
+  
+  <media_files>
+    <file id="1">
+      <filename>customer_database_backup.sql</filename>
+      <timestamp>2024-01-25T11:00:00Z</timestamp>
+      <size>524288000</size>
+      <type>SQL Database</type>
+      <path>/storage/emulated/0/Download/</path>
+      <hash>d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3</hash>
+      <deleted>true</deleted>
+      <recovery_status>partial</recovery_status>
+    </file>
+    
+    <file id="2">
+      <filename>bitcoin_transaction_receipt.pdf</filename>
+      <timestamp>2024-01-28T17:00:00Z</timestamp>
+      <size>256000</size>
+      <type>PDF</type>
+      <path>/storage/emulated/0/Documents/</path>
+      <hash>e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4</hash>
+      <deleted>false</deleted>
+      <recovery_status>complete</recovery_status>
+    </file>
+    
+    <file id="3">
+      <filename>encryption_keys.txt</filename>
+      <timestamp>2024-01-24T22:00:00Z</timestamp>
+      <size>4096</size>
+      <type>Text</type>
+      <path>/storage/emulated/0/Documents/secure/</path>
+      <hash>f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5</hash>
+      <deleted>true</deleted>
+      <recovery_status>complete</recovery_status>
+    </file>
+  </media_files>
+  
+  <location_data>
+    <location id="1">
+      <timestamp>2024-01-25T11:00:00Z</timestamp>
+      <latitude>37.7749</latitude>
+      <longitude>-122.4194</longitude>
+      <address>CyberTech Solutions, 123 Tech Street, San Francisco, CA</address>
+      <accuracy>5</accuracy>
+      <source>GPS</source>
+      <notes>Location during database backup</notes>
+    </location>
+    
+    <location id="2">
+      <timestamp>2024-01-26T14:30:00Z</timestamp>
+      <latitude>37.7849</latitude>
+      <longitude>-122.4094</longitude>
+      <address>Internet Cafe, 456 Anonymous Ave, San Francisco, CA</address>
+      <accuracy>10</accuracy>
+      <source>WiFi</source>
+      <notes>Location during dark web communication</notes>
+    </location>
+    
+    <location id="3">
+      <timestamp>2024-01-29T20:00:00Z</timestamp>
+      <latitude>37.7649</latitude>
+      <longitude>-122.4294</longitude>
+      <address>Golden Gate Park, San Francisco, CA</address>
+      <accuracy>15</accuracy>
+      <source>Cell Tower</source>
+      <notes>Meeting location after FBI contact</notes>
+    </location>
+  </location_data>
+  
+  <network_connections>
+    <connection id="1">
+      <timestamp>2024-01-25T11:15:00Z</timestamp>
+      <type>WiFi</type>
+      <ssid>CyberTech_Secure</ssid>
+      <bssid>00:1A:2B:3C:4D:5E</bssid>
+      <security>WPA2</security>
+      <duration>7200</duration>
+    </connection>
+    
+    <connection id="2">
+      <timestamp>2024-01-26T14:00:00Z</timestamp>
+      <type>WiFi</type>
+      <ssid>FreeWiFi_Anonymous</ssid>
+      <bssid>AA:BB:CC:DD:EE:FF</bssid>
+      <security>Open</security>
+      <duration>3600</duration>
+    </connection>
+    
+    <connection id="3">
+      <timestamp>2024-01-28T16:30:00Z</timestamp>
+      <type>VPN</type>
+      <server>tor-relay-001.onion</server>
+      <protocol>OpenVPN</protocol>
+      <duration>1800</duration>
+    </connection>
+  </network_connections>
+  
+  <extraction_metadata>
+    <extraction_date>2024-02-01T09:00:00Z</extraction_date>
+    <extraction_tool>Cellebrite UFED Touch 2</extraction_tool>
+    <extraction_method>Physical</extraction_method>
+    <examiner>Forensic Analyst Mike Rodriguez</examiner>
+    <case_number>CASE-2024-002</case_number>
+    <evidence_number>EVID-2024-002-PHONE</evidence_number>
+    <chain_of_custody>
+      <entry>
+        <timestamp>2024-01-30T14:00:00Z</timestamp>
+        <officer>Detective Johnson</officer>
+        <action>Device seized during arrest warrant execution</action>
+      </entry>
+      <entry>
+        <timestamp>2024-01-31T08:00:00Z</timestamp>
+        <officer>Evidence Custodian Smith</officer>
+        <action>Device logged into evidence storage</action>
+      </entry>
+      <entry>
+        <timestamp>2024-02-01T09:00:00Z</timestamp>
+        <officer>Forensic Analyst Rodriguez</officer>
+        <action>Device extracted using Cellebrite UFED Touch 2</action>
+      </entry>
+    </chain_of_custody>
+  </extraction_metadata>
+</report>
