@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Database Services
   elasticsearch:
@@ -58,105 +56,74 @@ services:
     networks:
       - ufdr-network
 
-  chromadb:
-    image: chromadb/chroma:latest
-    container_name: ufdr-chromadb
+  milvus:
+    image: milvusdb/milvus:latest
+    container_name: ufdr-milvus
+    environment:
+      - ETCD_ENDPOINTS=etcd:2379
+      - MINIO_ADDRESS=minio:9000
     ports:
-      - "8000:8000"
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - etcd
+      - minio
     volumes:
-      - chromadb_data:/chroma/chroma
+      - milvus_data:/var/lib/milvus
     networks:
       - ufdr-network
 
-  # Backend Services
-  api-gateway:
-    build:
-      context: ./backend/api-gateway
-      dockerfile: Dockerfile
-    container_name: ufdr-gateway
-    ports:
-      - "8080:8080"
+  etcd:
+    image: gcr.io/etcd-development/etcd:v3.5.10
+    container_name: ufdr-etcd
     environment:
-      - DATABASE_URL=postgresql://ufdr_user:ufdr_password@postgresql:5432/ufdr_db
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
-      - PARSER_SERVICE_URL=http://parser-service:8001
-      - INDEXER_SERVICE_URL=http://indexer-service:8002
-      - SEARCH_SERVICE_URL=http://search-service:8003
-      - GRAPH_SERVICE_URL=http://graph-service:8004
-    depends_on:
-      - postgresql
-    networks:
-      - ufdr-network
-
-  parser-service:
-    build:
-      context: ./backend/parser-service
-      dockerfile: Dockerfile
-    container_name: ufdr-parser
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=10000
     ports:
-      - "8001:8001"
-    environment:
-      - INDEXER_SERVICE_URL=http://indexer-service:8002
+      - "2379:2379"
+      - "2380:2380"
     volumes:
-      - ./uploads:/app/uploads
+      - etcd_data:/etcd-data
+    command: /usr/local/bin/etcd --advertise-client-urls=http://0.0.0.0:2379 --listen-client-urls=http://0.0.0.0:2379 --data-dir=/etcd-data
     networks:
       - ufdr-network
 
-  indexer-service:
-    build:
-      context: ./backend/indexer-service
-      dockerfile: Dockerfile
-    container_name: ufdr-indexer
-    ports:
-      - "8002:8002"
+  minio:
+    image: minio/minio:latest
+    container_name: ufdr-minio
     environment:
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - DATABASE_URL=postgresql://ufdr_user:ufdr_password@postgresql:5432/ufdr_db
-      - GRAPH_SERVICE_URL=http://graph-service:8004
-    depends_on:
-      - elasticsearch
-      - postgresql
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/minio_data
+    command: minio server /minio_data --console-address ":9001"
     networks:
       - ufdr-network
 
-  search-service:
-    build:
-      context: ./backend/search-service
-      dockerfile: Dockerfile
-    container_name: ufdr-search
+  redis:
+    image: redis:7-alpine
+    container_name: ufdr-redis
     ports:
-      - "8003:8003"
-    environment:
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - CHROMADB_URL=http://chromadb:8000
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    depends_on:
-      - elasticsearch
-      - chromadb
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - ufdr-network
 
-  graph-service:
-    build:
-      context: ./backend/graph-service
-      dockerfile: Dockerfile
-    container_name: ufdr-graph
-    ports:
-      - "8004:8004"
-    environment:
-      - NEO4J_URI=bolt://neo4j:7687
-      - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=ufdr_password
-    depends_on:
-      - neo4j
-    networks:
-      - ufdr-network
 
 volumes:
   elasticsearch_data:
   postgres_data:
   neo4j_data:
-  chromadb_data:
+  milvus_data:
+  etcd_data:
+  minio_data:
+  redis_data:
 
 networks:
   ufdr-network:
