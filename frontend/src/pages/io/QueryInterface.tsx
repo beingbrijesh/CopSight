@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Send, Loader2, History, Sparkles } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-import { Navbar } from '../../components/Navbar';
-import { QueryResults } from '../../components/QueryResults';
-import { QueryHistory } from '../../components/QueryHistory';
-import { api } from '../../lib/api';
+import { Navbar } from '../../components/Navbar.tsx';
+import { QueryResults } from '../../components/QueryResults.tsx';
+import { QueryHistory } from '../../components/QueryHistory.tsx';
+import { api } from '../../lib/api.ts';
 
 export const QueryInterface = () => {
   const { caseId } = useParams();
