@@ -9,18 +9,18 @@ graph TB
     Supervisor[Supervisor]
     External[External Forensic Tools]
     
-    subgraph UFDR["UFDR SYSTEM<br/>(Digital Forensic Investigation Platform)"]
+    subgraph UFDR[UFDR SYSTEM - Digital Forensic Investigation Platform]
         Core[Core System]
     end
     
-    Admin -->|User Management<br/>Case Creation<br/>System Config| Core
-    IO -->|Case Data<br/>Queries<br/>Evidence| Core
-    Supervisor -->|Case Monitoring<br/>Reports<br/>Oversight| Core
-    External -->|UFDR Files<br/>(XML/JSON)| Core
+    Admin -->|User Management, Case Creation, System Config| Core
+    IO -->|Case Data, Queries, Evidence| Core
+    Supervisor -->|Case Monitoring, Reports, Oversight| Core
+    External -->|UFDR Files XML/JSON| Core
     
-    Core -->|Dashboard<br/>Reports| Admin
-    Core -->|Results<br/>Visualizations| IO
-    Core -->|Analytics<br/>Reports| Supervisor
+    Core -->|Dashboard, Reports| Admin
+    Core -->|Results, Visualizations| IO
+    Core -->|Analytics, Reports| Supervisor
     
     style Admin fill:#ff9999
     style IO fill:#99ccff
@@ -33,27 +33,27 @@ graph TB
 
 ```mermaid
 flowchart TD
-    Users[Users<br/>Admin/IO/Supervisor]
+    Users[Users - Admin/IO/Supervisor]
     
-    P1[1.0 Authentication<br/>& Session Management]
-    P2[2.0 User & Case<br/>Management]
-    P3[3.0 File Upload<br/>& Processing]
-    P4[4.0 Background<br/>Processing]
-    P5[5.0 Query Processing<br/>RAG Pipeline]
-    P6[6.0 AI Analysis &<br/>Answer Generation]
-    P7[7.0 Evidence<br/>Management]
-    P8[8.0 Report<br/>Generation]
+    P1[1.0 Authentication and Session Management]
+    P2[2.0 User and Case Management]
+    P3[3.0 File Upload and Processing]
+    P4[4.0 Background Processing]
+    P5[5.0 Query Processing RAG Pipeline]
+    P6[6.0 AI Analysis and Answer Generation]
+    P7[7.0 Evidence Management]
+    P8[8.0 Report Generation]
     
-    D1[(D1: Users<br/>Database)]
-    D2[(D2: Cases<br/>Database)]
-    D3[(D3: Raw File<br/>Storage)]
-    D4[(D4: PostgreSQL<br/>Structured)]
-    D5[(D5: Elasticsearch<br/>Full-text)]
-    D6[(D6: Neo4j<br/>Graph)]
-    D7[(D7: Milvus<br/>Vectors)]
-    D8[(D8: Ollama<br/>LLM)]
-    D9[(D9: Bookmarks<br/>Database)]
-    D10[(D10: Reports<br/>Storage)]
+    D1[(D1: Users Database)]
+    D2[(D2: Cases Database)]
+    D3[(D3: Raw File Storage)]
+    D4[(D4: PostgreSQL Structured)]
+    D5[(D5: Elasticsearch Full-text)]
+    D6[(D6: Neo4j Graph)]
+    D7[(D7: Milvus Vectors)]
+    D8[(D8: Ollama LLM)]
+    D9[(D9: Bookmarks Database)]
+    D10[(D10: Reports Storage)]
     
     Users -->|1. Login Credentials| P1
     P1 -->|Session Token JWT| Users
@@ -89,79 +89,52 @@ flowchart TD
 
 ## Level 2: Detailed Process Flows
 
-### 2.1 File Upload and Processing Flow
+### 2.1 File Upload and Processing Flow (Mermaid)
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│              FILE UPLOAD & PROCESSING (Process 3.0 & 4.0)            │
-└─────────────────────────────────────────────────────────────────────┘
-
-┌──────────┐
-│    IO    │
-└─────┬────┘
-      │ UFDR File (XML/JSON)
-      ▼
-┌─────────────────┐
-│  3.1 Validate   │
-│  File Format    │
-└────────┬────────┘
-         │ Valid File
-         ▼
-┌─────────────────┐         ┌──────────────┐
-│  3.2 Store File │────────►│ File Storage │
-│  & Create Job   │         └──────────────┘
-└────────┬────────┘
-         │ Job ID
-         ▼
-┌─────────────────┐         ┌──────────────┐
-│  3.3 Queue Job  │────────►│ Redis Queue  │
-│  (Bull Queue)   │         │  (Bull)      │
-└─────────────────┘         └──────┬───────┘
-                                   │ Job Picked
-                                   ▼
-                            ┌──────────────┐
-                            │ 4.1 Parse    │
-                            │ UFDR File    │
-                            │ (XML/JSON)   │
-                            └──────┬───────┘
-                                   │ Raw Data
-                                   ▼
-                            ┌──────────────┐
-                            │ 4.2 Extract  │
-                            │   Entities   │
-                            │    (NER)     │
-                            └──────┬───────┘
-                                   │ Entities
-                                   ▼
-                            ┌──────────────┐
-                            │ 4.3 Store in │
-                            │  PostgreSQL  │
-                            └──────┬───────┘
-                                   │
-                                   ▼
-                            ┌──────────────┐
-                            │ 4.4 Index to │
-                            │Elasticsearch │
-                            └──────┬───────┘
-                                   │
-                                   ▼
-                            ┌──────────────┐
-                            │ 4.5 Build    │
-                            │ Neo4j Graph  │
-                            └──────┬───────┘
-                                   │
-                                   ▼
-                            ┌──────────────┐
-                            │ 4.6 Generate │
-                            │  Embeddings  │
-                            │  (Optional)  │
-                            └──────┬───────┘
-                                   │
-                                   ▼
-                            ┌──────────────┐
-                            │ 4.7 Update   │
-                            │  Job Status  │
-                            └──────────────┘
+```mermaid
+flowchart TD
+    IO[Investigating Officer]
+    
+    P31[3.1 Validate File Format]
+    P32[3.2 Store File and Create Job]
+    FS[(File Storage)]
+    P33[3.3 Queue Job - Bull Queue]
+    RQ[(Redis Queue Bull)]
+    
+    P41[4.1 Parse UFDR File XML/JSON]
+    P42[4.2 Extract Entities NER]
+    P43[4.3 Store in PostgreSQL]
+    P44[4.4 Index to Elasticsearch]
+    P45[4.5 Build Neo4j Graph]
+    P46[4.6 Generate Embeddings Optional]
+    P47[4.7 Update Job Status]
+    
+    IO -->|UFDR File XML/JSON| P31
+    P31 -->|Valid File| P32
+    P32 -->|Store| FS
+    P32 -->|Job ID| P33
+    P33 -->|Queue| RQ
+    RQ -->|Job Picked| P41
+    P41 -->|Raw Data| P42
+    P42 -->|Entities| P43
+    P43 --> P44
+    P44 --> P45
+    P45 --> P46
+    P46 --> P47
+    
+    style IO fill:#99ccff
+    style P31 fill:#fff4e1
+    style P32 fill:#fff4e1
+    style P33 fill:#fff4e1
+    style P41 fill:#e8f5e9
+    style P42 fill:#e8f5e9
+    style P43 fill:#e8f5e9
+    style P44 fill:#e8f5e9
+    style P45 fill:#e8f5e9
+    style P46 fill:#e8f5e9
+    style P47 fill:#e8f5e9
+    style FS fill:#f3e5f5
+    style RQ fill:#f3e5f5
 ```
 
 ### 2.2 Query Processing Flow (RAG Pipeline) - Mermaid
@@ -170,23 +143,23 @@ flowchart TD
 flowchart TD
     IO[Investigating Officer]
     
-    S1[5.1 Send Query<br/>to AI Service]
+    S1[5.1 Send Query to AI Service]
     S2[6.1 Query Decomposition]
-    LLM1[(Ollama LLM<br/>llama3.2)]
+    LLM1[(Ollama LLM llama3.2)]
     
-    subgraph Parallel["6.2 Parallel Multi-Database Search"]
-        PG[6.2.1 PostgreSQL Search<br/>Devices, Sources, Contacts]
-        ES[6.2.2 Elasticsearch Search<br/>Messages, Calls, Contacts]
-        Neo[6.2.3 Neo4j Search<br/>Relations, Patterns]
-        Milvus[6.2.4 Milvus Search<br/>Semantic Vectors]
+    subgraph Parallel[6.2 Parallel Multi-Database Search]
+        PG[6.2.1 PostgreSQL Search - Devices, Sources, Contacts]
+        ES[6.2.2 Elasticsearch Search - Messages, Calls, Contacts]
+        Neo[6.2.3 Neo4j Search - Relations, Patterns]
+        Milvus[6.2.4 Milvus Search - Semantic Vectors]
     end
     
-    S3[6.3 Rank &<br/>Deduplicate Results]
-    S4[6.4 Generate Answer<br/>with Citations]
-    LLM2[(Ollama LLM<br/>llama3.2)]
-    S5[6.5 Calculate<br/>Confidence Score]
-    S6[5.2 Store<br/>Query Result]
-    QH[(Query History<br/>Database)]
+    S3[6.3 Rank and Deduplicate Results]
+    S4[6.4 Generate Answer with Citations]
+    LLM2[(Ollama LLM llama3.2)]
+    S5[6.5 Calculate Confidence Score]
+    S6[5.2 Store Query Result]
+    QH[(Query History Database)]
     
     IO -->|Natural Language Query| S1
     S1 -->|Query Text| S2
@@ -213,91 +186,55 @@ flowchart TD
     style S6 fill:#fff4e1
 ```
 
-### 2.3 Report Generation Flow
+### 2.3 Report Generation Flow (Mermaid)
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│              REPORT GENERATION (Process 8.0)                         │
-└─────────────────────────────────────────────────────────────────────┘
-
-┌──────────┐
-│    IO    │
-└─────┬────┘
-      │ Report Request (Template + Options)
-      ▼
-┌─────────────────┐
-│ 8.1 Validate    │
-│ Report Config   │
-└────────┬────────┘
-         │ Valid Config
-         ▼
-┌─────────────────────────────────────────┐
-│ 8.2 Gather Data from Multiple Sources   │
-│                                          │
-│  ┌────────────┐  ┌────────────┐        │
-│  │ Case Info  │  │  Devices   │        │
-│  │  (PG)      │  │   (PG)     │        │
-│  └─────┬──────┘  └─────┬──────┘        │
-│        │               │                │
-│  ┌─────▼──────┐  ┌─────▼──────┐        │
-│  │  Queries   │  │ Bookmarks  │        │
-│  │   (PG)     │  │   (PG)     │        │
-│  └─────┬──────┘  └─────┬──────┘        │
-│        │               │                │
-│  ┌─────▼──────┐  ┌─────▼──────┐        │
-│  │ Evidence   │  │  Network   │        │
-│  │   (ES)     │  │  (Neo4j)   │        │
-│  └─────┬──────┘  └─────┬──────┘        │
-│        │               │                │
-└────────┼───────────────┼────────────────┘
-         │               │
-         └───────┬───────┘
-                 │ Aggregated Data
-                 ▼
-         ┌───────────────┐
-         │ 8.3 Apply     │
-         │   Template    │
-         │  (Full/Exec/  │
-         │  Evidence)    │
-         └───────┬───────┘
-                 │ Formatted Data
-                 ▼
-         ┌───────────────┐
-         │ 8.4 Generate  │
-         │  PDF (PDFKit) │
-         │               │
-         │ • Header/Footer│
-         │ • Case Info   │
-         │ • Evidence    │
-         │ • Timeline    │
-         │ • Queries     │
-         │ • Bookmarks   │
-         │ • Graph       │
-         └───────┬───────┘
-                 │ PDF File
-                 ▼
-         ┌───────────────┐         ┌──────────────┐
-         │ 8.5 Store     │────────►│ Report Files │
-         │ Report        │         │   Storage    │
-         └───────┬───────┘         └──────────────┘
-                 │
-                 ▼
-         ┌───────────────┐         ┌──────────────┐
-         │ 8.6 Save      │────────►│ Report Meta  │
-         │  Metadata     │         │   Database   │
-         └───────┬───────┘         └──────────────┘
-                 │
-                 ▼
-         ┌───────────────┐         ┌──────────────┐
-         │ 8.7 Log       │────────►│  Audit Log   │
-         │  Generation   │         │   Database   │
-         └───────┬───────┘         └──────────────┘
-                 │ Download Link
-                 ▼
-         ┌───────────────┐
-         │      IO       │
-         │  (Download)   │
-         └───────────────┘
+```mermaid
+flowchart TD
+    IO[Investigating Officer]
+    
+    R1[8.1 Validate Report Config]
+    
+    subgraph R2[8.2 Gather Data from Multiple Sources]
+        CaseInfo[Case Info PG]
+        Devices[Devices PG]
+        Queries[Queries PG]
+        Bookmarks[Bookmarks PG]
+        Evidence[Evidence ES]
+        Network[Network Neo4j]
+    end
+    
+    R3[8.3 Apply Template - Full/Exec/Evidence]
+    R4[8.4 Generate PDF PDFKit<br/>Header/Footer, Case Info<br/>Evidence, Timeline<br/>Queries, Bookmarks, Graph]
+    R5[8.5 Store Report]
+    RFS[(Report Files Storage)]
+    R6[8.6 Save Metadata]
+    RMD[(Report Meta Database)]
+    R7[8.7 Log Generation]
+    ALD[(Audit Log Database)]
+    
+    IO -->|Report Request Template + Options| R1
+    R1 -->|Valid Config| R2
+    R2 -->|Aggregated Data| R3
+    R3 -->|Formatted Data| R4
+    R4 -->|PDF File| R5
+    R5 -->|Store| RFS
+    R5 --> R6
+    R6 -->|Store| RMD
+    R6 --> R7
+    R7 -->|Log| ALD
+    R7 -->|Download Link| IO
+    
+    style IO fill:#99ccff
+    style R1 fill:#fff4e1
+    style R2 fill:#f0f0f0
+    style R3 fill:#fff4e1
+    style R4 fill:#fff4e1
+    style R5 fill:#fff4e1
+    style R6 fill:#fff4e1
+    style R7 fill:#fff4e1
+    style RFS fill:#f3e5f5
+    style RMD fill:#f3e5f5
+    style ALD fill:#f3e5f5
 ```
 
 ## Data Stores

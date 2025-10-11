@@ -4,48 +4,48 @@
 
 ```mermaid
 graph TB
-    subgraph Client["CLIENT LAYER"]
-        Browser["Web Browser<br/>Port 5173<br/>Vite Dev Server"]
+    subgraph Client[CLIENT LAYER]
+        Browser[Web Browser - Port 5173 - Vite Dev Server]
     end
     
-    subgraph Frontend["PRESENTATION LAYER<br/>React 19 + TypeScript"]
-        Pages["11 Pages<br/>Login, Admin(3), IO(5), Supervisor(2)"]
-        Components["6 Components<br/>Navbar, ProtectedRoute<br/>QueryResults, QueryHistory<br/>NetworkGraph, Timeline"]
-        State["Zustand State Store<br/>TailwindCSS<br/>React Router v6"]
+    subgraph Frontend[PRESENTATION LAYER - React 19 + TypeScript]
+        Pages[11 Pages: Login, Admin, IO, Supervisor]
+        Components[6 Components: Navbar, ProtectedRoute, QueryResults, QueryHistory, NetworkGraph, Timeline]
+        State[Zustand State Store, TailwindCSS, React Router v6]
     end
     
-    subgraph Backend["APPLICATION LAYER<br/>Node.js 18 + Express (Port 8080)"]
-        Middleware["MIDDLEWARE<br/>Helmet, CORS, Auth, RBAC<br/>Multer, ErrorHandler"]
-        Routes["7 ROUTES<br/>auth, users, cases<br/>upload, query, bookmarks, reports<br/>(27 endpoints)"]
-        Controllers["7 CONTROLLERS<br/>auth, user, case, upload<br/>query, bookmark, report"]
-        Services["6 SERVICES<br/>Parser, NER, Search<br/>Graph, AI, Report"]
-        Workers["WORKERS<br/>processingWorker<br/>(Bull Queue + Redis)"]
-        ORM["ORM: Sequelize<br/>(11 Models)"]
+    subgraph Backend[APPLICATION LAYER - Node.js 18 + Express Port 8080]
+        Middleware[MIDDLEWARE: Helmet, CORS, Auth, RBAC, Multer, ErrorHandler]
+        Routes[7 ROUTES: auth, users, cases, upload, query, bookmarks, reports - 27 endpoints]
+        Controllers[7 CONTROLLERS: auth, user, case, upload, query, bookmark, report]
+        Services[6 SERVICES: Parser, NER, Search, Graph, AI, Report]
+        Workers[WORKERS: processingWorker - Bull Queue + Redis]
+        ORM[ORM: Sequelize - 11 Models]
     end
     
-    subgraph DataLayer["DATA LAYER"]
-        PG["PostgreSQL:5432<br/>11 Tables<br/>Primary Database"]
-        ES["Elasticsearch:9200<br/>3 Indices<br/>Full-text Search"]
-        Neo["Neo4j:7687<br/>5 Node Types<br/>Graph Relations"]
-        Redis["Redis:6379<br/>Bull Queue<br/>Session Cache"]
-        Milvus["Milvus:19530<br/>Vector DB<br/>Semantic Search"]
-        etcd["etcd:2379<br/>Metadata Store"]
-        MinIO["MinIO:9000<br/>Object Storage"]
-        Kibana["Kibana:5601<br/>ES Visualization"]
+    subgraph DataLayer[DATA LAYER]
+        PG[PostgreSQL:5432 - 11 Tables - Primary Database]
+        ES[Elasticsearch:9200 - 3 Indices - Full-text Search]
+        Neo[Neo4j:7687 - 5 Node Types - Graph Relations]
+        Redis[Redis:6379 - Bull Queue - Session Cache]
+        Milvus[Milvus:19530 - Vector DB - Semantic Search]
+        etcd[etcd:2379 - Metadata Store]
+        MinIO[MinIO:9000 - Object Storage]
+        Kibana[Kibana:5601 - ES Visualization]
     end
     
-    subgraph AIService["AI/ML SERVICE LAYER<br/>Python 3.10 + FastAPI (Port 8005)"]
-        AIRouters["3 ROUTERS<br/>query, embeddings, analysis"]
-        AIServices["5 SERVICES<br/>Database, Embeddings<br/>LLM, RAG, Analysis"]
-        RAG["RAG PIPELINE<br/>1. Query Decomposition<br/>2. Multi-DB Search<br/>3. Ranking<br/>4. Answer Synthesis<br/>5. Confidence Scoring"]
+    subgraph AIService[AI/ML SERVICE LAYER - Python 3.10 + FastAPI Port 8005]
+        AIRouters[3 ROUTERS: query, embeddings, analysis]
+        AIServices[5 SERVICES: Database, Embeddings, LLM, RAG, Analysis]
+        RAG[RAG PIPELINE: 1.Query Decomposition 2.Multi-DB Search 3.Ranking 4.Answer Synthesis 5.Confidence Scoring]
     end
     
-    subgraph LLM["LLM INFERENCE LAYER<br/>Ollama (Port 11434)"]
-        Models["MODELS<br/>nomic-embed-text (384-dim)<br/>llama3.2 (Query & Answer)"]
+    subgraph LLM[LLM INFERENCE LAYER - Ollama Port 11434]
+        Models[MODELS: nomic-embed-text 384-dim, llama3.2 Query and Answer]
     end
     
-    Browser -->|HTTPS/REST<br/>Axios| Frontend
-    Frontend -->|REST API<br/>JSON + JWT| Backend
+    Browser -->|HTTPS/REST Axios| Frontend
+    Frontend -->|REST API JSON + JWT| Backend
     Backend -->|SQL| PG
     Backend -->|HTTP| ES
     Backend -->|Bolt| Neo
