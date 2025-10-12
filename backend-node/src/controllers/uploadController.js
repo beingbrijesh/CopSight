@@ -6,6 +6,7 @@ import DataSource from '../models/DataSource.js';
 import Device from '../models/Device.js';
 import ProcessingJob from '../models/ProcessingJob.js';
 import Case from '../models/Case.js';
+import EntityTag from '../models/EntityTag.js';
 import logger from '../config/logger.js';
 import ufdrParser from '../services/parser/ufdrParser.js';
 import processingQueue from '../queues/processingQueue.js';

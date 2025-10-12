@@ -30,25 +30,35 @@ class RAGPipeline:
             query_components = await llm_service.decompose_query(query)
             logger.info(f"Query decomposed: {query_components}")
             
-            # Step 2: Parallel search across databases
+            # Step 2: Get conversation history
+            conversation_history = await self._get_conversation_history(case_id, user_id)
+            logger.info(f"Retrieved {len(conversation_history)} previous queries")
+            
+            # Step 2.5: Get cross-case connections
+            cross_case_context = await self._get_cross_case_context(case_id)
+            logger.info(f"Found {len(cross_case_context.get('connected_cases', []))} connected cases")
+            
+            # Step 3: Parallel search across databases (current case + connected cases)
             search_results = await self._parallel_search(
                 case_id,
-                query_components
+                query_components,
+                cross_case_context.get('connected_cases', [])
             )
             
-            # Step 3: Rank and filter results
+            # Step 4: Rank and filter results
             ranked_results = await self._rank_results(
                 query,
                 search_results
             )
             
-            # Step 4: Synthesize answer
+            # Step 5: Synthesize answer with conversation context
             answer = await llm_service.synthesize_answer(
                 query,
-                ranked_results[:settings.TOP_K]
+                ranked_results[:settings.TOP_K],
+                conversation_history
             )
             
-            # Step 5: Save query to database
+            # Step 6: Save query to database
             query_id = await self._save_query(
                 case_id,
                 user_id,
@@ -75,37 +85,61 @@ class RAGPipeline:
     async def _parallel_search(
         self,
         case_id: int,
-        query_components: Dict[str, Any]
+        query_components: Dict[str, Any],
+        connected_cases: List[int] = None
     ) -> List[Dict[str, Any]]:
-        """Search across all databases in parallel"""
+        """Search across all databases in parallel (current case + connected cases)"""
         
-        results = []
+        if connected_cases is None:
+            connected_cases = []
         
-        # Elasticsearch keyword search
-        if db_manager.elasticsearch:
-            es_results = await self._search_elasticsearch(
-                case_id,
-                query_components
-            )
-            results.extend(es_results)
+        all_case_ids = [case_id] + connected_cases
+        all_results = []
         
-        # Milvus semantic search
-        if db_manager.milvus_connected:
-            milvus_results = await self._search_milvus(
-                case_id,
-                query_components["semantic_query"]
-            )
-            results.extend(milvus_results)
+        for search_case_id in all_case_ids:
+            logger.info(f"Searching case {search_case_id} for query components")
+            
+            results = []
+            
+            # Elasticsearch keyword search
+            if db_manager.elasticsearch:
+                es_results = await self._search_elasticsearch(
+                    search_case_id,
+                    query_components
+                )
+                # Mark results with source case
+                for result in es_results:
+                    result['source_case_id'] = search_case_id
+                    result['is_cross_case'] = search_case_id != case_id
+                results.extend(es_results)
+            
+            # ChromaDB semantic search
+            if db_manager.chroma_collection:
+                chroma_results = await self._search_chromadb(
+                    search_case_id,
+                    query_components["semantic_query"]
+                )
+                # Mark results with source case
+                for result in chroma_results:
+                    result['source_case_id'] = search_case_id
+                    result['is_cross_case'] = search_case_id != case_id
+                results.extend(chroma_results)
+            
+            # Neo4j graph search
+            if db_manager.neo4j:
+                graph_results = await self._search_neo4j(
+                    search_case_id,
+                    query_components
+                )
+                # Mark results with source case
+                for result in graph_results:
+                    result['source_case_id'] = search_case_id
+                    result['is_cross_case'] = search_case_id != case_id
+                results.extend(graph_results)
+            
+            all_results.extend(results)
         
-        # Neo4j graph search
-        if db_manager.neo4j:
-            graph_results = await self._search_neo4j(
-                case_id,
-                query_components
-            )
-            results.extend(graph_results)
-        
-        return results
+        return all_results
     
     async def _search_elasticsearch(
         self,
@@ -179,55 +213,52 @@ class RAGPipeline:
             logger.error(f"Elasticsearch search failed: {e}")
             return []
     
-    async def _search_milvus(
+    async def _search_chromadb(
         self,
         case_id: int,
         semantic_query: str
     ) -> List[Dict[str, Any]]:
-        """Search Milvus for semantic matches"""
+        """Search ChromaDB for semantic matches"""
         
         try:
             # Generate query embedding
             query_embedding = await embedding_service.generate_embedding(semantic_query)
             
-            # Search Milvus
-            from pymilvus import Collection
-            collection = Collection("ufdr_embeddings")
-            
-            search_params = {
-                "metric_type": "L2",
-                "params": {"nprobe": 10}
-            }
-            
-            results = collection.search(
-                data=[query_embedding],
-                anns_field="embedding",
-                param=search_params,
-                limit=20,
-                expr=f"case_id == {case_id}",
-                output_fields=["case_id", "source_type", "content", "timestamp"]
+            # Search ChromaDB
+            results = db_manager.chroma_collection.query(
+                query_embeddings=[query_embedding],
+                n_results=20,
+                where={"case_id": case_id},
+                include=["documents", "metadatas", "distances"]
             )
             
             # Format results
             formatted_results = []
-            for hits in results:
-                for hit in hits:
+            if results and results['ids']:
+                for i, doc_id in enumerate(results['ids'][0]):
+                    # ChromaDB returns distances (lower is better), convert to similarity score
+                    distance = results['distances'][0][i] if results['distances'] else 1.0
+                    similarity = 1.0 / (1.0 + distance)  # Convert distance to similarity
+                    
+                    metadata = results['metadatas'][0][i] if results['metadatas'] else {}
+                    document = results['documents'][0][i] if results['documents'] else ""
+                    
                     formatted_results.append({
-                        "id": hit.id,
-                        "score": 1.0 - hit.distance,  # Convert distance to similarity
-                        "source": "milvus",
-                        "content": hit.entity.get("content", ""),
+                        "id": doc_id,
+                        "score": similarity,
+                        "source": "chromadb",
+                        "content": document,
                         "metadata": {
-                            "sourceType": hit.entity.get("source_type"),
-                            "timestamp": hit.entity.get("timestamp")
+                            "sourceType": metadata.get("source_type"),
+                            "timestamp": metadata.get("timestamp")
                         }
                     })
             
-            logger.info(f"Milvus found {len(formatted_results)} results")
+            logger.info(f"ChromaDB found {len(formatted_results)} results")
             return formatted_results
             
         except Exception as e:
-            logger.error(f"Milvus search failed: {e}")
+            logger.error(f"ChromaDB search failed: {e}")
             return []
     
     async def _search_neo4j(
@@ -301,6 +332,97 @@ class RAGPipeline:
         
         return unique_results
     
+    async def _get_conversation_history(
+        self,
+        case_id: int,
+        user_id: int,
+        limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        """Get recent conversation history for the case and user"""
+        
+        try:
+            async with db_manager.postgres.acquire() as conn:
+                queries = await conn.fetch("""
+                    SELECT 
+                        id, query_text, answer, results_count, confidence_score,
+                        created_at
+                    FROM case_queries
+                    WHERE case_id = $1 AND user_id = $2 AND answer IS NOT NULL
+                    ORDER BY created_at DESC
+                    LIMIT $3
+                """, case_id, user_id, limit)
+                
+                # Convert to list and reverse to get chronological order (oldest first)
+                history = []
+                for query in reversed(list(queries)):
+                    history.append({
+                        "query": query["query_text"],
+                        "answer": query["answer"] or f"Query processed with {query['results_count']} results",
+                        "timestamp": query["created_at"].isoformat()
+                    })
+                
+                return history
+                
+        except Exception as e:
+            logger.error(f"Failed to get conversation history: {e}")
+            return []
+    
+    async def _get_cross_case_context(self, case_id: int) -> Dict[str, Any]:
+        """Get cross-case context including connected cases and relationships"""
+        
+        try:
+            async with db_manager.postgres.acquire() as conn:
+                # Get direct cross-case links
+                links = await conn.fetch("""
+                    SELECT 
+                        CASE WHEN source_case_id = $1 THEN target_case_id ELSE source_case_id END as connected_case_id,
+                        link_type, entity_type, entity_value, strength, confidence_score,
+                        c.case_number, c.title
+                    FROM cross_case_links ccl
+                    JOIN cases c ON c.id = CASE WHEN ccl.source_case_id = $1 THEN ccl.target_case_id ELSE ccl.source_case_id END
+                    WHERE (source_case_id = $1 OR target_case_id = $1)
+                    AND c.status IN ('active', 'ready_for_analysis', 'under_review')
+                    ORDER BY 
+                        CASE strength 
+                            WHEN 'critical' THEN 1 
+                            WHEN 'strong' THEN 2 
+                            WHEN 'medium' THEN 3 
+                            WHEN 'weak' THEN 4 
+                        END,
+                        confidence_score DESC
+                    LIMIT 10
+                """, case_id)
+                
+                connected_cases = []
+                for link in links:
+                    connected_cases.append({
+                        'case_id': link['connected_case_id'],
+                        'case_number': link['case_number'],
+                        'title': link['title'],
+                        'link_type': link['link_type'],
+                        'entity_type': link['entity_type'],
+                        'entity_value': link['entity_value'],
+                        'strength': link['strength'],
+                        'confidence': link['confidence_score']
+                    })
+                
+                # Get unique connected case IDs
+                case_ids = list(set(link['connected_case_id'] for link in links))
+                
+                return {
+                    'connected_cases': case_ids,
+                    'links': connected_cases,
+                    'total_connections': len(links)
+                }
+                
+        except Exception as e:
+            logger.error(f"Failed to get cross-case context for case {case_id}: {e}")
+            return {
+                'connected_cases': [],
+                'links': [],
+                'total_connections': 0
+            }
+    
     async def _save_query(
         self,
         case_id: int,
@@ -316,8 +438,8 @@ class RAGPipeline:
                 query_id = await conn.fetchval("""
                     INSERT INTO case_queries (
                         case_id, user_id, query_text, query_type,
-                        filters, results_count, created_at
-                    ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                        filters, results_count, confidence_score, answer, created_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
                     RETURNING id
                 """,
                     case_id,
@@ -325,7 +447,9 @@ class RAGPipeline:
                     query,
                     query_components.get("intent", "search"),
                     str(query_components.get("filters", {})),
-                    answer.get("evidence_count", 0)
+                    answer.get("evidence_count", 0),
+                    answer.get("confidence", 0.0),
+                    answer.get("answer", "")
                 )
                 
                 return query_id

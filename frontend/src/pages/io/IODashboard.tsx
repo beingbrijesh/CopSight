@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FolderOpen, Upload, Search, Bookmark } from 'lucide-react';
 import { caseAPI } from '../../lib/api';
 import { Navbar } from '../../components/Navbar';
+import { AlertsPanel } from '../../components/AlertsPanel';
 
 export const IODashboard = () => {
   const navigate = useNavigate();
@@ -76,6 +77,11 @@ export const IODashboard = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Alerts Panel */}
+        <div className="mb-8">
+          <AlertsPanel limit={5} />
         </div>
 
         <div className="bg-white rounded-lg shadow">

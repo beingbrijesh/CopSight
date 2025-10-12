@@ -1,6 +1,5 @@
 import { Client } from '@elastic/elasticsearch';
 import neo4j from 'neo4j-driver';
-import { MilvusClient } from '@zilliz/milvus2-sdk-node';
 import Redis from 'ioredis';
 import logger from './logger.js';
 
@@ -22,24 +21,6 @@ export const neo4jDriver = neo4j.driver(
   )
 );
 
-// Milvus Client (optional - will be initialized on demand)
-export let milvusClient = null;
-
-// Initialize Milvus only if needed
-export const initMilvus = () => {
-  try {
-    milvusClient = new MilvusClient({
-      address: process.env.MILVUS_URL || 'localhost:19530',
-      username: process.env.MILVUS_USER || '',
-      password: process.env.MILVUS_PASSWORD || ''
-    });
-    return milvusClient;
-  } catch (error) {
-    logger.warn('Milvus initialization skipped:', error.message);
-    return null;
-  }
-};
-
 // Redis Client (for Bull queue)
 export const redisClient = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
@@ -53,7 +34,6 @@ export const testDatabaseConnections = async () => {
   const results = {
     elasticsearch: false,
     neo4j: false,
-    milvus: false,
     redis: false
   };
 
@@ -75,21 +55,6 @@ export const testDatabaseConnections = async () => {
     logger.info('✓ Neo4j connected');
   } catch (error) {
     logger.warn('✗ Neo4j not available:', error.message);
-  }
-
-  // Test Milvus (optional)
-  try {
-    if (!milvusClient) {
-      milvusClient = initMilvus();
-    }
-    if (milvusClient) {
-      const health = await milvusClient.checkHealth();
-      results.milvus = health.isHealthy;
-      logger.info('✓ Milvus connected');
-    }
-  } catch (error) {
-    logger.warn('✗ Milvus not available:', error.message);
-    results.milvus = false;
   }
 
   // Test Redis

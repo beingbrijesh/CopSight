@@ -293,3 +293,302 @@ async def get_case_summary(case_id: int):
     except Exception as e:
         logger.error(f"Case summary failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/detect-anomalies")
+async def detect_anomalies(request: AnalysisRequest):
+    """Detect anomalies in case data using ML algorithms"""
+    try:
+        from app.services.anomaly_detector import anomaly_detector
+        
+        # Get case data for analysis
+        case_data = await get_case_data_for_analysis(request.case_id)
+        
+        # Run anomaly detection
+        anomalies = anomaly_detector.detect_all_anomalies(case_data)
+        
+        return {
+            "case_id": request.case_id,
+            "anomalies_detected": anomalies,
+            "timestamp": "2024-01-01T00:00:00Z"  # Would be dynamic in real implementation
+        }
+            
+    except Exception as e:
+        logger.error(f"Anomaly detection failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def get_case_data_for_analysis(case_id: int) -> Dict[str, Any]:
+    """Get case data formatted for anomaly detection"""
+    try:
+        case_data = {
+            "communications": [],
+            "temporal_data": [],
+            "network_data": []
+        }
+        
+        # Get communication data from Elasticsearch
+        if db_manager.elasticsearch:
+            try:
+                result = await db_manager.elasticsearch.search(
+                    index="ufdr-*",
+                    body={
+                        "query": {"term": {"caseId": case_id}},
+                        "size": 1000,
+                        "_source": ["phoneNumber", "timestamp", "duration", "sourceType"]
+                    }
+                )
+                
+                for hit in result["hits"]["hits"]:
+                    source = hit["_source"]
+                    case_data["communications"].append({
+                        "phone_number": source.get("phoneNumber", ""),
+                        "timestamp": source.get("timestamp", ""),
+                        "duration": source.get("duration", 0),
+                        "source_type": source.get("sourceType", ""),
+                        "frequency": 1  # Would be aggregated in real implementation
+                    })
+                    
+                    case_data["temporal_data"].append({
+                        "timestamp": source.get("timestamp", ""),
+                        "type": source.get("sourceType", "")
+                    })
+                    
+            except Exception as e:
+                logger.warning(f"Could not get communication data: {e}")
+        
+        # Get network data from Neo4j
+        if db_manager.neo4j:
+            try:
+                async with db_manager.neo4j.session() as session:
+                    result = await session.run(
+                        """
+                        MATCH (c:Case {id: $caseId})-[:HAS_DEVICE]->(:Device)-[r:COMMUNICATED_WITH]->(p:PhoneNumber)
+                        RETURN p.number as phone_number, 
+                               count(r) as communication_frequency,
+                               size(collect(DISTINCT p)) as unique_contacts
+                        """,
+                        {"caseId": str(case_id)}
+                    )
+                    
+                    for record in result:
+                        case_data["network_data"].append({
+                            "phone_number": record["phone_number"],
+                            "communication_frequency": record["communication_frequency"].toNumber(),
+                            "unique_contacts": record["unique_contacts"].toNumber(),
+                            "degree_centrality": 0,  # Would be calculated in real implementation
+                            "betweenness_centrality": 0
+                        })
+                        
+            except Exception as e:
+                logger.warning(f"Could not get network data: {e}")
+        
+        return case_data
+        
+    except Exception as e:
+        logger.error(f"Error getting case data for analysis: {e}")
+        return {
+            "communications": [],
+            "temporal_data": [],
+            "network_data": []
+        }
+
+
+@router.post("/predictive-analysis")
+async def predictive_analysis(request: AnalysisRequest):
+    """Run predictive analytics on case data"""
+    try:
+        from app.services.predictive_analytics import predictive_service
+        
+        # Get case data and historical patterns
+        case_data = await get_case_predictive_data(request.case_id)
+        historical_patterns = await get_similar_historical_cases(request.case_id)
+        
+        # Run risk prediction
+        risk_prediction = predictive_service.predict_case_risk(case_data)
+        
+        # Generate investigation leads
+        investigation_leads = predictive_service.generate_investigation_leads(case_data, historical_patterns)
+        
+        return {
+            "case_id": request.case_id,
+            "risk_prediction": risk_prediction,
+            "investigation_leads": investigation_leads,
+            "lead_count": len(investigation_leads),
+            "timestamp": "2024-01-01T00:00:00Z"
+        }
+            
+    except Exception as e:
+        logger.error(f"Predictive analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/train-predictive-model")
+async def train_predictive_model():
+    """Train predictive models using historical case data"""
+    try:
+        from app.services.predictive_analytics import predictive_service
+        
+        # Get historical case data for training
+        historical_cases = await get_historical_case_data()
+        
+        # Train risk prediction model
+        training_result = predictive_service.train_risk_prediction_model(historical_cases)
+        
+        return {
+            "training_result": training_result,
+            "training_timestamp": "2024-01-01T00:00:00Z"
+        }
+            
+    except Exception as e:
+        logger.error(f"Model training failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def get_case_predictive_data(case_id: int) -> Dict[str, Any]:
+    """Get case data formatted for predictive analysis"""
+    try:
+        case_data = {
+            "case_id": case_id,
+            "evidence_count": 0,
+            "communication_count": 0,
+            "unique_contacts": 0,
+            "foreign_numbers_ratio": 0.0,
+            "late_night_activity": 0,
+            "cross_case_links": 0,
+            "anomaly_count": 0,
+            "priority": "medium",
+            "has_critical_evidence": False
+        }
+        
+        # Get case metadata from database
+        if db_manager.postgres:
+            try:
+                async with db_manager.postgres.acquire() as conn:
+                    # Get case basic info
+                    case_info = await conn.fetchrow(
+                        "SELECT priority, created_at FROM cases WHERE id = $1",
+                        case_id
+                    )
+                    if case_info:
+                        case_data["priority"] = case_info["priority"] or "medium"
+                        case_data["created_at"] = case_info["created_at"].isoformat()
+                    
+                    # Get evidence count
+                    evidence_count = await conn.fetchval(
+                        "SELECT COUNT(*) FROM entity_tags WHERE case_id = $1",
+                        case_id
+                    )
+                    case_data["evidence_count"] = evidence_count or 0
+                    
+                    # Get communication count from Elasticsearch
+                    if db_manager.elasticsearch:
+                        try:
+                            result = await db_manager.elasticsearch.count(
+                                index="ufdr-*",
+                                body={"query": {"term": {"caseId": case_id}}}
+                            )
+                            case_data["communication_count"] = result["count"]
+                        except:
+                            pass
+                    
+                    # Get cross-case links count
+                    cross_links = await conn.fetchval(
+                        "SELECT COUNT(*) FROM cross_case_links WHERE source_case_id = $1 OR target_case_id = $1",
+                        case_id
+                    )
+                    case_data["cross_case_links"] = cross_links or 0
+                    
+                    # Get alerts count (as anomaly proxy)
+                    alerts_count = await conn.fetchval(
+                        "SELECT COUNT(*) FROM alerts WHERE case_id = $1",
+                        case_id
+                    )
+                    case_data["anomaly_count"] = alerts_count or 0
+                    
+            except Exception as e:
+                logger.warning(f"Could not get case predictive data: {e}")
+        
+        return case_data
+        
+    except Exception as e:
+        logger.error(f"Error getting case predictive data: {e}")
+        return {}
+
+
+async def get_similar_historical_cases(case_id: int) -> List[Dict[str, Any]]:
+    """Get similar historical cases for comparison"""
+    try:
+        historical_cases = []
+        
+        if db_manager.postgres:
+            async with db_manager.postgres.acquire() as conn:
+                # Get some historical cases (simplified - would need better similarity logic)
+                cases = await conn.fetch(
+                    """
+                    SELECT id, case_number, priority, created_at
+                    FROM cases 
+                    WHERE id != $1 AND status = 'closed'
+                    ORDER BY created_at DESC
+                    LIMIT 20
+                    """,
+                    case_id
+                )
+                
+                for case in cases:
+                    historical_cases.append({
+                        "id": case["id"],
+                        "case_number": case["case_number"],
+                        "priority": case["priority"],
+                        "outcome": "completed",  # Would need actual outcomes
+                        "communication_count": 50,  # Mock data
+                        "unique_contacts": 10,
+                        "foreign_numbers_ratio": 0.1,
+                        "key_insights": ["Mock insight 1", "Mock insight 2"]
+                    })
+        
+        return historical_cases
+        
+    except Exception as e:
+        logger.error(f"Error getting historical cases: {e}")
+        return []
+
+
+async def get_historical_case_data() -> List[Dict[str, Any]]:
+    """Get historical case data for model training"""
+    try:
+        # Return mock historical data for training
+        # In production, this would fetch real case outcomes and features
+        return [
+            {
+                "id": 1,
+                "outcome": "conviction",
+                "evidence_count": 150,
+                "communication_count": 200,
+                "unique_contacts": 25,
+                "foreign_numbers_ratio": 0.3,
+                "late_night_activity": 8,
+                "priority": "high",
+                "has_critical_evidence": True,
+                "cross_case_links": 3,
+                "anomaly_count": 5
+            },
+            # Add more mock cases for training...
+            {
+                "id": 2,
+                "outcome": "investigation_ongoing",
+                "evidence_count": 75,
+                "communication_count": 100,
+                "unique_contacts": 15,
+                "foreign_numbers_ratio": 0.1,
+                "late_night_activity": 3,
+                "priority": "medium",
+                "has_critical_evidence": False,
+                "cross_case_links": 1,
+                "anomaly_count": 2
+            }
+        ]
+        
+    except Exception as e:
+        logger.error(f"Error getting historical case data: {e}")
+        return []

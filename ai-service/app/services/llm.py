@@ -97,26 +97,37 @@ Return ONLY the JSON, no explanation."""
     async def synthesize_answer(
         self,
         query: str,
-        evidence: List[Dict[str, Any]]
+        evidence: List[Dict[str, Any]],
+        conversation_history: List[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Synthesize answer from evidence using RAG"""
+        """Synthesize answer from evidence using RAG with conversation context"""
         
         # Build context from evidence
         context = self._build_evidence_context(evidence)
         
-        prompt = f"""You are a forensic investigation assistant. Based ONLY on the provided evidence, answer the investigator's query.
+        # Build conversation context
+        conversation_context = ""
+        if conversation_history:
+            conversation_context = self._build_conversation_context(conversation_history)
+        
+        prompt = f"""You are a forensic investigation assistant. Based ONLY on the provided evidence and conversation history, answer the investigator's query.
 
-Query: {query}
+Previous Conversation:
+{conversation_context}
+
+Current Query: {query}
 
 Evidence:
 {context}
 
 Instructions:
-1. Answer based ONLY on the provided evidence
-2. Cite specific evidence items using [Evidence #X] format
-3. If evidence is insufficient, clearly state what's missing
-4. Be precise and factual
-5. Highlight suspicious patterns or connections
+1. Answer based ONLY on the provided evidence and previous conversation context
+2. Reference previous queries and findings when relevant
+3. Cite specific evidence items using [Evidence #X] format
+4. If evidence is insufficient, clearly state what's missing and reference any previous findings
+5. Be precise and factual
+6. Highlight suspicious patterns or connections
+7. Maintain continuity with previous responses
 
 Answer:"""
 
@@ -166,6 +177,22 @@ Answer:"""
             )
         
         return "\n".join(context_parts)
+    
+    def _build_conversation_context(self, conversation_history: List[Dict[str, Any]]) -> str:
+        """Build conversation context string from history"""
+        if not conversation_history:
+            return ""
+        
+        context_parts = []
+        for i, entry in enumerate(conversation_history[-5:], 1):  # Last 5 queries
+            query = entry.get("query", "")
+            answer = entry.get("answer", "")
+            context_parts.append(
+                f"Query {i}: {query}\n"
+                f"Response {i}: {answer[:500]}..."  # Truncate long responses
+            )
+        
+        return "\n\n".join(context_parts)
     
     def _extract_findings(
         self,

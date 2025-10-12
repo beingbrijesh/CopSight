@@ -28,10 +28,10 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
         {
           caseId,
           imei: parsedData.deviceInfo.imei || `device_${caseId}`,
-          name: parsedData.deviceInfo.deviceName,
-          type: parsedData.deviceInfo.deviceType,
-          phoneNumber: parsedData.deviceInfo.phoneNumber,
-          manufacturer: parsedData.deviceInfo.manufacturer
+          name: parsedData.deviceInfo.deviceName || 'Unknown Device',
+          type: parsedData.deviceInfo.deviceType || 'Unknown',
+          phoneNumber: parsedData.deviceInfo.phoneNumber || 'Unknown',
+          manufacturer: parsedData.deviceInfo.manufacturer || 'Unknown'
         }
       );
     }
@@ -231,9 +231,154 @@ export const findSuspiciousPatterns = async (caseId) => {
   }
 };
 
+/**
+ * Create cross-case relationship links in the graph
+ */
+export const createCrossCaseLinks = async (sourceCaseId, targetCaseId, links) => {
+  const session = neo4jDriver.session();
+
+  try {
+    for (const link of links) {
+      await session.run(
+        `MATCH (c1:Case {id: $sourceCaseId})
+         MATCH (c2:Case {id: $targetCaseId})
+         MERGE (c1)-[r:CROSS_CASE_LINK {
+           entityType: $entityType,
+           entityValue: $entityValue,
+           linkType: $linkType,
+           strength: $strength,
+           confidenceScore: $confidenceScore,
+           createdAt: datetime()
+         }]->(c2)
+         SET r.metadata = $metadata`,
+        {
+          sourceCaseId,
+          targetCaseId,
+          entityType: link.entityType,
+          entityValue: link.entityValue,
+          linkType: link.linkType,
+          strength: link.strength || 'weak',
+          confidenceScore: link.confidenceScore || 0.5,
+          metadata: link.metadata || {}
+        }
+      );
+    }
+
+    logger.info(`Created ${links.length} cross-case links between cases ${sourceCaseId} and ${targetCaseId}`);
+  } catch (error) {
+    logger.error('Error creating cross-case links:', error);
+    throw error;
+  } finally {
+    await session.close();
+  }
+};
+
+/**
+ * Find cross-case connections for a given case
+ */
+export const findCrossCaseConnections = async (caseId, maxDepth = 2) => {
+  const session = neo4jDriver.session();
+
+  try {
+    const result = await session.run(
+      `MATCH path = (c1:Case {id: $caseId})-[r:CROSS_CASE_LINK*1..${maxDepth}]-(c2:Case)
+       WHERE c1 <> c2
+       RETURN path,
+              length(path) as depth,
+              [rel in relationships(path) | {
+                entityType: rel.entityType,
+                entityValue: rel.entityValue,
+                linkType: rel.linkType,
+                strength: rel.strength,
+                confidenceScore: rel.confidenceScore
+              }] as links
+       ORDER BY depth, size([rel in relationships(path) | rel.strength = 'critical']) DESC
+       LIMIT 50`,
+      { caseId }
+    );
+
+    return result.records.map(record => ({
+      path: record.get('path'),
+      depth: record.get('depth').toNumber(),
+      links: record.get('links'),
+      connectedCaseId: record.get('path').end.properties.id
+    }));
+  } catch (error) {
+    logger.error('Error finding cross-case connections:', error);
+    throw error;
+  } finally {
+    await session.close();
+  }
+};
+
+/**
+ * Find entities shared across multiple cases
+ */
+export const getSharedEntities = async (entityType, minCaseCount = 2) => {
+  const session = neo4jDriver.session();
+
+  try {
+    let query;
+    let params = { minCaseCount };
+
+    if (entityType === 'phone') {
+      query = `
+        MATCH (p:PhoneNumber)
+        MATCH (c:Case)-[:HAS_DEVICE]->(:Device)-[:COMMUNICATED_WITH]->(p)
+        WITH p.number as entityValue, collect(DISTINCT c.id) as caseIds, count(DISTINCT c) as caseCount
+        WHERE caseCount >= $minCaseCount
+        RETURN entityValue, caseIds, caseCount
+        ORDER BY caseCount DESC, entityValue
+        LIMIT 100
+      `;
+    } else if (entityType === 'contact') {
+      query = `
+        MATCH (contact:Contact)
+        MATCH (c:Case)-[:HAS_DEVICE]->(:Device)-[:COMMUNICATED_WITH]->(:PhoneNumber)<-[:HAS_NUMBER]-(contact)
+        WITH contact.name as entityValue, collect(DISTINCT c.id) as caseIds, count(DISTINCT c) as caseCount
+        WHERE caseCount >= $minCaseCount
+        RETURN entityValue, caseIds, caseCount
+        ORDER BY caseCount DESC, entityValue
+        LIMIT 100
+      `;
+    } else {
+      // Generic shared entities across cases
+      query = `
+        MATCH (c1:Case)-[r1:CROSS_CASE_LINK]-(c2:Case)
+        WHERE r1.entityType = $entityType
+        WITH r1.entityValue as entityValue,
+             collect(DISTINCT c1.id) + collect(DISTINCT c2.id) as caseIds,
+             count(DISTINCT r1) as linkCount
+        WITH entityValue, caseIds, size(apoc.coll.toSet(caseIds)) as caseCount
+        WHERE caseCount >= $minCaseCount
+        RETURN entityValue, caseIds, caseCount
+        ORDER BY caseCount DESC, entityValue
+        LIMIT 100
+      `;
+      params.entityType = entityType;
+    }
+
+    const result = await session.run(query, params);
+
+    return result.records.map(record => ({
+      entityValue: record.get('entityValue'),
+      caseIds: record.get('caseIds'),
+      caseCount: record.get('caseCount').toNumber()
+    }));
+  } catch (error) {
+    logger.error('Error finding shared entities:', error);
+    throw error;
+  } finally {
+    await session.close();
+  }
+};
+
 export default {
   buildKnowledgeGraph,
   queryGraph,
   getCommunicationNetwork,
-  findSuspiciousPatterns
+  findSuspiciousPatterns,
+  createCrossCaseLinks,
+  findCrossCaseConnections,
+  getSharedEntities
 };

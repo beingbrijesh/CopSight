@@ -6,7 +6,6 @@ import dotenv from 'dotenv';
 import { connectDatabase } from './config/database.js';
 import { testDatabaseConnections, closeDatabaseConnections } from './config/databases.js';
 import { initializeIndices } from './services/search/elasticsearchService.js';
-import { initializeMilvusCollection } from './services/search/milvusService.js';
 import logger from './config/logger.js';
 import './workers/processingWorker.js'; // Start background worker
 
@@ -18,6 +17,9 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import queryRoutes from './routes/queryRoutes.js';
 import bookmarkRoutes from './routes/bookmarkRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
+import crossCaseRoutes from './routes/crossCaseRoutes.js';
+import alertRoutes from './routes/alertRoutes.js';
+import integrationRoutes from './routes/integrationRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -63,6 +65,9 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/query', queryRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/cross-case', crossCaseRoutes);
+app.use('/api/alerts', alertRoutes);
+app.use('/api/integration', integrationRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -97,11 +102,6 @@ const startServer = async () => {
     if (dbStatus.elasticsearch) {
       await initializeIndices();
     }
-    
-    // Skip Milvus initialization - it's optional and will be initialized on demand
-    // if (dbStatus.milvus) {
-    //   await initializeMilvusCollection();
-    // }
 
     // Start listening
     app.listen(PORT, () => {
@@ -112,7 +112,6 @@ const startServer = async () => {
       logger.info(`   - PostgreSQL: ✓`);
       logger.info(`   - Elasticsearch: ${dbStatus.elasticsearch ? '✓' : '✗'}`);
       logger.info(`   - Neo4j: ${dbStatus.neo4j ? '✓' : '✗'}`);
-      logger.info(`   - Milvus: ${dbStatus.milvus ? '✓' : '✗'}`);
       logger.info(`   - Redis: ${dbStatus.redis ? '✓' : '✗'}`);
     });
   } catch (error) {

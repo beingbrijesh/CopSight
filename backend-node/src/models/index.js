@@ -8,6 +8,10 @@ import EvidenceBookmark from './EvidenceBookmark.js';
 import EntityTag from './EntityTag.js';
 import CaseReport from './CaseReport.js';
 import AuditLog from './AuditLog.js';
+import CrossCaseLink from './CrossCaseLink.js';
+import CaseSharedEntity from './CaseSharedEntity.js';
+import Alert from './Alert.js';
+import AlertRule from './AlertRule.js';
 
 // Define associations
 // User self-referential association (supervisor)
@@ -54,6 +58,31 @@ AuditLog.belongsTo(Case, { foreignKey: 'caseId', as: 'case' });
 
 User.hasMany(AuditLog, { foreignKey: 'userId', as: 'auditLogs' });
 
+// Cross-case relationships
+CrossCaseLink.belongsTo(Case, { foreignKey: 'sourceCaseId', as: 'sourceCase' });
+CrossCaseLink.belongsTo(Case, { foreignKey: 'targetCaseId', as: 'targetCase' });
+CrossCaseLink.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+
+Case.hasMany(CrossCaseLink, { foreignKey: 'sourceCaseId', as: 'outgoingLinks' });
+Case.hasMany(CrossCaseLink, { foreignKey: 'targetCaseId', as: 'incomingLinks' });
+
+CaseSharedEntity.belongsTo(Case, { foreignKey: 'firstSeenCaseId', as: 'firstSeenCase' });
+CaseSharedEntity.belongsTo(Case, { foreignKey: 'lastSeenCaseId', as: 'lastSeenCase' });
+
+// Alert system associations
+Alert.belongsTo(Case, { foreignKey: 'caseId', as: 'case' });
+Alert.belongsTo(User, { foreignKey: 'userId', as: 'assignedUser' });
+Alert.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+Alert.belongsTo(User, { foreignKey: 'acknowledgedBy', as: 'acknowledger' });
+Alert.belongsTo(User, { foreignKey: 'resolvedBy', as: 'resolver' });
+
+Case.hasMany(Alert, { foreignKey: 'caseId', as: 'alerts' });
+User.hasMany(Alert, { foreignKey: 'userId', as: 'alerts' });
+User.hasMany(Alert, { foreignKey: 'createdBy', as: 'createdAlerts' });
+
+AlertRule.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+User.hasMany(AlertRule, { foreignKey: 'createdBy', as: 'alertRules' });
+
 export {
   User,
   Case,
@@ -64,5 +93,9 @@ export {
   EvidenceBookmark,
   EntityTag,
   CaseReport,
-  AuditLog
+  AuditLog,
+  CrossCaseLink,
+  CaseSharedEntity,
+  Alert,
+  AlertRule
 };

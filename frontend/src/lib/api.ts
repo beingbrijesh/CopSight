@@ -82,7 +82,7 @@ export const uploadAPI = {
     const formData = new FormData();
     formData.append('file', file);
     
-    return api.post(`/cases/${caseId}/upload`, formData, {
+    return api.post(`/upload/case/${caseId}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
@@ -93,20 +93,20 @@ export const uploadAPI = {
     });
   },
   
-  getJobStatus: (jobId: number) => api.get(`/jobs/${jobId}`),
+  getJobStatus: (jobId: number) => api.get(`/upload/job/${jobId}`),
   
-  getProcessingSummary: (caseId: number) => api.get(`/cases/${caseId}/processing`),
+  getProcessingSummary: (caseId: number) => api.get(`/upload/case/${caseId}/processing-summary`),
 };
 
 // Query API
 export const queryAPI = {
   createQuery: (caseId: number, data: any) =>
-    api.post(`/cases/${caseId}/queries`, data),
+    api.post(`/query/case/${caseId}`, data),
   
   getQueryHistory: (caseId: number, params?: any) =>
-    api.get(`/cases/${caseId}/queries`, { params }),
+    api.get(`/query/case/${caseId}/history`, { params }),
   
-  getQuery: (queryId: number) => api.get(`/queries/${queryId}`),
+  getQuery: (queryId: number) => api.get(`/query/${queryId}`),
 };
 
 // Bookmark API
@@ -125,4 +125,81 @@ export const bookmarkAPI = {
   
   reorderBookmarks: (caseId: number, bookmarkIds: number[]) =>
     api.post(`/cases/${caseId}/bookmarks/reorder`, { bookmarkIds }),
+};
+
+// Cross-Case API
+export const crossCaseAPI = {
+  analyzeAllCases: () =>
+    api.post('/cross-case/analyze-all'),
+  
+  analyzeCase: (caseId: number) =>
+    api.post(`/cross-case/analyze/${caseId}`),
+  
+  getConnections: (caseId: number, maxDepth?: number) =>
+    api.get(`/cross-case/connections/${caseId}`, { params: { maxDepth } }),
+  
+  getSharedEntities: (params?: any) =>
+    api.get('/cross-case/shared-entities', { params }),
+  
+  getStatistics: () =>
+    api.get('/cross-case/statistics'),
+};
+
+// Alerts API
+export const alertsAPI = {
+  getAlerts: (params?: any) =>
+    api.get('/alerts', { params }),
+  
+  getStatistics: () =>
+    api.get('/alerts/statistics'),
+  
+  acknowledgeAlert: (alertId: number) =>
+    api.put(`/alerts/${alertId}/acknowledge`),
+  
+  resolveAlert: (alertId: number, resolutionNotes?: string) =>
+    api.put(`/alerts/${alertId}/resolve`, { resolutionNotes }),
+  
+  getCaseAlerts: (caseId: number, params?: any) =>
+    api.get(`/alerts/case/${caseId}`, { params }),
+  
+  createAlert: (alertData: any) =>
+    api.post('/alerts', alertData),
+  
+  runDetection: () =>
+    api.post('/alerts/run-detection'),
+};
+
+// Analysis API (for ML-based anomaly detection)
+export const analysisAPI = {
+  detectPatterns: (caseId: number, analysisType: string) =>
+    api.post('/analysis/detect-patterns', { caseId, analysisType }),
+  
+  detectAnomalies: (caseId: number) =>
+    api.post('/analysis/detect-anomalies', { caseId, analysisType: 'anomalies' }),
+  
+  getCaseSummary: (caseId: number) =>
+    api.post('/analysis/case-summary', { caseId, analysisType: 'summary' }),
+  
+  predictiveAnalysis: (caseId: number) =>
+    api.post('/analysis/predictive-analysis', { caseId, analysisType: 'predictive' }),
+  
+  trainPredictiveModel: () =>
+    api.post('/analysis/train-predictive-model'),
+};
+
+// Integration API (for external tool integration)
+export const integrationAPI = {
+  getSystemStatus: () =>
+    api.get('/integration/status'),
+  
+  exportCaseData: (caseId: number, format?: string, includeEvidence?: boolean) =>
+    api.get(`/integration/cases/${caseId}/export`, {
+      params: { format, includeEvidence }
+    }),
+  
+  submitEvidence: (evidenceData: any) =>
+    api.post('/integration/evidence/submit', evidenceData),
+  
+  registerTool: (toolData: any) =>
+    api.post('/integration/register-tool', toolData),
 };

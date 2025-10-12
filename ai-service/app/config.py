@@ -32,9 +32,8 @@ class Settings(BaseSettings):
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "ufdr_password"
     
-    # Milvus
-    MILVUS_HOST: str = "localhost"
-    MILVUS_PORT: int = 19530
+    # ChromaDB
+    CHROMA_PERSIST_DIR: str = "./chroma_data"
     
     # Redis
     REDIS_HOST: str = "localhost"
@@ -43,7 +42,10 @@ class Settings(BaseSettings):
     # Ollama
     OLLAMA_HOST: str = "http://localhost:11434"
     EMBEDDING_MODEL: str = "nomic-embed-text"
+    EMBEDDING_DIM: int = 384
     LLM_MODEL: str = "llama3.2"
+    LLM_TEMPERATURE: float = 0.7
+    LLM_MAX_TOKENS: int = 2000
     
     # Model Configuration
     MAX_TOKENS: int = 4096

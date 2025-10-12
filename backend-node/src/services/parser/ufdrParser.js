@@ -1,5 +1,7 @@
 import xml2js from 'xml2js';
 import fs from 'fs/promises';
+import AdmZip from 'adm-zip';
+import path from 'path';
 import logger from '../../config/logger.js';
 
 /**
@@ -16,13 +18,45 @@ class UFDRParser {
   }
 
   /**
-   * Parse UFDR XML file
+   * Parse UFDR XML file (handles both plain XML and ZIP archives)
    */
   async parseUFDRFile(filePath) {
     try {
       logger.info(`Parsing UFDR file: ${filePath}`);
       
-      const xmlContent = await fs.readFile(filePath, 'utf-8');
+      // Read file to check if it's a ZIP
+      const fileBuffer = await fs.readFile(filePath);
+      const isZip = fileBuffer[0] === 0x50 && fileBuffer[1] === 0x4B; // PK signature
+      
+      let xmlContent;
+      
+      if (isZip) {
+        logger.info('Detected ZIP archive, extracting...');
+        const zip = new AdmZip(filePath);
+        const zipEntries = zip.getEntries();
+        
+        // Find XML file in the ZIP
+        const xmlEntry = zipEntries.find(entry => 
+          entry.entryName.toLowerCase().endsWith('.xml') && !entry.isDirectory
+        );
+        
+        if (!xmlEntry) {
+          throw new Error('No XML file found in the ZIP archive. UFDR files should contain an XML export.');
+        }
+        
+        logger.info(`Found XML file in ZIP: ${xmlEntry.entryName}`);
+        xmlContent = xmlEntry.getData().toString('utf-8');
+      } else {
+        // Plain XML file
+        xmlContent = fileBuffer.toString('utf-8');
+      }
+      
+      // Check if content is actually XML
+      const trimmedContent = xmlContent.trim();
+      if (!trimmedContent.startsWith('<?xml') && !trimmedContent.startsWith('<')) {
+        throw new Error('Invalid UFDR file format. File must contain valid XML. Please ensure you are uploading a proper UFDR/XML export file.');
+      }
+      
       const result = await this.parser.parseStringPromise(xmlContent);
       
       // Extract device information
@@ -38,6 +72,12 @@ class UFDRParser {
       };
     } catch (error) {
       logger.error('Error parsing UFDR file:', error);
+      
+      // Provide more helpful error messages
+      if (error.message.includes('Non-whitespace before first tag')) {
+        throw new Error('Invalid UFDR file format. The file does not appear to be valid XML. Please upload a proper UFDR/Cellebrite XML export file.');
+      }
+      
       throw new Error(`Failed to parse UFDR file: ${error.message}`);
     }
   }

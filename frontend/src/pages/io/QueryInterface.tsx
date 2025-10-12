@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { Navbar } from '../../components/Navbar.tsx';
 import { QueryResults } from '../../components/QueryResults.tsx';
 import { QueryHistory } from '../../components/QueryHistory.tsx';
-import { api } from '../../lib/api.ts';
+import { queryAPI } from '../../lib/api.ts';
 
 export const QueryInterface = () => {
   const { caseId } = useParams();
@@ -30,15 +30,25 @@ export const QueryInterface = () => {
     setResults(null);
 
     try {
-      const response = await api.post(`/api/query/case/${caseId}`, {
+      const response = await queryAPI.createQuery(parseInt(caseId!), {
         queryText: query,
         queryType: 'natural_language'
       });
 
+      console.log('Query response:', response.data);
       setResults(response.data.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Query failed:', error);
-      alert('Failed to execute query. Please try again.');
+      
+      // Show error in results instead of alert
+      setResults({
+        query: null,
+        answer: error.response?.data?.message || 'Failed to execute query. Please check your connection and try again.',
+        findings: [],
+        evidence: [],
+        confidence: 0,
+        query_components: null
+      });
     } finally {
       setLoading(false);
     }

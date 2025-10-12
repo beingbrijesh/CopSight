@@ -4,7 +4,8 @@ Database connection manager for all databases
 
 from elasticsearch import AsyncElasticsearch
 from neo4j import AsyncGraphDatabase
-from pymilvus import connections, Collection
+import chromadb
+from chromadb.config import Settings as ChromaSettings
 import asyncpg
 import redis.asyncio as aioredis
 from loguru import logger
@@ -20,7 +21,8 @@ class DatabaseManager:
         self.elasticsearch = None
         self.neo4j = None
         self.redis = None
-        self.milvus_connected = False
+        self.chroma_client = None
+        self.chroma_collection = None
     
     async def connect(self):
         """Connect to all databases"""
@@ -68,17 +70,23 @@ class DatabaseManager:
         except Exception as e:
             logger.warning(f"✗ Redis connection failed: {e}")
         
-        # Milvus
+        # ChromaDB
         try:
-            connections.connect(
-                alias="default",
-                host=settings.MILVUS_HOST,
-                port=settings.MILVUS_PORT
+            self.chroma_client = chromadb.PersistentClient(
+                path=settings.CHROMA_PERSIST_DIR,
+                settings=ChromaSettings(
+                    anonymized_telemetry=False,
+                    allow_reset=True
+                )
             )
-            self.milvus_connected = True
-            logger.info("✓ Milvus connected")
+            # Get or create collection for UFDR embeddings
+            self.chroma_collection = self.chroma_client.get_or_create_collection(
+                name="ufdr_embeddings",
+                metadata={"description": "UFDR forensic data embeddings"}
+            )
+            logger.info("✓ ChromaDB connected")
         except Exception as e:
-            logger.warning(f"✗ Milvus connection failed: {e}")
+            logger.warning(f"✗ ChromaDB connection failed: {e}")
     
     async def disconnect(self):
         """Disconnect from all databases"""
@@ -95,8 +103,9 @@ class DatabaseManager:
         if self.redis:
             await self.redis.close()
         
-        if self.milvus_connected:
-            connections.disconnect("default")
+        # ChromaDB doesn't need explicit disconnect
+        if self.chroma_client:
+            logger.info("ChromaDB client closed")
     
     async def check_health(self):
         """Check health of all database connections"""
@@ -106,7 +115,7 @@ class DatabaseManager:
             "elasticsearch": False,
             "neo4j": False,
             "redis": False,
-            "milvus": False
+            "chromadb": False
         }
         
         # Check PostgreSQL
@@ -142,8 +151,14 @@ class DatabaseManager:
             except:
                 pass
         
-        # Check Milvus
-        health["milvus"] = self.milvus_connected
+        # Check ChromaDB
+        if self.chroma_client and self.chroma_collection:
+            try:
+                # Simple check - try to count documents
+                self.chroma_collection.count()
+                health["chromadb"] = True
+            except:
+                pass
         
         return health
 
