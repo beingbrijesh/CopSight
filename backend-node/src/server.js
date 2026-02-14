@@ -1,8 +1,28 @@
+// Load environment variables FIRST, before any imports read process.env
+import dotenv from 'dotenv';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
+
+// Try .env.local first (workaround for macOS EPERM on .env), then .env
+const envLocal = resolve(process.cwd(), '.env.local');
+if (existsSync(envLocal)) {
+  dotenv.config({ path: envLocal });
+} else {
+  dotenv.config();
+}
+
+// Validate critical environment variables
+if (!process.env.JWT_SECRET) {
+  // We need logger here, but logger is imported later.
+  // For critical early checks, a direct console.error is acceptable before logger is fully initialized.
+  console.error('FATAL: JWT_SECRET environment variable is not set. Server cannot start securely.');
+  process.exit(1);
+}
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import { connectDatabase } from './config/database.js';
 import { testDatabaseConnections, closeDatabaseConnections } from './config/databases.js';
 import { initializeIndices } from './services/search/elasticsearchService.js';
@@ -20,9 +40,12 @@ import reportRoutes from './routes/reportRoutes.js';
 import crossCaseRoutes from './routes/crossCaseRoutes.js';
 import alertRoutes from './routes/alertRoutes.js';
 import integrationRoutes from './routes/integrationRoutes.js';
+import performanceRoutes from './routes/performanceRoutes.js';
 
-// Load environment variables
-dotenv.config();
+// Import middleware
+import { apiRateLimit, authRateLimit, searchRateLimit, uploadRateLimit, aiRateLimit } from './middleware/rateLimit.js';
+import { performanceMiddleware } from './routes/performanceRoutes.js';
+
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -57,17 +80,19 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/cases', caseRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/query', queryRoutes);
-app.use('/api/bookmarks', bookmarkRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/cross-case', crossCaseRoutes);
-app.use('/api/alerts', alertRoutes);
-app.use('/api/integration', integrationRoutes);
+// API Routes with rate limiting and performance monitoring
+app.use('/api/auth', authRateLimit, performanceMiddleware, authRoutes);
+app.use('/api/users', apiRateLimit, performanceMiddleware, userRoutes);
+app.use('/api/cases', apiRateLimit, performanceMiddleware, caseRoutes);
+app.use('/api/upload', uploadRateLimit, performanceMiddleware, uploadRoutes);
+app.use('/api/query', searchRateLimit, performanceMiddleware, queryRoutes);
+app.use('/api/bookmarks', apiRateLimit, performanceMiddleware, bookmarkRoutes);
+app.use('/api/reports', apiRateLimit, performanceMiddleware, reportRoutes);
+app.use('/api/cross-case', apiRateLimit, performanceMiddleware, crossCaseRoutes);
+app.use('/api/alerts', apiRateLimit, performanceMiddleware, alertRoutes);
+app.use('/api/integration', apiRateLimit, performanceMiddleware, integrationRoutes);
+app.use('/api/performance', apiRateLimit, performanceMiddleware, performanceRoutes);
+
 
 // 404 handler
 app.use((req, res) => {
@@ -80,7 +105,7 @@ app.use((req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
   logger.error('Unhandled error:', err);
-  
+
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal server error',
@@ -97,7 +122,7 @@ const startServer = async () => {
 
     // Test other database connections
     const dbStatus = await testDatabaseConnections();
-    
+
     // Initialize search indices (only if services are available)
     if (dbStatus.elasticsearch) {
       await initializeIndices();

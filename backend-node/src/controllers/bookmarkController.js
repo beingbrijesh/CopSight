@@ -255,18 +255,20 @@ export const deleteBookmark = async (req, res) => {
  * Reorder bookmarks
  */
 export const reorderBookmarks = async (req, res) => {
+  const t = await EvidenceBookmark.sequelize.transaction();
   try {
     const { caseId } = req.params;
     const { bookmarkIds } = req.body; // Array of bookmark IDs in new order
 
     if (!Array.isArray(bookmarkIds)) {
+      await t.rollback();
       return res.status(400).json({
         success: false,
         message: 'bookmarkIds must be an array'
       });
     }
 
-    // Update order for each bookmark
+    // Update order for each bookmark inside a transaction
     for (let i = 0; i < bookmarkIds.length; i++) {
       await EvidenceBookmark.update(
         { bookmarkOrder: i + 1 },
@@ -275,16 +277,20 @@ export const reorderBookmarks = async (req, res) => {
             id: bookmarkIds[i],
             caseId: parseInt(caseId),
             userId: req.user.id
-          }
+          },
+          transaction: t
         }
       );
     }
+
+    await t.commit();
 
     res.json({
       success: true,
       message: 'Bookmarks reordered successfully'
     });
   } catch (error) {
+    await t.rollback();
     logger.error('Reorder bookmarks error:', error);
     res.status(500).json({
       success: false,

@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     
     # ChromaDB
     CHROMA_PERSIST_DIR: str = "./chroma_data"
+    CHROMA_TELEMETRY_DISABLED: bool = True
     
     # Redis
     REDIS_HOST: str = "localhost"

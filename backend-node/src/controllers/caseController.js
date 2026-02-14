@@ -1,4 +1,4 @@
-import { Case, User, AuditLog } from '../models/index.js';
+import { Case, User, AuditLog, EntityTag, DataSource, Device } from '../models/index.js';
 import { Op } from 'sequelize';
 import logger, { auditLogger } from '../config/logger.js';
 
@@ -301,6 +301,159 @@ export const getCaseStatistics = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve statistics'
+    });
+  }
+};
+
+/**
+ * Get all entities for a case
+ */
+export const getCaseEntities = async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const { type, page = 1, limit = 50 } = req.query;
+
+    const whereClause = { caseId: parseInt(caseId) };
+    if (type) {
+      whereClause.entityType = type;
+    }
+
+    const offset = (page - 1) * limit;
+
+    const { count, rows: entities } = await EntityTag.findAndCountAll({
+      where: whereClause,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['created_at', 'DESC']]
+    });
+
+    // Group entities by type for summary
+    const entityTypes = {};
+    entities.forEach(entity => {
+      if (!entityTypes[entity.entityType]) {
+        entityTypes[entity.entityType] = { count: 0, entities: [] };
+      }
+      entityTypes[entity.entityType].count++;
+      entityTypes[entity.entityType].entities.push({
+        id: entity.id,
+        value: entity.entityValue,
+        type: entity.entityType,
+        evidenceType: entity.evidenceType,
+        evidenceId: entity.evidenceId,
+        confidenceScore: entity.confidenceScore,
+        metadata: entity.entityMetadata,
+        createdAt: entity.created_at
+      });
+    });
+
+    res.json({
+      success: true,
+      data: {
+        entities,
+        summary: {
+          total: count,
+          types: Object.keys(entityTypes).map(type => ({
+            type,
+            count: entityTypes[type].count
+          }))
+        },
+        pagination: {
+          total: count,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(count / limit)
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Get case entities error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve entities'
+    });
+  }
+};
+
+/**
+ * Get chat messages for a case
+ */
+export const getCaseChats = async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const { page = 1, limit = 100 } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    const { count, rows: dataSources } = await DataSource.findAndCountAll({
+      where: {
+        sourceType: 'chat'
+      },
+      include: [{
+        model: Device,
+        as: 'device',
+        where: { caseId: parseInt(caseId) },
+        attributes: []
+      }],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['created_at', 'DESC']]
+    });
+
+    // Extract all chat messages from data sources
+    const allChats = [];
+    dataSources.forEach(dataSource => {
+      if (dataSource.data && Array.isArray(dataSource.data)) {
+        dataSource.data.forEach((chat, index) => {
+          allChats.push({
+            id: `${dataSource.id}_${index}`,
+            sender: chat.sender,
+            receiver: chat.receiver,
+            message: chat.message,
+            timestamp: chat.timestamp,
+            dataSourceId: dataSource.id,
+            appName: dataSource.appName
+          });
+        });
+      }
+    });
+
+    // Sort chats by timestamp (newest first)
+    allChats.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Group chats by conversation (sender-receiver pairs)
+    const conversations = {};
+    allChats.forEach(chat => {
+      const participants = [chat.sender, chat.receiver].sort();
+      const conversationKey = `${participants[0]} ↔ ${participants[1]}`;
+
+      if (!conversations[conversationKey]) {
+        conversations[conversationKey] = [];
+      }
+      conversations[conversationKey].push(chat);
+    });
+
+    res.json({
+      success: true,
+      data: {
+        chats: allChats.slice(0, parseInt(limit)), // Apply pagination after sorting
+        conversations,
+        summary: {
+          total: allChats.length,
+          conversations: Object.keys(conversations).length
+        },
+        pagination: {
+          total: allChats.length,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(allChats.length / limit)
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Get case chats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve chats'
     });
   }
 };

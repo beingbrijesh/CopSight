@@ -8,6 +8,7 @@ import { CaseDetail } from './pages/io/CaseDetail';
 import { QueryInterface } from './pages/io/QueryInterface';
 import { Bookmarks } from './pages/io/Bookmarks';
 import { ReportGenerator } from './pages/io/ReportGenerator';
+import { EntitiesView } from './pages/io/EntitiesView';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 
@@ -74,6 +75,12 @@ function App() {
         <Route path="/io/case/:caseId/report" element={
           <ProtectedRoute allowedRoles={['investigating_officer', 'admin']}>
             <ReportGenerator />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/io/case/:caseId/entities" element={
+          <ProtectedRoute allowedRoles={['investigating_officer']}>
+            <EntitiesView />
           </ProtectedRoute>
         } />
         

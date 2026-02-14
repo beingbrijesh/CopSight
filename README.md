@@ -32,7 +32,7 @@ A comprehensive digital forensics platform for law enforcement agencies to analy
 ┌─────────────────────────────────────────────────────────────┐
 │              Backend API (Node.js + Express)                 │
 │                        Port 8080                             │
-│  • 7 Routes  • 7 Controllers  • 11 Models  • 4 Middleware   │
+│  • 11 Routes  • 7 Controllers  • 14 Models  • 5 Middleware  │
 │  • Background Workers (Bull Queue)  • File Upload (Multer)  │
 └─┬──────────┬──────────┬──────────┬──────────┬──────────────┘
   │          │          │          │          │
@@ -57,8 +57,8 @@ A comprehensive digital forensics platform for law enforcement agencies to analy
   - Backend (Node.js): ~6,000 lines
   - Frontend (React/TS): ~3,200 lines
   - AI Service (Python): ~1,400 lines
-- **API Endpoints**: 27 REST endpoints
-- **Database Models**: 11 Sequelize models
+- **API Endpoints**: 61 REST endpoints
+- **Database Models**: 14 Sequelize models
 - **React Components**: 17 (11 pages + 6 shared components)
 - **Background Services**: 3 (Parser, Entity Extractor, Indexer)
 
@@ -227,8 +227,8 @@ UFDR/
 │   │   ├── config/            # Database connections, logger
 │   │   ├── models/            # 11 Sequelize models
 │   │   ├── controllers/       # 7 controllers (auth, user, case, etc.)
-│   │   ├── routes/            # 7 route files (27 endpoints total)
-│   │   ├── middleware/        # Auth, RBAC, upload, error handling
+│   │   ├── routes/            # 11 route files (61 endpoints total)
+│   │   ├── middleware/        # Auth, RBAC, case access, upload, rate limiting
 │   │   ├── services/          # Business logic
 │   │   │   ├── parser/        # UFDR file parser
 │   │   │   ├── ner/           # Entity extraction
@@ -302,26 +302,31 @@ UFDR/
 - **Vector Operations**: NumPy
 - **Async**: AsyncIO, AsyncPG
 
-## 📡 API Endpoints
+## 📡 API Endpoints (61 total)
 
-### Authentication (3 endpoints)
+### Authentication (4 endpoints)
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
 - `GET /api/auth/session` - Get current session
+- `POST /api/auth/change-password` - Change password
 
-### Users (5 endpoints)
+### Users (7 endpoints)
 - `POST /api/users` - Create user (Admin)
 - `GET /api/users` - List users (Admin)
 - `GET /api/users/:id` - Get user details
 - `PUT /api/users/:id` - Update user (Admin)
 - `POST /api/users/:id/reset-password` - Reset password (Admin)
+- `GET /api/users/officers` - List investigating officers
+- `GET /api/users/supervisors` - List supervisors
 
-### Cases (5 endpoints)
+### Cases (7 endpoints)
 - `POST /api/cases` - Create case (Admin)
 - `GET /api/cases` - List cases
+- `GET /api/cases/statistics` - Get case statistics
 - `GET /api/cases/:id` - Get case details
 - `PUT /api/cases/:id` - Update case
-- `GET /api/cases/my-cases` - Get assigned cases (IO)
+- `GET /api/cases/:id/chats` - Get case chats
+- `GET /api/cases/:id/network` - Get communication network
 
 ### Upload (3 endpoints)
 - `POST /api/upload/case/:id` - Upload UFDR file
@@ -345,9 +350,31 @@ UFDR/
 - `GET /api/reports/case/:id/history` - Get report history
 - `GET /api/reports/templates` - Get available templates
 
+### Cross-Case Intelligence (5 endpoints)
+- `GET /api/cross-case/search` - Search across all cases
+- `GET /api/cross-case/statistics` - Cross-case statistics
+- `GET /api/cross-case/shared-entities` - Find shared entities
+- `GET /api/cross-case/links` - Get case links
+- `POST /api/cross-case/links` - Create case link
+
+### Alerts (7 endpoints)
+- `GET /api/alerts` - List alerts
+- `POST /api/alerts` - Create alert
+- `PUT /api/alerts/:id` - Update alert
+- `DELETE /api/alerts/:id` - Delete alert
+- `GET /api/alerts/rules` - List alert rules
+- `POST /api/alerts/rules` - Create alert rule
+- `PUT /api/alerts/rules/:id` - Update alert rule
+
+### Integration (12 endpoints)
+- Webhook management, bulk operations, data transformation, and sync endpoints
+
+### Performance (5 endpoints)
+- System metrics, health checks, and monitoring endpoints
+
 ## 🗄️ Database Schema
 
-### PostgreSQL Tables (11)
+### PostgreSQL Tables (14)
 1. **users** - User accounts with roles and permissions
 2. **sessions** - Active user sessions
 3. **cases** - Investigation cases
@@ -359,6 +386,9 @@ UFDR/
 9. **entity_tags** - Tagged entities
 10. **case_reports** - Generated report metadata
 11. **audit_log** - System audit trail
+12. **alerts** - System and case alerts
+13. **alert_rules** - Alert triggering rules
+14. **cross_case_links** - Links between related cases
 
 ### Elasticsearch Indices (3)
 - **ufdr-messages** - SMS, WhatsApp, Telegram messages
@@ -372,11 +402,14 @@ UFDR/
 ## 🔐 Security Features
 
 - JWT-based authentication with secure token storage
-- Password hashing using bcrypt (10 rounds)
+- JWT_SECRET startup validation (server won't start without it)
+- Password hashing using bcrypt (12 rounds)
 - Role-based access control (RBAC) with 3 roles
+- Case-level access control (`checkCaseAccess` middleware)
 - Session management with database persistence
 - CORS protection with configurable origins
 - Helmet security headers
+- API rate limiting (auth, search, upload, general)
 - Input validation and sanitization
 - SQL injection prevention (Sequelize ORM)
 - XSS protection
@@ -493,7 +526,7 @@ JWT_EXPIRES_IN=24h
 
 # Services
 ELASTICSEARCH_URL=http://localhost:9200
-NEO4J_URL=bolt://localhost:7687
+NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=ufdr_password
 REDIS_HOST=localhost
@@ -542,4 +575,4 @@ For detailed documentation, see:
 
 **Status**: Production Ready ✅  
 **Version**: 1.0.0  
-**Last Updated**: October 2025
+**Last Updated**: February 2026

@@ -1,0 +1,647 @@
+{
+  "metadata": {
+    "device": "Android Phone",
+    "extraction_date": "2025-10-14",
+    "tool": "Oxygen Forensic"
+  },
+  "contacts": [
+    {
+      "id": 1,
+      "name": "Main T.",
+      "phone": "+12015551234"
+    },
+    {
+      "id": 2,
+      "name": "African Supplier",
+      "phone": "+27123456789"
+    },
+    {
+      "id": 3,
+      "name": "Asian Buyer",
+      "phone": "+628123456789"
+    },
+    {
+      "id": 4,
+      "name": "Local Fence",
+      "phone": "+12025556789"
+    },
+    {
+      "id": 5,
+      "name": "Family Member",
+      "phone": "+12035567890"
+    },
+    {
+      "id": 6,
+      "name": "Friend",
+      "phone": "+12045554321"
+    },
+    {
+      "id": 7,
+      "name": "Colleague",
+      "phone": "+12055559876"
+    }
+  ],
+  "chats": [
+    {
+      "sender": "Main T.",
+      "receiver": "African Supplier",
+      "message": "Got the crate of parrots ready for port?",
+      "timestamp": "2025-01-15T09:12:34"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "African Supplier",
+      "message": "You watching the game tonight?",
+      "timestamp": "2025-01-16T18:30:22"
+    },
+    {
+      "sender": "Asian Buyer",
+      "receiver": "Main T.",
+      "message": "Send me the crypto address for ivory payment.",
+      "timestamp": "2025-02-03T14:45:22"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Asian Buyer",
+      "message": "Got any plans for the weekend?",
+      "timestamp": "2025-02-04T10:20:15"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "Price for 5 turtles: $4500.",
+      "timestamp": "2025-02-10T11:30:17"
+    },
+    {
+      "sender": "Local Fence",
+      "receiver": "Main T.",
+      "message": "Meet at port for tiger skins delivery tomorrow.",
+      "timestamp": "2025-03-01T16:20:05"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "Hey, you free for lunch tomorrow?",
+      "timestamp": "2025-03-02T09:45:33"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Asian Buyer",
+      "message": "Crypto for birds: 1aBcXyZ9kLmNpQrStUvWxYz1234567890Ab.",
+      "timestamp": "2025-03-12T08:55:43"
+    },
+    {
+      "sender": "African Supplier",
+      "receiver": "Main T.",
+      "message": "Shipment of 10 exotic birds ready. Call me.",
+      "timestamp": "2025-03-20T13:10:29"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "African Supplier",
+      "message": "Normal chat, how's the family?",
+      "timestamp": "2025-03-21T11:25:47"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "Normal chat, how's it going?",
+      "timestamp": "2025-04-01T10:25:12"
+    },
+    {
+      "sender": "Asian Buyer",
+      "receiver": "Main T.",
+      "message": "Need 3 tiger skins by next week.",
+      "timestamp": "2025-04-05T15:40:56"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Asian Buyer",
+      "message": "You seen that new movie yet?",
+      "timestamp": "2025-04-06T12:15:29"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "African Supplier",
+      "message": "Price for ivory tusks: $8000 each.",
+      "timestamp": "2025-04-15T12:00:33"
+    },
+    {
+      "sender": "Local Fence",
+      "receiver": "Main T.",
+      "message": "Got a buyer for parrots. Send pics of cages.",
+      "timestamp": "2025-04-20T09:15:47"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "Want to grab coffee this week?",
+      "timestamp": "2025-04-21T08:30:11"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Asian Buyer",
+      "message": "Meet me at port for turtle shipment.",
+      "timestamp": "2025-05-01T17:22:19"
+    },
+    {
+      "sender": "African Supplier",
+      "receiver": "Main T.",
+      "message": "Crypto payment sent: 1XyZ9kLmNpQrStUvWxYz1234567890BcDe.",
+      "timestamp": "2025-05-10T14:30:28"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "African Supplier",
+      "message": "Any good restaurant recommendations?",
+      "timestamp": "2025-05-11T10:40:55"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "Normal convo, you free this weekend?",
+      "timestamp": "2025-05-15T11:45:50"
+    },
+    {
+      "sender": "Asian Buyer",
+      "receiver": "Main T.",
+      "message": "Price for 6 parrots: $6000 total?",
+      "timestamp": "2025-05-20T08:50:11"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Asian Buyer",
+      "message": "Normal chat, how’s the weather there?",
+      "timestamp": "2025-05-21T09:25:33"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "African Supplier",
+      "message": "Need 4 more turtles ASAP.",
+      "timestamp": "2025-06-01T13:20:37"
+    },
+    {
+      "sender": "Local Fence",
+      "receiver": "Main T.",
+      "message": "Shipment crate ready at warehouse.",
+      "timestamp": "2025-06-05T10:10:44"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "You going to the game this weekend?",
+      "timestamp": "2025-06-06T08:15:22"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Asian Buyer",
+      "message": "Crypto address for payment: 1CdEfGhIjKlMnOpQrStUv1234567890XyZ.",
+      "timestamp": "2025-06-10T15:55:23"
+    },
+    {
+      "sender": "African Supplier",
+      "receiver": "Main T.",
+      "message": "Tiger skins shipped, check port in 3 days.",
+      "timestamp": "2025-06-15T12:40:09"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "African Supplier",
+      "message": "Got any travel plans this summer?",
+      "timestamp": "2025-06-16T10:30:47"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "Hey, call me about the buyer.",
+      "timestamp": "2025-06-20T09:30:15"
+    },
+    {
+      "sender": "Asian Buyer",
+      "receiver": "Main T.",
+      "message": "Normal chat, how’s the weather there?",
+      "timestamp": "2025-06-25T14:25:31"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "African Supplier",
+      "message": "Got the exotic birds, good condition.",
+      "timestamp": "2025-07-01T11:10:47"
+    },
+    {
+      "sender": "Local Fence",
+      "receiver": "Main T.",
+      "message": "Price for 2 ivory tusks: $15000.",
+      "timestamp": "2025-07-05T16:50:22"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "Normal convo, you got the payment?",
+      "timestamp": "2025-07-20T10:15:56"
+    },
+    {
+      "sender": "Asian Buyer",
+      "receiver": "Main T.",
+      "message": "Crypto payment for turtles: 1KlMnOpQrStUvWxYz1234567890CdEfG.",
+      "timestamp": "2025-07-25T15:40:28"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Asian Buyer",
+      "message": "You free for a call later?",
+      "timestamp": "2025-07-26T09:20:11"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "African Supplier",
+      "message": "Meet at port for ivory pickup.",
+      "timestamp": "2025-08-01T12:00:44"
+    },
+    {
+      "sender": "Local Fence",
+      "receiver": "Main T.",
+      "message": "Got the crate photos, looks good.",
+      "timestamp": "2025-08-05T09:30:11"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Asian Buyer",
+      "message": "Price for tiger skins: $7000 each.",
+      "timestamp": "2025-08-10T14:25:37"
+    },
+    {
+      "sender": "African Supplier",
+      "receiver": "Main T.",
+      "message": "Normal convo, how’s business?",
+      "timestamp": "2025-08-15T11:50:22"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "Call me to discuss new buyer for birds.",
+      "timestamp": "2025-08-20T08:40:19"
+    },
+    {
+      "sender": "Asian Buyer",
+      "receiver": "Main T.",
+      "message": "Need 5 more parrots, same price?",
+      "timestamp": "2025-08-25T13:20:33"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Asian Buyer",
+      "message": "Any good hiking spots nearby?",
+      "timestamp": "2025-08-26T10:15:44"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "African Supplier",
+      "message": "Shipment of 3 tiger skins confirmed.",
+      "timestamp": "2025-09-01T10:15:56"
+    },
+    {
+      "sender": "Local Fence",
+      "receiver": "Main T.",
+      "message": "Crypto address for payment: 1QrStUvWxYz1234567890KlMnOpCdEfG.",
+      "timestamp": "2025-09-05T15:40:28"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "Normal chat, you coming to the meetup?",
+      "timestamp": "2025-09-10T12:00:44"
+    },
+    {
+      "sender": "African Supplier",
+      "receiver": "Main T.",
+      "message": "Price for 4 turtles: $5000 total.",
+      "timestamp": "2025-09-15T09:30:11"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "Meet at warehouse for crate pickup.",
+      "timestamp": "2025-09-20T14:25:37"
+    },
+    {
+      "sender": "Asian Buyer",
+      "receiver": "Main T.",
+      "message": "Normal convo, got the shipment details?",
+      "timestamp": "2025-09-25T11:50:22"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "African Supplier",
+      "message": "Crypto payment sent: 1UvWxYz1234567890KlMnOpQrStCdEfG.",
+      "timestamp": "2025-10-01T08:40:19"
+    },
+    {
+      "sender": "Local Fence",
+      "receiver": "Main T.",
+      "message": "Exotic birds ready for buyer.",
+      "timestamp": "2025-10-05T13:20:33"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Asian Buyer",
+      "message": "Call me to confirm port delivery.",
+      "timestamp": "2025-10-10T10:15:56"
+    },
+    {
+      "sender": "African Supplier",
+      "receiver": "Main T.",
+      "message": "Shipment crate for ivory at port now.",
+      "timestamp": "2025-10-12T15:40:28"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "Price for 6 parrots: $7200.",
+      "timestamp": "2025-10-13T12:00:44"
+    },
+    {
+      "sender": "Asian Buyer",
+      "receiver": "Main T.",
+      "message": "Crypto payment for tiger skins: 1Yz1234567890KlMnOpQrStUvWxCdEfG.",
+      "timestamp": "2025-10-14T09:30:11"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "African Supplier",
+      "message": "Normal chat, you got the new supplier?",
+      "timestamp": "2025-01-20T14:25:37"
+    },
+    {
+      "sender": "Local Fence",
+      "receiver": "Main T.",
+      "message": "Need 2 more tiger skins by Friday.",
+      "timestamp": "2025-02-15T11:50:22"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Asian Buyer",
+      "message": "Meet at port for exotic birds delivery.",
+      "timestamp": "2025-03-25T08:40:19"
+    },
+    {
+      "sender": "African Supplier",
+      "receiver": "Main T.",
+      "message": "Price for 5 exotic birds: $6500.",
+      "timestamp": "2025-04-10T13:20:33"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Local Fence",
+      "message": "Crypto address: 1MnOpQrStUvWxYz1234567890CdEfGhIjK.",
+      "timestamp": "2025-05-25T10:15:56"
+    },
+    {
+      "sender": "Asian Buyer",
+      "receiver": "Main T.",
+      "message": "Shipment of turtles looks good, confirm price.",
+      "timestamp": "2025-06-30T15:40:28"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Family Member",
+      "message": "Hey, you coming to the family BBQ this weekend?",
+      "timestamp": "2025-01-05T15:10:12"
+    },
+    {
+      "sender": "Family Member",
+      "receiver": "Main T.",
+      "message": "Yeah, I’ll bring the dessert! What time?",
+      "timestamp": "2025-01-05T15:30:45"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Friend",
+      "message": "Want to catch a movie this Friday?",
+      "timestamp": "2025-02-20T09:25:33"
+    },
+    {
+      "sender": "Friend",
+      "receiver": "Main T.",
+      "message": "Sure, what’s playing? 7pm work?",
+      "timestamp": "2025-02-20T09:40:11"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Colleague",
+      "message": "Can you review the report by tomorrow?",
+      "timestamp": "2025-03-10T14:15:22"
+    },
+    {
+      "sender": "Colleague",
+      "receiver": "Main T.",
+      "message": "Got it, I’ll have feedback by noon.",
+      "timestamp": "2025-03-10T14:30:47"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Family Member",
+      "message": "Mom’s birthday next week, any gift ideas?",
+      "timestamp": "2025-04-25T11:20:19"
+    },
+    {
+      "sender": "Family Member",
+      "receiver": "Main T.",
+      "message": "Maybe a nice scarf? I’ll check some stores.",
+      "timestamp": "2025-04-25T11:45:56"
+    },
+    {
+      "sender": "Main T.",
+      "receiver": "Friend",
+      "message": "You up for hiking this Sunday?",
+      "timestamp": "2025-06-12T08:50:33"
+    },
+    {
+      "sender": "Friend",
+      "receiver": "Main T.",
+      "message": "Yeah, let’s hit the trails! 8am?",
+      "timestamp": "2025-06-12T09:10:28"
+    }
+  ],
+  "calls": [
+    {
+      "caller": "Main T.",
+      "receiver": "African Supplier",
+      "duration": 300,
+      "timestamp": "2025-01-10T14:30:12"
+    },
+    {
+      "caller": "Asian Buyer",
+      "receiver": "Main T.",
+      "duration": 420,
+      "timestamp": "2025-02-05T09:15:45"
+    },
+    {
+      "caller": "Main T.",
+      "receiver": "Local Fence",
+      "duration": 180,
+      "timestamp": "2025-02-20T16:20:33"
+    },
+    {
+      "caller": "Local Fence",
+      "receiver": "Main T.",
+      "duration": 360,
+      "timestamp": "2025-03-01T11:50:27"
+    },
+    {
+      "caller": "Main T.",
+      "receiver": "Asian Buyer",
+      "duration": 240,
+      "timestamp": "2025-03-15T13:25:19"
+    },
+    {
+      "caller": "African Supplier",
+      "receiver": "Main T.",
+      "duration": 390,
+      "timestamp": "2025-03-20T08:40:56"
+    },
+    {
+      "caller": "Main T.",
+      "receiver": "Local Fence",
+      "duration": 150,
+      "timestamp": "2025-04-01T15:30:44"
+    },
+    {
+      "caller": "Asian Buyer",
+      "receiver": "Main T.",
+      "duration": 480,
+      "timestamp": "2025-04-10T10:15:22"
+    },
+    {
+      "caller": "Main T.",
+      "receiver": "African Supplier",
+      "duration": 270,
+      "timestamp": "2025-04-15T12:45:11"
+    },
+    {
+      "caller": "Local Fence",
+      "receiver": "Main T.",
+      "duration": 330,
+      "timestamp": "2025-05-01T09:20:37"
+    },
+    {
+      "caller": "Main T.",
+      "receiver": "Asian Buyer",
+      "duration": 210,
+      "timestamp": "2025-05-10T14:10:28"
+    },
+    {
+      "caller": "African Supplier",
+      "receiver": "Main T.",
+      "duration": 450,
+      "timestamp": "2025-05-20T11:55:19"
+    },
+    {
+      "caller": "Main T.",
+      "receiver": "Local Fence",
+      "duration": 120,
+      "timestamp": "2025-06-01T08:30:44"
+    },
+    {
+      "caller": "Asian Buyer",
+      "receiver": "Main T.",
+      "duration": 510,
+      "timestamp": "2025-06-10T13:15:33"
+    },
+    {
+      "caller": "Main T.",
+      "receiver": "African Supplier",
+      "duration": 360,
+      "timestamp": "2025-06-15T10:40:22"
+    },
+    {
+      "caller": "Local Fence",
+      "receiver": "Main T.",
+      "duration": 300,
+      "timestamp": "2025-07-01T15:25:11"
+    },
+    {
+      "caller": "Main T.",
+      "receiver": "Asian Buyer",
+      "duration": 180,
+      "timestamp": "2025-07-10T12:50:37"
+    },
+    {
+      "caller": "African Supplier",
+      "receiver": "Main T.",
+      "duration": 420,
+      "timestamp": "2025-08-01T09:30:28"
+    },
+    {
+      "caller": "Main T.",
+      "receiver": "Local Fence",
+      "duration": 240,
+      "timestamp": "2025-08-15T14:15:44"
+    },
+    {
+      "caller": "Asian Buyer",
+      "receiver": "Main T.",
+      "duration": 390,
+      "timestamp": "2025-09-01T11:20:19"
+    }
+  ],
+  "images": [
+    {
+      "path": "assets/images/img8411.png",
+      "description": "Shipment crate",
+      "timestamp": "2025-06-12T06:20:11"
+    },
+    {
+      "path": "assets/images/img1006.png",
+      "description": "Photo of caged exotic birds",
+      "timestamp": "2025-05-08T00:08:11"
+    },
+    {
+      "path": "assets/images/img2852.png",
+      "description": "Normal photo",
+      "timestamp": "2025-09-25T07:54:43"
+    },
+    {
+      "path": "assets/images/img9279.png",
+      "description": "Shipment crate",
+      "timestamp": "2025-05-21T16:05:37"
+    },
+    {
+      "path": "assets/images/img1144.png",
+      "description": "Normal photo",
+      "timestamp": "2025-10-08T15:23:25"
+    },
+    {
+      "path": "assets/images/img1189.png",
+      "description": "Shipment crate",
+      "timestamp": "2025-06-06T10:29:32"
+    }
+  ],
+  "videos": [
+    {
+      "path": "assets/videos/vid1493.mp4",
+      "description": "Video of animal transport",
+      "timestamp": "2025-05-26T12:45:06"
+    },
+    {
+      "path": "assets/videos/vid5089.mp4",
+      "description": "Meeting recording",
+      "timestamp": "2025-04-04T03:15:53"
+    },
+    {
+      "path": "assets/videos/vid5190.mp4",
+      "description": "Video of animal transport",
+      "timestamp": "2025-06-01T08:22:56"
+    },
+    {
+      "path": "assets/videos/vid2280.mp4",
+      "description": "Suspicious video",
+      "timestamp": "2025-02-13T13:24:41"
+    },
+    {
+      "path": "assets/videos/vid2330.mp4",
+      "description": "Suspicious video",
+      "timestamp": "2025-05-15T00:53:27"
+    }
+  ]
+}

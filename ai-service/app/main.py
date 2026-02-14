@@ -8,10 +8,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from loguru import logger
 import sys
+import warnings
+
+# Suppress Keras/TensorFlow warnings
+warnings.filterwarnings("ignore", message=".*Do not pass an `input_shape`.*", category=UserWarning)
+warnings.filterwarnings("ignore", message=".*Field.*has conflict with protected namespace.*", category=UserWarning)
 
 from app.config import settings
-from app.routers import query, embeddings, analysis
-from app.services.database import DatabaseManager
+from app.routers import query, embeddings, analysis, indexing
+from app.services.database import DatabaseManager, db_manager
 
 # Configure logger
 logger.remove()
@@ -27,8 +32,8 @@ logger.add(
     level="DEBUG"
 )
 
-# Initialize database manager
-db_manager = DatabaseManager()
+# Initialize database managers
+# Global db_manager imported from database.py will be initialized in lifespan
 
 
 @asynccontextmanager
@@ -36,7 +41,7 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup
     logger.info("🚀 Starting UFDR AI Service...")
-    await db_manager.connect()
+    await db_manager.connect()  # Only initialize global instance
     logger.info("✅ AI Service ready")
     
     yield
@@ -68,6 +73,7 @@ app.add_middleware(
 app.include_router(query.router, prefix="/api/query", tags=["Query"])
 app.include_router(embeddings.router, prefix="/api/embeddings", tags=["Embeddings"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"])
+app.include_router(indexing.router, prefix="/api/index", tags=["Indexing"])
 
 
 @app.get("/")

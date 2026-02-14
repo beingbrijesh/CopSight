@@ -1,5 +1,6 @@
 import { Alert, AlertRule, User, Case } from '../models/index.js';
 import logger from '../config/logger.js';
+import { Op } from 'sequelize';
 
 /**
  * Alert Service - Automated detection and management of suspicious patterns
@@ -230,15 +231,27 @@ class AlertService {
       const whereClause = { userId };
 
       if (filters.status) {
-        whereClause.status = filters.status;
+        if (filters.status.includes(',')) {
+          whereClause.status = { [Op.in]: filters.status.split(',') };
+        } else {
+          whereClause.status = filters.status;
+        }
       }
 
       if (filters.severity) {
-        whereClause.severity = filters.severity;
+        if (filters.severity.includes(',')) {
+          whereClause.severity = { [Op.in]: filters.severity.split(',') };
+        } else {
+          whereClause.severity = filters.severity;
+        }
       }
 
       if (filters.alertType) {
-        whereClause.alertType = filters.alertType;
+        if (filters.alertType.includes(',')) {
+          whereClause.alertType = { [Op.in]: filters.alertType.split(',') };
+        } else {
+          whereClause.alertType = filters.alertType;
+        }
       }
 
       const alerts = await Alert.findAll({
@@ -247,7 +260,7 @@ class AlertService {
           { model: Case, as: 'case', attributes: ['id', 'caseNumber', 'title'] },
           { model: User, as: 'creator', attributes: ['id', 'fullName'] }
         ],
-        order: [['createdAt', 'DESC']],
+        order: [['created_at', 'DESC']],
         limit: filters.limit || 50
       });
 
@@ -373,17 +386,17 @@ class AlertService {
     switch (rule.ruleType) {
       case 'cross_case':
         return context.crossCaseConnections &&
-               context.crossCaseConnections.some(conn =>
-                 conn.strength === conditions.strength &&
-                 conn.confidence >= conditions.confidence_threshold
-               );
+          context.crossCaseConnections.some(conn =>
+            conn.strength === conditions.strength &&
+            conn.confidence >= conditions.confidence_threshold
+          );
 
       case 'entity_frequency':
         return context.sharedEntities &&
-               context.sharedEntities.some(entity =>
-                 entity.caseCount >= conditions.min_case_count &&
-                 conditions.entity_types.includes(entity.entityType)
-               );
+          context.sharedEntities.some(entity =>
+            entity.caseCount >= conditions.min_case_count &&
+            conditions.entity_types.includes(entity.entityType)
+          );
 
       default:
         return false;

@@ -1,5 +1,6 @@
 import winston from 'winston';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,55 +16,92 @@ const logFormat = winston.format.combine(
   winston.format.json()
 );
 
+// Check if log directory is writable
+let logDirWritable = false;
+// FORCE CONSOLE LOGGING to avoid EPERM/WriteAfterEnd issues
+console.log('[logger] Forcing console-only logging to avoid EPERM issues');
+
+// Build transports
+const transports = [
+  new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.printf(
+        ({ timestamp, level, message, service, ...meta }) => {
+          return `${timestamp} [${service}] ${level}: ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''
+            }`;
+        }
+      )
+    )
+  })
+];
+
+if (logDirWritable) {
+  transports.push(
+    new winston.transports.File({
+      filename: path.join(logDir, 'error.log'),
+      level: 'error',
+      maxsize: 5242880,
+      maxFiles: 5
+    }),
+    new winston.transports.File({
+      filename: path.join(logDir, 'combined.log'),
+      maxsize: 5242880,
+      maxFiles: 5
+    })
+  );
+}
+
 // Create logger instance
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: logFormat,
   defaultMeta: { service: 'ufdr-backend' },
-  transports: [
-    // Write all logs to console
+  transports
+});
+
+// Handle transport errors gracefully (don't crash)
+logger.on('error', (err) => {
+  console.error('[logger] Winston error:', err.message);
+});
+
+// Build audit transports
+const auditTransports = [];
+if (logDirWritable) {
+  auditTransports.push(
+    new winston.transports.File({
+      filename: path.join(logDir, 'audit.log'),
+      maxsize: 10485760,
+      maxFiles: 10
+    })
+  );
+} else {
+  auditTransports.push(
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),
         winston.format.printf(
           ({ timestamp, level, message, service, ...meta }) => {
-            return `${timestamp} [${service}] ${level}: ${message} ${
-              Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''
-            }`;
+            return `${timestamp} [${service}] ${level}: ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''
+              }`;
           }
         )
       )
-    }),
-    
-    // Write all logs with level 'error' and below to error.log
-    new winston.transports.File({
-      filename: path.join(logDir, 'error.log'),
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5
-    }),
-    
-    // Write all logs to combined.log
-    new winston.transports.File({
-      filename: path.join(logDir, 'combined.log'),
-      maxsize: 5242880, // 5MB
-      maxFiles: 5
     })
-  ]
-});
+  );
+}
 
 // Create audit logger for security events
 export const auditLogger = winston.createLogger({
   level: 'info',
   format: logFormat,
   defaultMeta: { service: 'ufdr-audit' },
-  transports: [
-    new winston.transports.File({
-      filename: path.join(logDir, 'audit.log'),
-      maxsize: 10485760, // 10MB
-      maxFiles: 10
-    })
-  ]
+  transports: auditTransports
+});
+
+auditLogger.on('error', (err) => {
+  console.error('[audit-logger] Winston error:', err.message);
 });
 
 export default logger;
+

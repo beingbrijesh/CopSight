@@ -360,8 +360,14 @@ class CrossCaseService {
         ]
       });
 
-      // Get graph connections
-      const graphConnections = await findCrossCaseConnections(caseId, maxDepth);
+      // Try to get graph connections, but don't fail if Neo4j is unavailable
+      let graphConnections = [];
+      try {
+        graphConnections = await findCrossCaseConnections(caseId, maxDepth);
+      } catch (neo4jError) {
+        logger.warn(`Neo4j not available for case ${caseId}, proceeding without graph connections: ${neo4jError.message}`);
+        // Continue without graph connections - this is not a critical failure
+      }
 
       return {
         databaseLinks: dbLinks,

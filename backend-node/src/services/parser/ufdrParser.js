@@ -23,48 +23,48 @@ class UFDRParser {
   async parseUFDRFile(filePath) {
     try {
       logger.info(`Parsing UFDR file: ${filePath}`);
-      
+
       // Read file to check if it's a ZIP
       const fileBuffer = await fs.readFile(filePath);
       const isZip = fileBuffer[0] === 0x50 && fileBuffer[1] === 0x4B; // PK signature
-      
+
       let xmlContent;
-      
+
       if (isZip) {
         logger.info('Detected ZIP archive, extracting...');
         const zip = new AdmZip(filePath);
         const zipEntries = zip.getEntries();
-        
+
         // Find XML file in the ZIP
-        const xmlEntry = zipEntries.find(entry => 
+        const xmlEntry = zipEntries.find(entry =>
           entry.entryName.toLowerCase().endsWith('.xml') && !entry.isDirectory
         );
-        
+
         if (!xmlEntry) {
           throw new Error('No XML file found in the ZIP archive. UFDR files should contain an XML export.');
         }
-        
+
         logger.info(`Found XML file in ZIP: ${xmlEntry.entryName}`);
         xmlContent = xmlEntry.getData().toString('utf-8');
       } else {
         // Plain XML file
         xmlContent = fileBuffer.toString('utf-8');
       }
-      
+
       // Check if content is actually XML
       const trimmedContent = xmlContent.trim();
       if (!trimmedContent.startsWith('<?xml') && !trimmedContent.startsWith('<')) {
         throw new Error('Invalid UFDR file format. File must contain valid XML. Please ensure you are uploading a proper UFDR/XML export file.');
       }
-      
+
       const result = await this.parser.parseStringPromise(xmlContent);
-      
+
       // Extract device information
       const deviceInfo = this.extractDeviceInfo(result);
-      
+
       // Extract data sources
       const dataSources = this.extractDataSources(result);
-      
+
       return {
         deviceInfo,
         dataSources,
@@ -72,12 +72,12 @@ class UFDRParser {
       };
     } catch (error) {
       logger.error('Error parsing UFDR file:', error);
-      
+
       // Provide more helpful error messages
       if (error.message.includes('Non-whitespace before first tag')) {
         throw new Error('Invalid UFDR file format. The file does not appear to be valid XML. Please upload a proper UFDR/Cellebrite XML export file.');
       }
-      
+
       throw new Error(`Failed to parse UFDR file: ${error.message}`);
     }
   }
@@ -88,13 +88,106 @@ class UFDRParser {
   async parseJSONFile(filePath) {
     try {
       logger.info(`Parsing JSON UFDR file: ${filePath}`);
-      
+
       const jsonContent = await fs.readFile(filePath, 'utf-8');
       const data = JSON.parse(jsonContent);
-      
+
+      // Extract device information from metadata
+      const deviceInfo = {
+        deviceName: data.metadata?.device || 'Unknown Device',
+        deviceType: 'smartphone',
+        manufacturer: 'Unknown',
+        model: 'Unknown Model',
+        osVersion: null,
+        extractionDate: data.metadata?.extraction_date || new Date(),
+        tool: data.metadata?.tool || 'Unknown'
+      };
+
+      // Create data sources from JSON structure
+      const dataSources = [];
+
+      // Contacts
+      if (data.contacts && Array.isArray(data.contacts)) {
+        dataSources.push({
+          sourceType: 'contacts',
+          appName: 'Contacts',
+          data: data.contacts.map((contact, index) => ({
+            id: contact.id || `contact_${index}`,
+            name: contact.name,
+            phone: contact.phone, // Keep original field name for compatibility
+            timestamp: new Date()
+          })),
+          totalRecords: data.contacts.length
+        });
+      }
+
+      // Chats/Messages
+      if (data.chats && Array.isArray(data.chats)) {
+        dataSources.push({
+          sourceType: 'chat',
+          appName: 'Chat',
+          data: data.chats.map((chat, index) => ({
+            id: `chat_${index}`,
+            sender: chat.sender,
+            receiver: chat.receiver,
+            message: chat.message, // Use 'message' as content field
+            timestamp: chat.timestamp
+          })),
+          totalRecords: data.chats.length
+        });
+      }
+
+      // Calls
+      if (data.calls && Array.isArray(data.calls)) {
+        dataSources.push({
+          sourceType: 'call_log',
+          appName: 'Phone',
+          data: data.calls.map((call, index) => ({
+            id: `call_${index}`,
+            caller: call.caller,
+            receiver: call.receiver,
+            duration: call.duration,
+            timestamp: call.timestamp
+          })),
+          totalRecords: data.calls.length
+        });
+      }
+
+      // Images
+      if (data.images && Array.isArray(data.images)) {
+        dataSources.push({
+          sourceType: 'media',
+          appName: 'Gallery',
+          data: data.images.map((image, index) => ({
+            id: `image_${index}`,
+            path: image.path,
+            description: image.description,
+            timestamp: image.timestamp,
+            type: 'image'
+          })),
+          totalRecords: data.images.length
+        });
+      }
+
+      // Videos
+      if (data.videos && Array.isArray(data.videos)) {
+        dataSources.push({
+          sourceType: 'media',
+          appName: 'Gallery',
+          data: data.videos.map((video, index) => ({
+            id: `video_${index}`,
+            path: video.path,
+            description: video.description,
+            timestamp: video.timestamp,
+            type: 'video'
+          })),
+          totalRecords: data.videos.length
+        });
+      }
+
       return {
-        deviceInfo: data.device || {},
-        dataSources: data.sources || [],
+        deviceInfo,
+        dataSources,
         rawData: data
       };
     } catch (error) {
@@ -108,18 +201,55 @@ class UFDRParser {
    */
   extractDeviceInfo(parsedData) {
     try {
-      const device = parsedData.root?.device || parsedData.device || {};
-      
+      // Handle UFDR XML structure
+      const ufdr = parsedData['ufdr:UFDR'] || parsedData.UFDR || parsedData;
+      const device = ufdr['ufdr:device'] || ufdr.device || {};
+      const deviceInfo = device['ufdr:deviceInfo'] || device.deviceInfo || {};
+
+      // If we have actual UFDR device info, use it
+      if (deviceInfo['ufdr:manufacturer'] || deviceInfo.manufacturer) {
+        return {
+          deviceName: deviceInfo['ufdr:model'] || deviceInfo.model || 'Unknown Device',
+          deviceType: 'smartphone',
+          imei: deviceInfo['ufdr:imei'] || deviceInfo.imei || null,
+          phoneNumber: null,
+          ownerName: null,
+          manufacturer: deviceInfo['ufdr:manufacturer'] || deviceInfo.manufacturer || 'Unknown',
+          model: deviceInfo['ufdr:model'] || deviceInfo.model || 'Unknown Model',
+          osVersion: deviceInfo['ufdr:os'] || deviceInfo.os || deviceInfo['ufdr:osVersion'] || deviceInfo.osVersion || null,
+          extractionDate: deviceInfo['ufdr:extractionDate'] || deviceInfo.extractionDate || new Date()
+        };
+      }
+
+      // Handle different XML structures
+      const project = parsedData.project || parsedData.root?.project || parsedData;
+      const deviceAlt = project?.device || project?.Device || {};
+
+      // If device is not directly available, try to extract from project attributes
+      if (!deviceAlt.name && !deviceAlt.model && project) {
+        return {
+          deviceName: project.name || project['$']?.name || 'Unknown Device',
+          deviceType: project.extractionType || 'smartphone',
+          imei: null,
+          phoneNumber: null,
+          ownerName: null,
+          manufacturer: 'Unknown',
+          model: project.model || project['$']?.model || 'Unknown Model',
+          osVersion: null,
+          extractionDate: new Date()
+        };
+      }
+
       return {
-        deviceName: device.name || device.model || 'Unknown Device',
-        deviceType: device.type || 'smartphone',
-        imei: device.imei || device.IMEI || null,
-        phoneNumber: device.phoneNumber || device.msisdn || null,
-        ownerName: device.owner || device.ownerName || null,
-        manufacturer: device.manufacturer || null,
-        model: device.model || null,
-        osVersion: device.osVersion || device.os || null,
-        extractionDate: device.extractionDate || new Date()
+        deviceName: deviceAlt.name || deviceAlt.model || project?.name || 'Unknown Device',
+        deviceType: deviceAlt.type || project?.extractionType || 'smartphone',
+        imei: deviceAlt.imei || deviceAlt.IMEI || null,
+        phoneNumber: deviceAlt.phoneNumber || deviceAlt.msisdn || null,
+        ownerName: deviceAlt.owner || deviceAlt.ownerName || null,
+        manufacturer: deviceAlt.manufacturer || null,
+        model: deviceAlt.model || project?.model || null,
+        osVersion: deviceAlt.osVersion || deviceAlt.os || null,
+        extractionDate: deviceAlt.extractionDate || new Date()
       };
     } catch (error) {
       logger.warn('Error extracting device info:', error);
@@ -138,7 +268,38 @@ class UFDRParser {
     try {
       const sources = [];
       const root = parsedData.root || parsedData;
-      
+      const project = parsedData.project || root.project || root;
+
+      // Debug logging
+      logger.debug('Extracting data sources from:', {
+        hasUFDR: !!parsedData['ufdr:UFDR'],
+        hasProject: !!parsedData.project,
+        hasRoot: !!parsedData.root,
+        rootKeys: Object.keys(root || {}),
+        projectKeys: Object.keys(project || {}),
+        projectAttributes: project && project['$'] ? Object.keys(project['$']) : []
+      });
+
+      // Handle UFDR XML structure first
+      const ufdr = parsedData['ufdr:UFDR'] || parsedData.UFDR || parsedData;
+      if (ufdr['ufdr:device'] || ufdr.device) {
+        logger.info('Detected UFDR XML structure, extracting from ufdr:device');
+        return this.extractCellebriteDataSources(ufdr);
+      }
+
+      // Handle Cellebrite XML structure - check multiple ways
+      const isCellebrite = project && project['$'] && (
+        project['$']['xmlns:ufdr'] ||
+        project['$']['xmlns'] ||
+        project['$']['xmlns:dc']
+      );
+
+      if (isCellebrite) {
+        logger.info('Detected Cellebrite XML structure, using extraction method');
+        return this.extractCellebriteDataSources(project);
+      }
+
+      // Original structure for backward compatibility
       // Extract SMS/Messages
       if (root.messages || root.sms) {
         const messages = this.normalizeArray(root.messages || root.sms);
@@ -149,7 +310,7 @@ class UFDRParser {
           totalRecords: Array.isArray(messages) ? messages.length : 0
         });
       }
-      
+
       // Extract Call Logs
       if (root.calls || root.callLogs) {
         const calls = this.normalizeArray(root.calls || root.callLogs);
@@ -160,29 +321,7 @@ class UFDRParser {
           totalRecords: Array.isArray(calls) ? calls.length : 0
         });
       }
-      
-      // Extract Contacts
-      if (root.contacts) {
-        const contacts = this.normalizeArray(root.contacts);
-        sources.push({
-          sourceType: 'contacts',
-          appName: 'Contacts',
-          data: this.parseContacts(contacts),
-          totalRecords: Array.isArray(contacts) ? contacts.length : 0
-        });
-      }
-      
-      // Extract WhatsApp
-      if (root.whatsapp || root.WhatsApp) {
-        const whatsapp = this.normalizeArray(root.whatsapp || root.WhatsApp);
-        sources.push({
-          sourceType: 'whatsapp',
-          appName: 'WhatsApp',
-          data: this.parseWhatsApp(whatsapp),
-          totalRecords: Array.isArray(whatsapp) ? whatsapp.length : 0
-        });
-      }
-      
+
       // Extract Telegram
       if (root.telegram || root.Telegram) {
         const telegram = this.normalizeArray(root.telegram || root.Telegram);
@@ -193,10 +332,120 @@ class UFDRParser {
           totalRecords: Array.isArray(telegram) ? telegram.length : 0
         });
       }
-      
+
+      // If no sources found, return empty array
+      if (sources.length === 0) {
+        logger.warn('No data sources found in the parsed file');
+      }
+
       return sources;
     } catch (error) {
       logger.error('Error extracting data sources:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Extract data sources from Cellebrite XML
+   */
+  extractCellebriteDataSources(project) {
+    const sources = [];
+
+    try {
+      // Parse the actual UFDR XML structure
+      logger.info('Parsing actual UFDR XML structure');
+
+      // Get the device communications
+      const device = project['ufdr:device'] || project.device || {};
+      const communications = device['ufdr:communications'] || device.communications || {};
+
+      // Extract SMS messages
+      if (communications['ufdr:smsMessages'] || communications.smsMessages) {
+        const smsMessages = communications['ufdr:smsMessages'] || communications.smsMessages;
+        const smsData = this.extractSMSFromUFDR(smsMessages);
+        if (smsData.length > 0) {
+          sources.push({
+            sourceType: 'sms',
+            appName: 'Messages',
+            data: smsData,
+            totalRecords: smsData.length
+          });
+        }
+      }
+
+      // Extract Call Logs
+      if (communications['ufdr:callLogs'] || communications.callLogs) {
+        const callLogs = communications['ufdr:callLogs'] || communications.callLogs;
+        const callData = this.extractCallsFromUFDR(callLogs);
+        if (callData.length > 0) {
+          sources.push({
+            sourceType: 'call_log',
+            appName: 'Phone',
+            data: callData,
+            totalRecords: callData.length
+          });
+        }
+      }
+
+      // Extract Emails
+      if (communications['ufdr:emails'] || communications.emails) {
+        const emails = communications['ufdr:emails'] || communications.emails;
+        const emailData = this.extractEmailsFromUFDR(emails);
+        if (emailData.length > 0) {
+          sources.push({
+            sourceType: 'email',
+            appName: 'Mail',
+            data: emailData,
+            totalRecords: emailData.length
+          });
+        }
+      }
+
+      // If no sources found from actual parsing, return empty array
+      if (sources.length === 0) {
+        logger.warn('No data sources found in UFDR XML structure');
+      }
+
+      logger.info(`Extracted ${sources.length} data sources from UFDR XML`);
+      return sources;
+
+    } catch (error) {
+      logger.error('Error extracting Cellebrite data sources:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Extract email messages from UFDR XML
+   */
+  extractEmailsFromUFDR(emails) {
+    const emailMessages = [];
+
+    try {
+      // Handle both single email and array of emails
+      const emailArray = this.normalizeArray(emails.email || emails);
+
+      for (let i = 0; i < emailArray.length; i++) {
+        const email = emailArray[i];
+
+        emailMessages.push({
+          id: email.id || `email_${i}`,
+          type: 'email',
+          sender: email.from || email.sender,
+          recipient: email.to || email.recipient,
+          subject: email.subject || '',
+          content: email.body || email.content || '',
+          timestamp: email.timestamp || new Date(),
+          hasAttachments: email.hasAttachments === 'true' || false,
+          attachmentCount: parseInt(email.attachmentCount) || 0
+        });
+      }
+
+      logger.info(`Extracted ${emailMessages.length} email messages from UFDR XML`);
+      return emailMessages;
+
+    } catch (error) {
+      logger.error('Error extracting emails from UFDR:', error);
       return [];
     }
   }
@@ -283,6 +532,72 @@ class UFDRParser {
   }
 
   /**
+   * Extract SMS messages from UFDR XML
+   */
+  extractSMSFromUFDR(smsMessages) {
+    const messages = [];
+
+    try {
+      // Handle the UFDR structure: smsMessages['ufdr:message'] is an array
+      const messageArray = this.normalizeArray(smsMessages['ufdr:message'] || smsMessages.message || smsMessages);
+
+      for (let i = 0; i < messageArray.length; i++) {
+        const msg = messageArray[i];
+
+        messages.push({
+          id: msg['ufdr:id'] || msg.id || `sms_${i}`,
+          type: 'sms',
+          direction: msg['ufdr:direction'] || msg.direction || 'incoming',
+          phoneNumber: msg['ufdr:sender'] || msg['ufdr:recipient'] || msg.sender || msg.recipient || msg.address,
+          content: msg['ufdr:body'] || msg.body || msg.content || msg.text,
+          timestamp: msg['ufdr:timestamp'] || msg.timestamp || new Date(),
+          read: (msg['ufdr:status'] || msg.status) === 'read' || false
+        });
+      }
+
+      logger.info(`Extracted ${messages.length} SMS messages from UFDR XML`);
+      return messages;
+
+    } catch (error) {
+      logger.error('Error extracting SMS from UFDR:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Extract call logs from UFDR XML
+   */
+  extractCallsFromUFDR(callLogs) {
+    const calls = [];
+
+    try {
+      // Handle the UFDR structure: callLogs['ufdr:call'] is an array
+      const callArray = this.normalizeArray(callLogs['ufdr:call'] || callLogs.call || callLogs);
+
+      for (let i = 0; i < callArray.length; i++) {
+        const call = callArray[i];
+
+        calls.push({
+          id: call['ufdr:id'] || call.id || `call_${i}`,
+          type: call['ufdr:type'] || call.type || 'voice',
+          direction: call['ufdr:direction'] || call.direction || 'incoming',
+          phoneNumber: call['ufdr:number'] || call.number || call.phoneNumber,
+          duration: parseInt(call['ufdr:duration'] || call.duration) || 0,
+          timestamp: call['ufdr:timestamp'] || call.timestamp || new Date(),
+          name: call['ufdr:name'] || call.name || call.contactName
+        });
+      }
+
+      logger.info(`Extracted ${calls.length} call logs from UFDR XML`);
+      return calls;
+
+    } catch (error) {
+      logger.error('Error extracting calls from UFDR:', error);
+      return [];
+    }
+  }
+
+  /**
    * Normalize data to array
    */
   normalizeArray(data) {
@@ -304,7 +619,7 @@ const parserInstance = new UFDRParser();
 
 export const parseUFDRFile = async (filePath) => {
   const ext = filePath.split('.').pop().toLowerCase();
-  
+
   if (ext === 'json') {
     return await parserInstance.parseJSONFile(filePath);
   } else if (ext === 'xml' || ext === 'ufdr') {

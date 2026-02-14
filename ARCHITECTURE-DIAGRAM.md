@@ -16,11 +16,11 @@ graph TB
     
     subgraph Backend[APPLICATION LAYER - Node.js 18 + Express Port 8080]
         Middleware[MIDDLEWARE: Helmet, CORS, Auth, RBAC, Multer, ErrorHandler]
-        Routes[7 ROUTES: auth, users, cases, upload, query, bookmarks, reports - 27 endpoints]
+        Routes[11 ROUTES: auth, users, cases, upload, query, bookmarks, reports, crossCase, alerts, integration, performance - 61 endpoints]
         Controllers[7 CONTROLLERS: auth, user, case, upload, query, bookmark, report]
         Services[6 SERVICES: Parser, NER, Search, Graph, AI, Report]
         Workers[WORKERS: processingWorker - Bull Queue + Redis]
-        ORM[ORM: Sequelize - 11 Models]
+        ORM[ORM: Sequelize - 14 Models]
     end
     
     subgraph DataLayer[DATA LAYER]
@@ -80,11 +80,11 @@ graph TB
 - **HTTP Client**: Axios
 
 ### Backend (Node.js + Express)
-- **7 Routes**: auth, users, cases, upload, query, bookmarks, reports
-- **27 API Endpoints**: RESTful API
+- **11 Routes**: auth, users, cases, upload, query, bookmarks, reports, crossCase, alerts, integration, performance
+- **61 API Endpoints**: RESTful API
 - **7 Controllers**: Business logic handlers
 - **6 Services**: Parser, NER, Search, Graph, AI Client, Report Generator
-- **11 Models**: Sequelize ORM (users, sessions, cases, devices, data_sources, processing_jobs, case_queries, evidence_bookmarks, entity_tags, case_reports, audit_log)
+- **14 Models**: Sequelize ORM (users, sessions, cases, devices, data_sources, processing_jobs, case_queries, evidence_bookmarks, entity_tags, case_reports, audit_log, alerts, alert_rules, cross_case_links)
 - **Background Workers**: Bull queue with Redis for async processing
 
 ### AI Service (Python + FastAPI)
@@ -93,7 +93,7 @@ graph TB
 - **RAG Pipeline**: Query decomposition → Multi-DB search → Ranking → Answer synthesis
 
 ### Databases
-- **PostgreSQL**: Primary relational database (11 tables)
+- **PostgreSQL**: Primary relational database (14 tables)
 - **Elasticsearch**: Full-text search (3 indices: messages, calls, contacts)
 - **Neo4j**: Graph database (5 node types, 4 relationship types)
 - **Redis**: Job queue and session cache

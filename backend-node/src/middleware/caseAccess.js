@@ -1,5 +1,6 @@
 import { Case } from '../models/index.js';
-import { auditLogger } from '../config/logger.js';
+import { Op } from 'sequelize';
+import logger, { auditLogger } from '../config/logger.js';
 
 /**
  * Middleware to check if user can access a specific case
@@ -11,7 +12,7 @@ import { auditLogger } from '../config/logger.js';
 export const checkCaseAccess = async (req, res, next) => {
   try {
     const caseId = req.params.caseId || req.body.caseId;
-    
+
     if (!caseId) {
       return res.status(400).json({
         success: false,
@@ -65,14 +66,14 @@ export const checkCaseAccess = async (req, res, next) => {
 
       case 'supervisor':
         // Supervisor can access cases in their unit (read-only)
-        if (caseRecord.supervisorId === user.id || 
-            (caseRecord.unit && user.unit && caseRecord.unit === user.unit)) {
+        if (caseRecord.supervisorId === user.id ||
+          (caseRecord.unit && user.unit && caseRecord.unit === user.unit)) {
           hasAccess = true;
           accessType = 'read_only';
-          
+
           // Block write operations for supervisors
-          if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && 
-              !req.path.includes('/view')) {
+          if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) &&
+            !req.path.includes('/view')) {
             return res.status(403).json({
               success: false,
               message: 'Supervisors have read-only access to cases'
@@ -105,7 +106,7 @@ export const checkCaseAccess = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Case access check error:', error);
+    logger.error('Case access check error:', error);
     return res.status(500).json({
       success: false,
       message: 'Error checking case access'
@@ -129,16 +130,16 @@ export const getAccessibleCaseIds = async (user) => {
         break;
 
       case 'supervisor':
-        const whereClause = {};
+        const conditions = [];
         if (user.unit) {
-          whereClause.unit = user.unit;
+          conditions.push({ unit: user.unit });
         }
         if (user.id) {
-          whereClause.supervisorId = user.id;
+          conditions.push({ supervisorId: user.id });
         }
-        
+
         cases = await Case.findAll({
-          where: whereClause,
+          where: conditions.length > 0 ? { [Op.or]: conditions } : {},
           attributes: ['id']
         });
         break;
@@ -153,7 +154,7 @@ export const getAccessibleCaseIds = async (user) => {
 
     return cases.map(c => c.id);
   } catch (error) {
-    console.error('Error getting accessible cases:', error);
+    logger.error('Error getting accessible cases:', error);
     return [];
   }
 };

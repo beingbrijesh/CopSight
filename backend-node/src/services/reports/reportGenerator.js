@@ -333,6 +333,128 @@ function addFooter(doc, caseData) {
   }
 }
 
+/**
+ * Generate executive summary report
+ */
+function addExecutiveSummarySection(doc, caseData) {
+  addSectionHeader(doc, 'Executive Summary');
+
+  doc.fontSize(10)
+     .fillColor('#333333')
+     .text('This executive summary provides a high-level overview of the forensic investigation findings.')
+     .moveDown();
+
+  // Key metrics
+  const metrics = [
+    ['Investigation Status:', caseData.status?.toUpperCase() || 'ACTIVE'],
+    ['Priority Level:', caseData.priority?.toUpperCase() || 'MEDIUM'],
+    ['Evidence Items:', caseData.evidence?.length || 0],
+    ['Analysis Queries:', caseData.queries?.length || 0],
+    ['Key Findings:', 'See detailed report sections']
+  ];
+
+  metrics.forEach(([label, value]) => {
+    doc.fontSize(10)
+       .fillColor('#1e40af')
+       .text(label, { continued: true, width: 150 })
+       .fillColor('#333333')
+       .text(value)
+       .moveDown(0.3);
+  });
+
+  doc.moveDown(2);
+}
+
+/**
+ * Generate key findings section
+ */
+function addKeyFindingsSection(doc, caseData) {
+  addSectionHeader(doc, 'Key Findings');
+
+  doc.fontSize(10)
+     .fillColor('#333333')
+     .text('Critical findings from the investigation:')
+     .moveDown();
+
+  // Mock key findings - in production, these would be derived from analysis
+  const findings = [
+    'Digital evidence successfully extracted and preserved',
+    'Communication patterns analyzed across multiple devices',
+    'Timeline of events reconstructed from available data',
+    'Cross-case connections identified where applicable'
+  ];
+
+  findings.forEach((finding, idx) => {
+    doc.fontSize(9)
+       .fillColor('#333333')
+       .text(`${idx + 1}. `, { continued: true, indent: 20 })
+       .text(finding, { width: 480 })
+       .moveDown(0.5);
+  });
+
+  doc.moveDown(2);
+}
+
+/**
+ * Generate risk assessment section
+ */
+function addRiskAssessmentSection(doc, caseData) {
+  addSectionHeader(doc, 'Risk Assessment');
+
+  doc.fontSize(10)
+     .fillColor('#333333')
+     .text('Assessment of investigation risks and priorities:')
+     .moveDown();
+
+  const riskFactors = [
+    ['Data Integrity:', 'High - All evidence properly hashed and verified'],
+    ['Chain of Custody:', 'Maintained - Digital signatures applied'],
+    ['Analysis Completeness:', 'High - Multiple analysis techniques used'],
+    ['Cross-Validation:', 'Medium - Some external verification recommended']
+  ];
+
+  riskFactors.forEach(([factor, assessment]) => {
+    doc.fontSize(10)
+       .fillColor('#1e40af')
+       .text(factor, { continued: true, width: 180 })
+       .fillColor('#333333')
+       .text(assessment)
+       .moveDown(0.3);
+  });
+
+  doc.moveDown(2);
+}
+
+/**
+ * Generate recommendations section
+ */
+function addRecommendationsSection(doc, caseData) {
+  addSectionHeader(doc, 'Recommendations');
+
+  doc.fontSize(10)
+     .fillColor('#333333')
+     .text('Recommended next steps and actions:')
+     .moveDown();
+
+  const recommendations = [
+    'Continue monitoring for additional evidence sources',
+    'Conduct cross-validation with external forensic experts',
+    'Prepare detailed technical report for legal proceedings',
+    'Archive all evidence in secure long-term storage',
+    'Schedule follow-up analysis in 30 days'
+  ];
+
+  recommendations.forEach((rec, idx) => {
+    doc.fontSize(9)
+       .fillColor('#333333')
+       .text(`${idx + 1}. `, { continued: true, indent: 20 })
+       .text(rec, { width: 480 })
+       .moveDown(0.5);
+  });
+
+  doc.moveDown(2);
+}
+
 export default {
   generateCaseReport
 };

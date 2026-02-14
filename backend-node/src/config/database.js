@@ -1,7 +1,16 @@
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
+import logger from './logger.js';
 
-dotenv.config();
+// Try .env.local first (workaround for macOS EPERM on .env), then .env
+const envLocal = resolve(process.cwd(), '.env.local');
+if (existsSync(envLocal)) {
+  dotenv.config({ path: envLocal });
+} else {
+  dotenv.config();
+}
 
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'ufdr_db',
@@ -11,7 +20,7 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    logging: process.env.NODE_ENV === 'development' ? (msg) => logger.debug(msg) : false,
     pool: {
       max: 10,
       min: 0,
@@ -31,15 +40,16 @@ const sequelize = new Sequelize(
 export const connectDatabase = async () => {
   try {
     await sequelize.authenticate();
-    console.log('✅ Database connection established successfully');
-    
-    // Sync models in development
-    if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ alter: false });
-      console.log('✅ Database models synchronized');
-    }
+    logger.info('Database connection established successfully');
+
+    // Sync models in development - disabled (schema already created in Docker PostgreSQL)
+    // To recreate schema, temporarily uncomment the sync line below:
+    // if (process.env.NODE_ENV === 'development') {
+    //   await sequelize.sync({ alter: true });
+    //   logger.info('Database schema synced (development mode)');
+    // }
   } catch (error) {
-    console.error('❌ Unable to connect to database:', error);
+    logger.error('Unable to connect to database:', error);
     process.exit(1);
   }
 };

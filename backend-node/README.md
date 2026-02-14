@@ -32,25 +32,65 @@ backend-node/
 ├── src/
 │   ├── config/
 │   │   ├── database.js          # Sequelize configuration
+│   │   ├── databases.js         # Multi-DB connections (ES, Neo4j, Redis)
 │   │   └── logger.js            # Winston logging setup
 │   ├── models/
 │   │   ├── User.js              # User model with RBAC
 │   │   ├── Case.js              # Case management
+│   │   ├── Device.js            # Extracted device info
+│   │   ├── DataSource.js        # Data sources per device
+│   │   ├── ProcessingJob.js     # Background job tracking
 │   │   ├── CaseQuery.js         # Query tracking
 │   │   ├── EvidenceBookmark.js  # Evidence bookmarks
 │   │   ├── CaseReport.js        # Report generation
+│   │   ├── EntityTag.js         # Extracted entities
 │   │   ├── AuditLog.js          # Audit trail
+│   │   ├── Alert.js             # System/case alerts
+│   │   ├── AlertRule.js         # Alert triggering rules
+│   │   ├── CrossCaseLink.js     # Cross-case relationships
+│   │   ├── CaseSharedEntity.js  # Shared entities across cases
 │   │   └── index.js             # Model associations
 │   ├── middleware/
-│   │   ├── auth.js              # JWT authentication
-│   │   └── caseAccess.js        # Case-level RBAC
+│   │   ├── auth.js              # JWT authentication + authorize()
+│   │   ├── rbac.js              # Role-based access control
+│   │   ├── caseAccess.js        # Case-level access enforcement
+│   │   ├── upload.js            # Multer file upload config
+│   │   └── rateLimit.js         # API rate limiting
 │   ├── controllers/
 │   │   ├── authController.js    # Authentication logic
-│   │   └── caseController.js    # Case management logic
+│   │   ├── userController.js    # User management
+│   │   ├── caseController.js    # Case management
+│   │   ├── uploadController.js  # File upload + processing
+│   │   ├── queryController.js   # Query execution
+│   │   ├── bookmarkController.js # Evidence bookmarks
+│   │   └── reportController.js  # Report generation
 │   ├── routes/
-│   │   ├── authRoutes.js        # Auth endpoints
-│   │   └── caseRoutes.js        # Case endpoints
-│   └── server.js                # Main application
+│   │   ├── authRoutes.js        # Auth endpoints (4)
+│   │   ├── userRoutes.js        # User endpoints (7)
+│   │   ├── caseRoutes.js        # Case endpoints (7)
+│   │   ├── uploadRoutes.js      # Upload endpoints (3)
+│   │   ├── queryRoutes.js       # Query endpoints (3)
+│   │   ├── bookmarkRoutes.js    # Bookmark endpoints (5)
+│   │   ├── reportRoutes.js      # Report endpoints (3)
+│   │   ├── crossCaseRoutes.js   # Cross-case intelligence (5)
+│   │   ├── alertRoutes.js       # Alert management (7)
+│   │   ├── integrationRoutes.js # External integrations (12)
+│   │   └── performanceRoutes.js # Monitoring (5)
+│   ├── services/
+│   │   ├── parser/              # UFDR file parser
+│   │   ├── ner/                 # Entity extraction (NER)
+│   │   ├── search/              # Elasticsearch operations
+│   │   ├── graph/               # Neo4j operations
+│   │   ├── ai/                  # AI service client + embeddings
+│   │   └── reports/             # PDF generation (PDFKit)
+│   ├── queues/
+│   │   └── processingQueue.js   # Bull queue configuration
+│   ├── workers/
+│   │   └── processingWorker.js  # Background job processor
+│   └── server.js                # Express app entry point
+├── scripts/                     # Utility scripts (reset-admin.js)
+├── uploads/                     # Uploaded files directory
+├── logs/                        # Application logs
 ├── package.json
 ├── .env.example
 └── README.md
@@ -75,24 +115,19 @@ npm install
 2. **Configure environment:**
 ```bash
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env if needed (defaults work for local development)
 ```
 
-3. **Setup database:**
-```bash
-# Run the enhanced init.sql from backend/database/init.sql
-psql -U postgres -d ufdr_db -f ../backend/database/init.sql
-```
-
-4. **Start development server:**
+3. **Start development server:**
 ```bash
 npm run dev
 ```
 
-## 🔑 API Endpoints
+The server will start on port 8080 with auto-reload.
 
-### Authentication
+## 🔑 API Endpoints (61 total)
 
+### Authentication (4 endpoints)
 ```
 POST   /api/auth/login           # User login
 GET    /api/auth/me              # Get current user
@@ -100,28 +135,92 @@ POST   /api/auth/logout          # Logout
 POST   /api/auth/change-password # Change password
 ```
 
-### Case Management
-
+### User Management (7 endpoints)
 ```
-POST   /api/cases                # Create case (Admin only)
+POST   /api/users                # Create user (Admin)
+GET    /api/users                # List users (Admin)
+GET    /api/users/:id            # Get user details
+PUT    /api/users/:id            # Update user (Admin)
+POST   /api/users/:id/reset-password # Reset password (Admin)
+GET    /api/users/officers       # List investigating officers
+GET    /api/users/supervisors    # List supervisors
+```
+
+### Case Management (7 endpoints)
+```
+POST   /api/cases                # Create case (Admin)
 GET    /api/cases                # Get accessible cases
 GET    /api/cases/statistics     # Get case statistics
 GET    /api/cases/:caseId        # Get specific case
 PUT    /api/cases/:caseId        # Update case
+GET    /api/cases/:caseId/chats  # Get case chats
+GET    /api/cases/:caseId/network # Get communication network
 ```
+
+### File Upload (3 endpoints)
+```
+POST   /api/upload/case/:id      # Upload UFDR file
+GET    /api/upload/job/:id       # Get processing job status
+GET    /api/upload/case/:id/processing-summary # Get summary
+```
+
+### Query (3 endpoints)
+```
+POST   /api/query/case/:id       # Execute natural language query
+GET    /api/query/case/:id/history # Get query history
+GET    /api/query/:id            # Get specific query result
+```
+
+### Bookmarks (5 endpoints)
+```
+POST   /api/bookmarks            # Create bookmark
+GET    /api/bookmarks/case/:id   # List case bookmarks
+PUT    /api/bookmarks/:id        # Update bookmark
+DELETE /api/bookmarks/:id        # Delete bookmark
+POST   /api/bookmarks/case/:id/reorder # Reorder bookmarks
+```
+
+### Reports (3 endpoints)
+```
+POST   /api/reports/case/:id/generate # Generate PDF report
+GET    /api/reports/case/:id/history  # Get report history
+GET    /api/reports/templates         # Get available templates
+```
+
+### Cross-Case Intelligence (5 endpoints)
+```
+GET    /api/cross-case/search         # Search across cases
+GET    /api/cross-case/statistics     # Cross-case statistics
+GET    /api/cross-case/shared-entities # Find shared entities
+GET    /api/cross-case/links          # Get case links
+POST   /api/cross-case/links          # Create case link
+```
+
+### Alerts (7 endpoints)
+```
+GET    /api/alerts               # List alerts
+POST   /api/alerts               # Create alert
+PUT    /api/alerts/:id           # Update alert
+DELETE /api/alerts/:id           # Delete alert
+GET    /api/alerts/rules         # List alert rules
+POST   /api/alerts/rules         # Create alert rule
+PUT    /api/alerts/rules/:id     # Update alert rule
+```
+
+### Integration (12 endpoints)
+Webhook management, bulk operations, data transformation, and sync endpoints.
+
+### Performance (5 endpoints)
+System metrics, health checks, and monitoring endpoints.
 
 ## 🔒 RBAC Implementation
 
 ### Permission System
 
 ```javascript
-// Check if user has permission
-User.hasPermission(role, permission)
-
 // Middleware examples
 authenticate              // Verify JWT token
 authorize('admin')        // Require specific role
-requirePermission('create_case')  // Require specific permission
 checkCaseAccess          // Verify case-level access
 ```
 
@@ -142,59 +241,51 @@ checkCaseAccess          // Verify case-level access
 - ✅ View queries, bookmarks, reports
 - ❌ Cannot modify cases or upload data
 
-## 📊 Database Models
+## 📊 Database Models (14)
 
-### User
-- Stores user credentials and role
-- Supports hierarchical supervisor relationships
-- Tracks login history
-
-### Case
-- Case metadata and assignment
-- Status tracking (created → active → processing → ready_for_analysis)
-- Unit-based organization
-
-### CaseQuery
-- Tracks all queries made by IOs
-- Stores query text, filters, results
-- Performance metrics (processing time, confidence)
-
-### EvidenceBookmark
-- IO-created bookmarks of important evidence
-- Links to queries that found the evidence
-- Supports notes and tags
-
-### CaseReport
-- Generated reports with digital signatures
-- References bookmarks and queries
-- PDF export capability
-
-### AuditLog
-- Comprehensive audit trail
-- Tracks all user actions
-- IP address and session tracking
+| Model | Description |
+|-------|-------------|
+| **User** | User credentials, roles, supervisor hierarchy |
+| **Case** | Case metadata, assignment, status workflow |
+| **Device** | Extracted device information from UFDR files |
+| **DataSource** | Data sources per device (SMS, calls, contacts) |
+| **ProcessingJob** | Background job tracking and status |
+| **CaseQuery** | Query execution history with results |
+| **EvidenceBookmark** | Bookmarked evidence with notes and tags |
+| **CaseReport** | Generated report metadata and file paths |
+| **EntityTag** | NER-extracted entities (phones, emails, etc.) |
+| **AuditLog** | Comprehensive audit trail |
+| **Alert** | System and case alerts |
+| **AlertRule** | Alert triggering rules |
+| **CrossCaseLink** | Links between related cases |
+| **CaseSharedEntity** | Shared entities across cases |
 
 ## 🔐 Security Features
 
 1. **JWT Authentication**
    - Secure token-based auth
+   - JWT_SECRET validated at startup (server won't start without it)
    - Configurable expiration
-   - Session tracking
 
 2. **Password Security**
    - bcrypt hashing (12 rounds)
    - Password change tracking
-   - Minimum complexity requirements
 
-3. **Audit Logging**
-   - All actions logged
+3. **Access Control**
+   - Role-based access control (RBAC) with 3 roles
+   - Case-level access enforcement (`checkCaseAccess` middleware)
+   - `authorize()` middleware supports both variadic and array syntax
+
+4. **API Protection**
+   - Rate limiting (auth, search, upload, general)
+   - Helmet security headers
+   - CORS with configurable origins
+   - Input validation via Sequelize ORM
+
+5. **Audit Logging**
+   - All actions logged with Winston
    - Separate audit log file
    - IP and user agent tracking
-
-4. **Input Validation**
-   - Joi schema validation
-   - SQL injection prevention (Sequelize ORM)
-   - XSS protection (Helmet)
 
 ## 📝 Logging
 
@@ -209,20 +300,7 @@ checkCaseAccess          // Verify case-level access
 - `logs/error.log` - Errors only
 - `logs/audit.log` - Security audit trail
 
-## 🧪 Testing
-
-```bash
-# Run tests
-npm test
-
-# Run with coverage
-npm test -- --coverage
-
-# Run specific test
-npm test -- authController.test.js
-```
-
-## 🔄 Workflow Implementation
+## 🔄 Workflow
 
 ### Step 1: Case Creation (Admin)
 ```javascript
@@ -242,72 +320,40 @@ POST /api/auth/login
 GET /api/cases  // Returns only assigned cases
 ```
 
-### Step 3: Upload UFDR (Coming Next)
+### Step 3: Upload UFDR File
 ```javascript
-POST /api/cases/:caseId/upload
-// Triggers parser → indexer → NER → graph
+POST /api/upload/case/:caseId
+// File processed via Bull queue in background
+// Monitor with GET /api/upload/job/:jobId
 ```
 
-### Step 4: Query Data (Coming Next)
+### Step 4: Query Data
 ```javascript
-POST /api/cases/:caseId/query
+POST /api/query/case/:caseId
 {
   "queryText": "Find all chats with foreign numbers discussing financial transactions"
 }
 ```
 
-### Step 5: Bookmark Evidence (Coming Next)
+### Step 5: Bookmark Evidence
 ```javascript
-POST /api/cases/:caseId/bookmarks
+POST /api/bookmarks
 {
+  "caseId": 1,
   "evidenceType": "message",
   "evidenceId": "msg_12345",
   "notes": "Suspicious transaction discussion"
 }
 ```
 
-### Step 6: Generate Report (Coming Next)
+### Step 6: Generate Report
 ```javascript
-POST /api/cases/:caseId/reports
+POST /api/reports/case/:caseId/generate
 {
-  "title": "Evidentiary Report",
-  "includedBookmarks": [1, 2, 3]
+  "templateType": "full_case_report",
+  "sections": ["case_info", "evidence", "queries", "bookmarks"]
 }
 ```
-
-## 🚧 Next Steps
-
-The following features are planned for implementation:
-
-1. **User Management API** (Admin)
-   - Create/update/delete users
-   - Assign supervisors
-   - Manage units
-
-2. **UFDR Parser Service**
-   - XML/JSON parsing
-   - NER (Named Entity Recognition)
-   - Entity tagging (phone numbers, crypto addresses, etc.)
-
-3. **Search Service**
-   - Natural language query processing
-   - RAG implementation with OpenAI
-   - Vector search with ChromaDB
-
-4. **Evidence & Query APIs**
-   - Bookmark management
-   - Query history
-   - Evidence linking
-
-5. **Report Generation**
-   - PDF generation
-   - Digital signatures
-   - Evidence compilation
-
-6. **Graph Service**
-   - Neo4j integration
-   - Network visualization
-   - Relationship analysis
 
 ## 📞 Support
 

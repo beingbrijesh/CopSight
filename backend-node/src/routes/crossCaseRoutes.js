@@ -2,6 +2,7 @@ import express from 'express';
 import crossCaseService from '../services/crossCaseService.js';
 import { authenticate, authorize, requirePermission } from '../middleware/auth.js';
 import { checkCaseAccess } from '../middleware/caseAccess.js';
+import logger from '../config/logger.js';
 
 const router = express.Router();
 
@@ -22,7 +23,7 @@ router.post('/analyze-all', async (req, res) => {
       data: result
     });
   } catch (error) {
-    console.error('Cross-case analysis error:', error);
+    logger.error('Cross-case analysis error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to perform cross-case analysis'
@@ -45,7 +46,7 @@ router.post('/analyze/:caseId', checkCaseAccess, async (req, res) => {
       data: result
     });
   } catch (error) {
-    console.error('Case analysis error:', error);
+    logger.error('Case analysis error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to analyze case for cross-case connections'
@@ -69,7 +70,7 @@ router.get('/connections/:caseId', checkCaseAccess, async (req, res) => {
       data: connections
     });
   } catch (error) {
-    console.error('Get connections error:', error);
+    logger.error('Get connections error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve cross-case connections'
@@ -102,7 +103,7 @@ router.get('/shared-entities', async (req, res) => {
       data: sharedEntities
     });
   } catch (error) {
-    console.error('Get shared entities error:', error);
+    logger.error('Get shared entities error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve shared entities'
@@ -133,7 +134,7 @@ router.get('/statistics', async (req, res) => {
       data: stats
     });
   } catch (error) {
-    console.error('Get statistics error:', error);
+    logger.error('Get statistics error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve cross-case statistics'

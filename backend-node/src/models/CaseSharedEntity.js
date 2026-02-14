@@ -58,19 +58,19 @@ const CaseSharedEntity = sequelize.define('CaseSharedEntity', {
   indexes: [
     {
       unique: true,
-      fields: ['entityType', 'entityValue'],
+      fields: ['entity_type', 'entity_value'],
       name: 'shared_entities_unique'
     },
     {
-      fields: ['entityType'],
+      fields: ['entity_type'],
       name: 'idx_shared_entities_type'
     },
     {
-      fields: ['entityValue'],
+      fields: ['entity_value'],
       name: 'idx_shared_entities_value'
     },
     {
-      fields: ['riskLevel'],
+      fields: ['risk_level'],
       name: 'idx_shared_entities_risk'
     },
     {

@@ -15,12 +15,14 @@ router.use(authenticate);
 // Create query (IO only)
 router.post(
   '/case/:caseId',
+  checkCaseAccess,
   createQuery
 );
 
 // Get query history (IO and Supervisor)
 router.get(
   '/case/:caseId/history',
+  checkCaseAccess,
   getQueryHistory
 );
 

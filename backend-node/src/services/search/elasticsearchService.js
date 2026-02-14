@@ -7,10 +7,10 @@ import logger from '../../config/logger.js';
 export const initializeIndices = async () => {
   try {
     const indices = ['ufdr-messages', 'ufdr-calls', 'ufdr-contacts'];
-    
+
     for (const index of indices) {
       const exists = await elasticsearchClient.indices.exists({ index });
-      
+
       if (!exists) {
         await elasticsearchClient.indices.create({
           index,
@@ -50,27 +50,32 @@ export const initializeIndices = async () => {
 export const indexToElasticsearch = async (caseId, parsedData, entities) => {
   try {
     const operations = [];
-    
+
     // Index messages
     if (parsedData.dataSources) {
       for (const source of parsedData.dataSources) {
         const indexName = getIndexName(source.sourceType);
-        
+
         for (const record of source.data) {
           // Find entities in this record
-          const recordEntities = entities.filter(e => 
-            record.content?.includes(e.value) || 
+          const recordEntities = entities.filter(e =>
+            record.content?.includes(e.value) ||
             record.phoneNumber?.includes(e.value)
           );
-          
+
+          // Extract text content from various possible field names
+          const content = record.content || record.message || record.body || record.text || '';
+          // Extract phone number from various possible field names
+          const phoneNumber = record.phoneNumber || record.phone || record.caller || record.receiver || record.sender || null;
+
           operations.push(
             { index: { _index: indexName } },
             {
               caseId,
               sourceType: source.sourceType,
               appName: source.appName,
-              content: record.content || '',
-              phoneNumber: record.phoneNumber || null,
+              content,
+              phoneNumber,
               timestamp: record.timestamp,
               entities: recordEntities,
               metadata: record
@@ -79,17 +84,17 @@ export const indexToElasticsearch = async (caseId, parsedData, entities) => {
         }
       }
     }
-    
+
     if (operations.length > 0) {
       const result = await elasticsearchClient.bulk({ body: operations });
-      
+
       if (result.errors) {
         logger.error('Elasticsearch bulk indexing had errors');
       } else {
         logger.info(`Indexed ${operations.length / 2} documents to Elasticsearch`);
       }
     }
-    
+
     return { indexed: operations.length / 2 };
   } catch (error) {
     logger.error('Error indexing to Elasticsearch:', error);
@@ -113,23 +118,23 @@ export const searchElasticsearch = async (caseId, query, filters = {}) => {
         }
       }
     ];
-    
+
     // Add filters
     if (filters.sourceType) {
       must.push({ term: { sourceType: filters.sourceType } });
     }
-    
+
     if (filters.dateFrom || filters.dateTo) {
       const range = {};
       if (filters.dateFrom) range.gte = filters.dateFrom;
       if (filters.dateTo) range.lte = filters.dateTo;
       must.push({ range: { timestamp: range } });
     }
-    
+
     if (filters.phoneNumber) {
       must.push({ term: { phoneNumber: filters.phoneNumber } });
     }
-    
+
     const result = await elasticsearchClient.search({
       index: 'ufdr-*',
       body: {
@@ -144,7 +149,7 @@ export const searchElasticsearch = async (caseId, query, filters = {}) => {
         }
       }
     });
-    
+
     return {
       total: result.hits.total.value,
       results: result.hits.hits.map(hit => ({

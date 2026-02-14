@@ -10,8 +10,8 @@ const patterns = {
   phone_number: /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g,
   email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
   crypto_address: {
-    bitcoin: /\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b|bc1[a-z0-9]{39,59}\b/g,
-    ethereum: /0x[a-fA-F0-9]{40}\b/g,
+    bitcoin: /\b[a-zA-Z0-9]{30,}\b/g,
+    ethereum: /0x[a-fA-F0-9]{40}\b|\b[0-9a-fA-F]{40}\b/g,
     upi: /[\w.-]+@[\w.-]+/g
   },
   ip_address: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
@@ -37,8 +37,8 @@ export const extractEntities = async (parsedData) => {
     if (parsedData.dataSources) {
       for (const source of parsedData.dataSources) {
         for (const record of source.data || []) {
-          const text = record.content || record.message || record.body || '';
-          
+          const text = record.content || record.message || record.body || record.description || '';
+
           if (text) {
             // Extract phone numbers
             const phones = extractPhoneNumbers(text);
@@ -86,7 +86,7 @@ export const extractEntities = async (parsedData) => {
               const key = `url:${url.value}`;
               if (!seenEntities.has(key)) {
                 entities.push(url);
-                seenEntities.add(key);
+                seenEntities.add(url);
               }
             });
 
@@ -102,12 +102,41 @@ export const extractEntities = async (parsedData) => {
           }
 
           // Extract phone numbers from record fields
-          if (record.phoneNumber) {
-            const phone = classifyPhoneNumber(record.phoneNumber);
-            const key = `phone:${phone.value}`;
-            if (!seenEntities.has(key)) {
-              entities.push(phone);
-              seenEntities.add(key);
+          if (record.phoneNumber || record.phone) {
+            const phoneStr = record.phoneNumber || record.phone;
+            patterns.phone_number.lastIndex = 0;
+            if (patterns.phone_number.test(phoneStr)) {
+              const phone = classifyPhoneNumber(phoneStr);
+              const key = `phone:${phone.value}`;
+              if (!seenEntities.has(key)) {
+                entities.push(phone);
+                seenEntities.add(key);
+              }
+            }
+          }
+
+          // Extract phone numbers from caller/receiver fields (for calls)
+          if (record.caller) {
+            patterns.phone_number.lastIndex = 0;
+            if (patterns.phone_number.test(record.caller)) {
+              const phone = classifyPhoneNumber(record.caller);
+              const key = `phone:${phone.value}`;
+              if (!seenEntities.has(key)) {
+                entities.push(phone);
+                seenEntities.add(key);
+              }
+            }
+          }
+
+          if (record.receiver) {
+            patterns.phone_number.lastIndex = 0;
+            if (patterns.phone_number.test(record.receiver)) {
+              const phone = classifyPhoneNumber(record.receiver);
+              const key = `phone:${phone.value}`;
+              if (!seenEntities.has(key)) {
+                entities.push(phone);
+                seenEntities.add(key);
+              }
             }
           }
         }

@@ -110,24 +110,43 @@ Return ONLY the JSON, no explanation."""
         if conversation_history:
             conversation_context = self._build_conversation_context(conversation_history)
         
-        prompt = f"""You are a forensic investigation assistant. Based ONLY on the provided evidence and conversation history, answer the investigator's query.
+        # Determine if we have current evidence or only historical data
+        has_current_evidence = len(evidence) > 0
+        
+        if has_current_evidence:
+            # We have current evidence - prioritize it
+            prompt = f"""You are an Expert Forensic Analyst and Criminal Profiler. Your task is to analyze case data for hidden meanings, coded language, and suspicious connections.
+
+Current Evidence:
+{context}
+
+Previous Conversation (for context only):
+{conversation_context}
+
+Current Query: {query}
+
+Instructions:
+1. **Detect Coded Language**: Scrutinize "normal-looking" chats for slang, euphemisms, or unnatural phrasing that may mask illegal activities (e.g., "food", "groceries", "papers" used in suspicious contexts).
+2. **Correlate Events**: Actively link chat messages with financial transactions or other events based on timing and context. Look for patterns like a "delivery" chat followed immediately by a payment.
+3. **Identify Intent**: Look beyond the literal meaning. Assess whether casual conversations are facilitating illicit trafficking, money laundering, or coordination.
+4. **Cite Evidence**: Support every claim by citing specific [Evidence #X] items.
+5. **Be Assertive yet Objective**: State clearly if a conversation appears suspicious, explaining *why* based on the correlations.
+
+Answer:"""
+        else:
+            # No current evidence - be explicit about this
+            prompt = f"""You are a forensic investigation assistant. The query is asking about current case data, but no relevant evidence was found in the case database.
 
 Previous Conversation:
 {conversation_context}
 
 Current Query: {query}
 
-Evidence:
-{context}
-
 Instructions:
-1. Answer based ONLY on the provided evidence and previous conversation context
-2. Reference previous queries and findings when relevant
-3. Cite specific evidence items using [Evidence #X] format
-4. If evidence is insufficient, clearly state what's missing and reference any previous findings
-5. Be precise and factual
-6. Highlight suspicious patterns or connections
-7. Maintain continuity with previous responses
+1. Clearly state that no relevant current evidence was found in the case data
+2. If previous conversation contains relevant information, mention it explicitly as "previously found" or "from earlier analysis"
+3. Do not present previous findings as current case data
+4. Suggest what kind of evidence might be needed or why it wasn't found
 
 Answer:"""
 
@@ -168,11 +187,27 @@ Answer:"""
             content = item.get('content', '')
             metadata = item.get('metadata', {})
             
+            # Handle source being a string (e.g., "elasticsearch") or a dict
+            if isinstance(source, str):
+                source_type = source
+            elif isinstance(source, dict):
+                source_type = source.get('type', 'unknown')
+            else:
+                source_type = 'unknown'
+            
+            # Handle metadata being a string or dict
+            if isinstance(metadata, str):
+                phone_number = 'unknown'
+                timestamp = 'unknown'
+            else:
+                phone_number = metadata.get('phoneNumber', 'unknown')
+                timestamp = metadata.get('timestamp', 'unknown')
+            
             context_parts.append(
                 f"[Evidence #{idx}]\n"
-                f"Type: {source.get('type', 'unknown')}\n"
-                f"From: {metadata.get('phoneNumber', 'unknown')}\n"
-                f"Date: {metadata.get('timestamp', 'unknown')}\n"
+                f"Type: {source_type}\n"
+                f"From: {phone_number}\n"
+                f"Date: {timestamp}\n"
                 f"Content: {content}\n"
             )
         

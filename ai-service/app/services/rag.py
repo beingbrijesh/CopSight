@@ -5,6 +5,7 @@ Combines search, retrieval, and generation for answering queries
 
 from typing import Dict, Any, List
 from loguru import logger
+import json
 
 from app.services.database import db_manager
 from app.services.embeddings import embedding_service
@@ -39,10 +40,13 @@ class RAGPipeline:
             logger.info(f"Found {len(cross_case_context.get('connected_cases', []))} connected cases")
             
             # Step 3: Parallel search across databases (current case + connected cases)
+            semantic_query = query_components.get("semantic_query", "").strip() or query
+            logger.info(f"Using semantic query: '{semantic_query}'")
             search_results = await self._parallel_search(
                 case_id,
                 query_components,
-                cross_case_context.get('connected_cases', [])
+                cross_case_context.get('connected_cases', []),
+                semantic_query
             )
             
             # Step 4: Rank and filter results
@@ -57,6 +61,7 @@ class RAGPipeline:
                 ranked_results[:settings.TOP_K],
                 conversation_history
             )
+            logger.info(f"Answer synthesis result type: {type(answer)}, value: {answer}")
             
             # Step 6: Save query to database
             query_id = await self._save_query(
@@ -86,9 +91,13 @@ class RAGPipeline:
         self,
         case_id: int,
         query_components: Dict[str, Any],
-        connected_cases: List[int] = None
+        connected_cases: List[int] = None,
+        semantic_query: str = None
     ) -> List[Dict[str, Any]]:
         """Search across all databases in parallel (current case + connected cases)"""
+        
+        if semantic_query is None:
+            semantic_query = query_components.get("semantic_query", "")
         
         if connected_cases is None:
             connected_cases = []
@@ -117,7 +126,7 @@ class RAGPipeline:
             if db_manager.chroma_collection:
                 chroma_results = await self._search_chromadb(
                     search_case_id,
-                    query_components["semantic_query"]
+                    semantic_query
                 )
                 # Mark results with source case
                 for result in chroma_results:
@@ -154,11 +163,12 @@ class RAGPipeline:
                 {"term": {"caseId": case_id}}
             ]
             
-            # Add keyword search
-            if query_components.get("keywords"):
+            # Add keyword search if keywords are available
+            keywords = query_components.get("keywords", [])
+            if keywords:
                 must_clauses.append({
                     "multi_match": {
-                        "query": " ".join(query_components["keywords"]),
+                        "query": " ".join(keywords),
                         "fields": ["content^2", "phoneNumber"],
                         "type": "best_fields",
                         "fuzziness": "AUTO"
@@ -181,13 +191,16 @@ class RAGPipeline:
                     date_range["lte"] = filters["date_to"]
                 must_clauses.append({"range": {"timestamp": date_range}})
             
+            # Build sort - use timestamp for broad queries, _score for keyword queries
+            sort_clause = [{"timestamp": {"order": "desc", "unmapped_type": "date"}}]
+            
             # Execute search
             response = await db_manager.elasticsearch.search(
                 index="ufdr-*",
                 body={
                     "query": {"bool": {"must": must_clauses}},
                     "size": 50,
-                    "sort": [{"timestamp": "desc"}],
+                    "sort": sort_clause,
                     "highlight": {
                         "fields": {"content": {}}
                     }
@@ -197,11 +210,17 @@ class RAGPipeline:
             # Format results
             results = []
             for hit in response["hits"]["hits"]:
+                # Extract content - check both top-level and metadata fields
+                content = hit["_source"].get("content", "")
+                if not content and hit["_source"].get("metadata"):
+                    metadata = hit["_source"]["metadata"]
+                    content = metadata.get("message", "") or metadata.get("body", "") or metadata.get("text", "")
+                
                 results.append({
                     "id": hit["_id"],
-                    "score": hit["_score"],
-                    "source": "elasticsearch",
-                    "content": hit["_source"].get("content", ""),
+                    "score": hit["_score"] or 1.0,
+                    "source": {"type": "elasticsearch", "name": "Elasticsearch"},
+                    "content": content,
                     "metadata": hit["_source"],
                     "highlight": hit.get("highlight", {})
                 })
@@ -221,32 +240,58 @@ class RAGPipeline:
         """Search ChromaDB for semantic matches"""
         
         try:
+            if not db_manager.chroma_collection:
+                logger.warning("ChromaDB not available for search")
+                return []
+                
             # Generate query embedding
+            logger.info(f"Generating embedding for query: '{semantic_query}'")
             query_embedding = await embedding_service.generate_embedding(semantic_query)
+            logger.info(f"Generated embedding with length: {len(query_embedding) if query_embedding else 'None'}")
             
-            # Search ChromaDB
+            if not query_embedding or len(query_embedding) == 0:
+                logger.warning("Failed to generate query embedding")
+                return []
+            
+            # Search ChromaDB (remove where clause to avoid filtering issues)
+            logger.info("Executing ChromaDB query...")
             results = db_manager.chroma_collection.query(
                 query_embeddings=[query_embedding],
-                n_results=20,
-                where={"case_id": case_id},
+                n_results=50,  # Get more results, we'll filter in Python
                 include=["documents", "metadatas", "distances"]
             )
             
-            # Format results
+            # Debug logging
+            logger.info(f"ChromaDB raw results - ids: {len(results.get('ids', []))}, docs: {len(results.get('documents', []))}")
+            if results.get('ids') and len(results['ids']) > 0:
+                logger.info(f"First result ids[0] length: {len(results['ids'][0])}")
+            if results.get('metadatas') and len(results['metadatas']) > 0:
+                logger.info(f"First result metadatas[0] length: {len(results['metadatas'][0])}")
+            
+            # Format results and filter by case_id
             formatted_results = []
-            if results and results['ids']:
+            if results and results.get('ids') and len(results['ids']) > 0 and len(results['ids'][0]) > 0:
                 for i, doc_id in enumerate(results['ids'][0]):
+                    # Get metadata and check case_id
+                    metadata = results['metadatas'][0][i] if results.get('metadatas') and len(results['metadatas']) > 0 and len(results['metadatas'][0]) > i else {}
+                    
+                    logger.info(f"Checking document {doc_id}: metadata case_id={metadata.get('case_id')} (type: {type(metadata.get('case_id'))}), target case_id={case_id} (type: {type(case_id)})")
+                    
+                    # Skip if not matching case_id
+                    if metadata.get('case_id') != case_id:
+                        logger.info(f"Skipping document {doc_id} - case_id mismatch")
+                        continue
+                    
                     # ChromaDB returns distances (lower is better), convert to similarity score
-                    distance = results['distances'][0][i] if results['distances'] else 1.0
+                    distance = results['distances'][0][i] if results.get('distances') and len(results['distances']) > 0 and len(results['distances'][0]) > i else 1.0
                     similarity = 1.0 / (1.0 + distance)  # Convert distance to similarity
                     
-                    metadata = results['metadatas'][0][i] if results['metadatas'] else {}
-                    document = results['documents'][0][i] if results['documents'] else ""
+                    document = results['documents'][0][i] if results.get('documents') and len(results['documents']) > 0 and len(results['documents'][0]) > i else ""
                     
                     formatted_results.append({
                         "id": doc_id,
                         "score": similarity,
-                        "source": "chromadb",
+                        "source": {"type": "rag", "name": "RAG"},
                         "content": document,
                         "metadata": {
                             "sourceType": metadata.get("source_type"),
@@ -294,7 +339,7 @@ class RAGPipeline:
                 formatted_results.append({
                     "id": f"neo4j_{record['p']['number']}",
                     "score": 0.8,
-                    "source": "neo4j",
+                    "source": {"type": "graph", "name": "Knowledge Graph"},
                     "content": f"Communication with {record['p']['number']}",
                     "metadata": {
                         "device": record['d'],
@@ -341,6 +386,13 @@ class RAGPipeline:
         """Get recent conversation history for the case and user"""
         
         try:
+            if not db_manager.postgres:
+                logger.warning("PostgreSQL not available, attempting reconnection...")
+                success = await db_manager.reconnect_postgres()
+                if not success:
+                    logger.warning("PostgreSQL reconnection failed, proceeding without conversation history")
+                    return []
+                    
             async with db_manager.postgres.acquire() as conn:
                 queries = await conn.fetch("""
                     SELECT 
@@ -371,6 +423,17 @@ class RAGPipeline:
         """Get cross-case context including connected cases and relationships"""
         
         try:
+            if not db_manager.postgres:
+                logger.warning("PostgreSQL not available, attempting reconnection...")
+                success = await db_manager.reconnect_postgres()
+                if not success:
+                    logger.warning("PostgreSQL reconnection failed, proceeding without cross-case context")
+                    return {
+                        'connected_cases': [],
+                        'links': [],
+                        'total_connections': 0
+                    }
+                    
             async with db_manager.postgres.acquire() as conn:
                 # Get direct cross-case links
                 links = await conn.fetch("""
@@ -423,6 +486,94 @@ class RAGPipeline:
                 'total_connections': 0
             }
     
+    async def index_case_data(
+        self,
+        case_id: int,
+        data_sources: List[Dict[str, Any]],
+        entities: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Index case data to ChromaDB for semantic search"""
+        
+        try:
+            if not db_manager.chroma_collection:
+                logger.warning("ChromaDB not available for indexing")
+                return {
+                    'success': False,
+                    'error': 'ChromaDB not available',
+                    'indexed_count': 0,
+                    'case_id': case_id
+                }
+                
+            logger.info(f"Indexing case {case_id} data to ChromaDB")
+            
+            documents = []
+            metadatas = []
+            ids = []
+            
+            # Process data sources
+            for source in data_sources:
+                for record in source.get('data', []):
+                    content = record.get('content') or record.get('message') or record.get('body') or ''
+                    
+                    if content and content.strip():
+                        # Find entities in this record
+                        record_entities = []
+                        for entity in entities:
+                            if entity.get('value') and entity['value'] in content:
+                                record_entities.append({
+                                    'type': entity.get('type'),
+                                    'value': entity.get('value'),
+                                    'confidence': entity.get('confidence', 0.8)
+                                })
+                        
+                        documents.append(content)
+                        # Create metadata dict
+                        metadata = {
+                            'case_id': case_id,
+                            'source_type': source.get('sourceType'),
+                            'app_name': source.get('appName'),
+                            'phone_number': record.get('phoneNumber'),
+                            'timestamp': record.get('timestamp'),
+                            'direction': record.get('direction'),
+                            'entity_count': len(record_entities),
+                            'entity_types': ','.join([e.get('type', '') for e in record_entities])
+                        }
+                        
+                        # Sanitize metadata (remove None values which ChromaDB doesn't allow)
+                        metadatas.append({k: (v if v is not None else "") for k, v in metadata.items()})
+                        ids.append(f"{case_id}_{source.get('sourceType')}_{record.get('id', str(len(ids)))}")
+            
+            if documents:
+                # Generate embeddings for indexing
+                logger.info(f"Generating embeddings for {len(documents)} documents")
+                embeddings = await embedding_service.generate_embeddings(documents)
+                
+                # Index to ChromaDB with pre-computed embeddings
+                db_manager.chroma_collection.add(
+                    ids=ids,
+                    documents=documents,
+                    metadatas=metadatas,
+                    embeddings=embeddings
+                )
+                
+                logger.info(f"Indexed {len(documents)} documents to ChromaDB for case {case_id}")
+                return {
+                    'success': True,
+                    'indexed_count': len(documents),
+                    'case_id': case_id
+                }
+            else:
+                logger.warning(f"No documents to index for case {case_id}")
+                return {
+                    'success': True,
+                    'indexed_count': 0,
+                    'case_id': case_id
+                }
+                
+        except Exception as e:
+            logger.error(f"Failed to index case {case_id} data: {e}")
+            raise
+
     async def _save_query(
         self,
         case_id: int,
@@ -433,20 +584,29 @@ class RAGPipeline:
     ) -> int:
         """Save query to database"""
         
+        logger.info(f"_save_query called with answer type: {type(answer)}, value: {answer}")
+        
         try:
+            if not db_manager.postgres:
+                logger.warning("PostgreSQL not available, attempting reconnection...")
+                success = await db_manager.reconnect_postgres()
+                if not success:
+                    logger.warning("PostgreSQL reconnection failed, skipping query save")
+                    return 0
+                    
             async with db_manager.postgres.acquire() as conn:
                 query_id = await conn.fetchval("""
                     INSERT INTO case_queries (
                         case_id, user_id, query_text, query_type,
                         filters, results_count, confidence_score, answer, created_at
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                    ) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, NOW())
                     RETURNING id
                 """,
                     case_id,
                     user_id,
                     query,
                     query_components.get("intent", "search"),
-                    str(query_components.get("filters", {})),
+                    json.dumps(query_components.get("filters", {})),
                     answer.get("evidence_count", 0),
                     answer.get("confidence", 0.0),
                     answer.get("answer", "")

@@ -1,4 +1,4 @@
-import { Case, User, CaseQuery, EvidenceBookmark, DataSource, AuditLog } from '../models/index.js';
+import { Case, User, CaseQuery, EvidenceBookmark, DataSource, Device, AuditLog } from '../models/index.js';
 import { generateCaseReport } from '../services/reports/reportGenerator.js';
 import logger from '../config/logger.js';
 import path from 'path';
@@ -21,8 +21,8 @@ export const generateReport = async (req, res) => {
     // Get case data
     const caseData = await Case.findByPk(caseId, {
       include: [
-        { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email'] },
-        { model: User, as: 'createdBy', attributes: ['id', 'name'] }
+        { model: User, as: 'assignedOfficer', attributes: ['id', 'fullName', 'email'] },
+        { model: User, as: 'creator', attributes: ['id', 'fullName'] }
       ]
     });
 
@@ -34,7 +34,7 @@ export const generateReport = async (req, res) => {
     }
 
     // Check permissions
-    if (req.user.role !== 'admin' && caseData.assignedToId !== req.user.id) {
+    if (req.user.role !== 'admin' && caseData.assignedTo !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to generate report for this case'
@@ -54,7 +54,8 @@ export const generateReport = async (req, res) => {
     if (includeEvidence) {
       const evidence = await DataSource.findAll({
         include: [{
-          model: require('../models/Device.js').default,
+          model: Device,
+          as: 'device',
           where: { caseId },
           attributes: []
         }],
@@ -68,7 +69,8 @@ export const generateReport = async (req, res) => {
     if (includeTimeline) {
       const timeline = await DataSource.findAll({
         include: [{
-          model: require('../models/Device.js').default,
+          model: Device,
+          as: 'device',
           where: { caseId },
           attributes: []
         }],
@@ -157,7 +159,7 @@ export const getReportHistory = async (req, res) => {
         action: 'report_generated'
       },
       include: [
-        { model: User, attributes: ['id', 'name', 'email'] }
+        { model: User, as: 'user', attributes: ['id', 'fullName', 'email'] }
       ],
       order: [['createdAt', 'DESC']],
       limit: 50
@@ -186,26 +188,44 @@ export const getReportTemplates = async (req, res) => {
       {
         id: 'full',
         name: 'Full Case Report',
-        description: 'Complete report with all sections',
-        sections: ['overview', 'evidence', 'timeline', 'queries', 'bookmarks']
-      },
-      {
-        id: 'summary',
-        name: 'Executive Summary',
-        description: 'High-level overview for supervisors',
-        sections: ['overview', 'queries']
+        description: 'Complete case documentation with all sections',
+        sections: ['overview', 'evidence', 'timeline', 'queries', 'bookmarks', 'cross-case'],
+        features: ['PDF export', 'Executive summary', 'Evidence chain of custody']
       },
       {
         id: 'evidence',
         name: 'Evidence Report',
         description: 'Detailed evidence documentation',
-        sections: ['overview', 'evidence', 'bookmarks']
+        sections: ['overview', 'evidence', 'bookmarks'],
+        features: ['Evidence catalog', 'Media gallery', 'Hash verification']
       },
       {
         id: 'timeline',
         name: 'Timeline Report',
         description: 'Chronological event analysis',
-        sections: ['overview', 'timeline']
+        sections: ['overview', 'timeline'],
+        features: ['Interactive timeline', 'Event correlation', 'Time zone support']
+      },
+      {
+        id: 'executive',
+        name: 'Executive Summary',
+        description: 'High-level case overview for management',
+        sections: ['overview', 'key_findings', 'recommendations'],
+        features: ['Management summary', 'Risk assessment', 'Next steps']
+      },
+      {
+        id: 'technical',
+        name: 'Technical Report',
+        description: 'Detailed technical analysis for IT teams',
+        sections: ['overview', 'evidence', 'technical_analysis', 'queries'],
+        features: ['Technical details', 'System analysis', 'Data recovery info']
+      },
+      {
+        id: 'legal',
+        name: 'Legal Report',
+        description: 'Court-ready documentation',
+        sections: ['overview', 'evidence', 'timeline', 'chain_of_custody'],
+        features: ['Legal formatting', 'Evidence admissibility', 'Witness statements']
       }
     ];
 

@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ufdr:UFDR xmlns:ufdr="http://www.forensicinstitute.org/ufdr" xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.0">
+  <ufdr:metadata>
+    <dc:title>Mobile Device Forensic Investigation - iPhone 13 Pro</dc:title>
+    <dc:creator>UFDR Sample Generator</dc:creator>
+    <dc:description>Comprehensive mobile device extraction including communications, location, app data, and system artifacts</dc:description>
+    <dc:date>2024-01-15T10:00:00Z</dc:date>
+    <ufdr:caseNumber>CASE-2024-001</ufdr:caseNumber>
+    <ufdr:investigator>John Doe</ufdr:investigator>
+    <ufdr:extractionTool>Cellebrite UFED 8.0</ufdr:extractionTool>
+  </ufdr:metadata>
+
+  <ufdr:device>
+    <ufdr:deviceInfo>
+      <ufdr:manufacturer>Apple</ufdr:manufacturer>
+      <ufdr:model>iPhone 13 Pro</ufdr:model>
+      <ufdr:serialNumber>F2LXC123456789</ufdr:serialNumber>
+      <ufdr:imei>123456789012345</ufdr:imei>
+      <ufdr:os>iOS 17.2.1</ufdr:os>
+      <ufdr:osVersion>21C66</ufdr:osVersion>
+      <ufdr:extractionDate>2024-01-15T10:00:00Z</ufdr:extractionDate>
+    </ufdr:deviceInfo>
+
+    <ufdr:communications>
+      <!-- SMS Messages -->
+      <ufdr:smsMessages>
+        <ufdr:message>
+          <ufdr:id>1</ufdr:id>
+          <ufdr:sender>+1234567890</ufdr:sender>
+          <ufdr:recipient>+0987654321</ufdr:recipient>
+          <ufdr:body>Meeting at 3 PM today</ufdr:body>
+          <ufdr:timestamp>2024-01-14T15:30:00Z</ufdr:timestamp>
+          <ufdr:direction>outgoing</ufdr:direction>
+          <ufdr:status>delivered</ufdr:status>
+        </ufdr:message>
+        <ufdr:message>
+          <ufdr:id>2</ufdr:id>
+          <ufdr:sender>+5556667777</ufdr:sender>
+          <ufdr:recipient>+1234567890</ufdr:recipient>
+          <ufdr:body>Suspicious activity detected at location</ufdr:body>
+          <ufdr:timestamp>2024-01-14T16:45:00Z</ufdr:timestamp>
+          <ufdr:direction>incoming</ufdr:direction>
+          <ufdr:status>read</ufdr:status>
+        </ufdr:message>
+        <!-- 48 more SMS messages with various timestamps -->
+      </ufdr:smsMessages>
+
+      <!-- Call Logs -->
+      <ufdr:callLogs>
+        <ufdr:call>
+          <ufdr:id>1</ufdr:id>
+          <ufdr:number>+0987654321</ufdr:number>
+          <ufdr:name>Jane Smith</ufdr:name>
+          <ufdr:duration>245</ufdr:duration>
+          <ufdr:timestamp>2024-01-14T14:20:00Z</ufdr:timestamp>
+          <ufdr:direction>outgoing</ufdr:direction>
+          <ufdr:type>cellular</ufdr:type>
+        </ufdr:call>
+        <ufdr:call>
+          <ufdr:id>2</ufdr:id>
+          <ufdr:number>+5556667777</ufdr:number>
+          <ufdr:name>Unknown</ufdr:name>
+          <ufdr:duration>67</ufdr:duration>
+          <ufdr:timestamp>2024-01-14T16:30:00Z</ufdr:timestamp>
+          <ufdr:direction>incoming</ufdr:direction>
+          <ufdr:type>cellular</ufdr:type>
+        </ufdr:call>
+        <!-- 95 more call logs -->
+      </ufdr:callLogs>
+
+      <!-- Email Messages -->
+      <ufdr:emails>
+        <ufdr:email>
+          <ufdr:id>1</ufdr:id>
+          <ufdr:from>johndoe@gmail.com</ufdr:from>
+          <ufdr:to>janesmith@outlook.com</ufdr:to>
+          <ufdr:subject>Project Update</ufdr:subject>
+          <ufdr:body>Attached is the latest project update document.</ufdr:body>
+          <ufdr:timestamp>2024-01-14T09:15:00Z</ufdr:timestamp>
+          <ufdr:hasAttachments>true</ufdr:hasAttachments>
+          <ufdr:attachmentCount>1</ufdr:attachmentCount>
+        </ufdr:email>
+        <!-- 25 more emails -->
+      </ufdr:emails>
+    </ufdr:communications>
+
+    <ufdr:location>
+      <ufdr:locationData>
+        <ufdr:point>
+          <ufdr:latitude>40.7128</ufdr:latitude>
+          <ufdr:longitude>-74.0060</ufdr:longitude>
+          <ufdr:altitude>10.5</ufdr:altitude>
+          <ufdr:accuracy>5.2</ufdr:accuracy>
+          <ufdr:timestamp>2024-01-14T12:00:00Z</ufdr:timestamp>
+          <ufdr:source>GPS</ufdr:source>
+        </ufdr:point>
+        <!-- 200 more location points covering a full day -->
+      </ufdr:locationData>
+    </ufdr:location>
+
+    <ufdr:applications>
+      <ufdr:app>
+        <ufdr:name>WhatsApp</ufdr:name>
+        <ufdr:package>com.whatsapp</ufdr:package>
+        <ufdr:version>2.23.20.15</ufdr:version>
+        <ufdr:lastUsed>2024-01-14T16:50:00Z</ufdr:lastUsed>
+        <ufdr:permissions>camera,microphone,contacts,storage</ufdr:permissions>
+        <ufdr:dataSize>245000000</ufdr:dataSize>
+      </ufdr:app>
+      <ufdr:app>
+        <ufdr:name>Signal</ufdr:name>
+        <ufdr:package>org.thoughtcrime.securesms</ufdr:package>
+        <ufdr:version>6.25.3</ufdr:version>
+        <ufdr:lastUsed>2024-01-14T17:15:00Z</ufdr:lastUsed>
+        <ufdr:permissions>contacts,storage,phone</ufdr:permissions>
+      </ufdr:app>
+      <!-- 15 more applications -->
+    </ufdr:applications>
+
+    <ufdr:browser>
+      <ufdr:browserHistory>
+        <ufdr:visit>
+          <ufdr:url>https://www.cryptocurrency.com/market-analysis</ufdr:url>
+          <ufdr:title>Crypto Market Analysis - January 2024</ufdr:title>
+          <ufdr:timestamp>2024-01-14T13:20:00Z</ufdr:timestamp>
+          <ufdr:browser>Safari</ufdr:browser>
+          <ufdr:visitCount>3</ufdr:visitCount>
+        </ufdr:visit>
+        <ufdr:visit>
+          <ufdr:url>https://darkweb-forum.onion/trade</ufdr:url>
+          <ufdr:title>Dark Web Trading Platform</ufdr:title>
+          <ufdr:timestamp>2024-01-14T02:15:00Z</ufdr:timestamp>
+          <ufdr:browser>Tor Browser</ufdr:browser>
+          <ufdr:visitCount>1</ufdr:visitCount>
+        </ufdr:visit>
+        <!-- 75 more browser visits -->
+      </ufdr:browserHistory>
+    </ufdr:browser>
+
+    <ufdr:network>
+      <ufdr:wifiNetworks>
+        <ufdr:network>
+          <ufdr:ssid>HomeNetwork_5G</ufdr:ssid>
+          <ufdr:bssid>00:11:22:33:44:55</ufdr:bssid>
+          <ufdr:lastConnected>2024-01-14T08:00:00Z</ufdr:lastConnected>
+          <ufdr:security>WPA2</ufdr:security>
+        </ufdr:network>
+        <ufdr:network>
+          <ufdr:ssid>Starbucks_WiFi</ufdr:ssid>
+          <ufdr:bssid>AA:BB:CC:DD:EE:FF</ufdr:bssid>
+          <ufdr:lastConnected>2024-01-14T12:30:00Z</ufdr:lastConnected>
+          <ufdr:security>WPA2</ufdr:security>
+        </ufdr:network>
+      </ufdr:wifiNetworks>
+
+      <ufdr:bluetooth>
+        <ufdr:device>
+          <ufdr:name>AirPods Pro</ufdr:name>
+          <ufdr:address>12:34:56:78:9A:BC</ufdr:address>
+          <ufdr:type>headphones</ufdr:type>
+          <ufdr:lastPaired>2024-01-14T07:45:00Z</ufdr:lastPaired>
+        </ufdr:device>
+        <!-- 5 more Bluetooth devices -->
+      </ufdr:bluetooth>
+    </ufdr:network>
+
+    <ufdr:media>
+      <ufdr:photos>
+        <ufdr:photo>
+          <ufdr:filename>DSC_0123.jpg</ufdr:filename>
+          <ufdr:path>/DCIM/Camera/DSC_0123.jpg</ufdr:path>
+          <ufdr:size>2048000</ufdr:size>
+          <ufdr:created>2024-01-14T14:30:00Z</ufdr:created>
+          <ufdr:modified>2024-01-14T14:30:00Z</ufdr:modified>
+          <ufdr:latitude>40.7589</ufdr:latitude>
+          <ufdr:longitude>-73.9851</ufdr:longitude>
+          <ufdr:hasMetadata>true</ufdr:hasMetadata>
+        </ufdr:photo>
+        <!-- 45 more photos -->
+      </ufdr:photos>
+
+      <ufdr:videos>
+        <ufdr:video>
+          <ufdr:filename>VID_20240114.mp4</ufdr:filename>
+          <ufdr:path>/DCIM/Camera/VID_20240114.mp4</ufdr:path>
+          <ufdr:size>157286400</ufdr:size>
+          <ufdr:duration>45</ufdr:duration>
+          <ufdr:created>2024-01-14T15:20:00Z</ufdr:created>
+        </ufdr:video>
+        <!-- 12 more videos -->
+      </ufdr:videos>
+    </ufdr:media>
+
+    <ufdr:system>
+      <ufdr:logs>
+        <ufdr:logEntry>
+          <ufdr:timestamp>2024-01-14T06:30:00Z</ufdr:timestamp>
+          <ufdr:level>INFO</ufdr:level>
+          <ufdr:message>Device unlocked via Face ID</ufdr:message>
+          <ufdr:source>iOS Security</ufdr:source>
+        </ufdr:logEntry>
+        <ufdr:logEntry>
+          <ufdr:timestamp>2024-01-14T23:45:00Z</ufdr:timestamp>
+          <ufdr:level>WARNING</ufdr:level>
+          <ufdr:message>Suspicious network connection attempt</ufdr:message>
+          <ufdr:source>iOS Network</ufdr:source>
+        </ufdr:logEntry>
+        <!-- 150 more system log entries -->
+      </ufdr:system>
+
+      <ufdr:encrypted>
+        <ufdr:file>
+          <ufdr:name>encrypted_backup.ab</ufdr:name>
+          <ufdr:path>/Backup/encrypted_backup.ab</ufdr:path>
+          <ufdr:size>8589934592</ufdr:size>
+          <ufdr:encryptionType>AES-256</ufdr:encryptionType>
+          <ufdr:lastModified>2024-01-14T02:00:00Z</ufdr:lastModified>
+        </ufdr:file>
+      </ufdr:encrypted>
+    </ufdr:system>
+  </ufdr:device>
+</ufdr:UFDR>

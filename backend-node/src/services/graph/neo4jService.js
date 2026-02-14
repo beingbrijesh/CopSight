@@ -6,7 +6,7 @@ import logger from '../../config/logger.js';
  */
 export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
   const session = neo4jDriver.session();
-  
+
   try {
     // Create case node
     await session.run(
@@ -14,7 +14,7 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
        SET c.createdAt = datetime()`,
       { caseId }
     );
-    
+
     // Create device node
     if (parsedData.deviceInfo) {
       await session.run(
@@ -35,11 +35,11 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
         }
       );
     }
-    
+
     // Create entity nodes and relationships
     const phoneNumbers = new Set();
     const contacts = new Map();
-    
+
     // Extract unique phone numbers and contacts
     if (parsedData.dataSources) {
       for (const source of parsedData.dataSources) {
@@ -53,12 +53,12 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
         }
       }
     }
-    
+
     // Create phone number nodes
     for (const phoneNumber of phoneNumbers) {
       const isIndian = phoneNumber.startsWith('+91') || phoneNumber.startsWith('91');
       const isForeign = phoneNumber.startsWith('+') && !isIndian;
-      
+
       await session.run(
         `MERGE (p:PhoneNumber {number: $number})
          SET p.isIndian = $isIndian,
@@ -66,14 +66,14 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
         { number: phoneNumber, isIndian, isForeign }
       );
     }
-    
+
     // Create contact nodes and link to phone numbers
     for (const [name, numbers] of contacts.entries()) {
       await session.run(
         `MERGE (c:Contact {name: $name})`,
         { name }
       );
-      
+
       for (const number of numbers) {
         await session.run(
           `MATCH (c:Contact {name: $name})
@@ -83,7 +83,7 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
         );
       }
     }
-    
+
     // Create communication relationships
     if (parsedData.dataSources) {
       for (const source of parsedData.dataSources) {
@@ -111,31 +111,37 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
         }
       }
     }
-    
+
     // Create entity nodes from NER
     for (const entity of entities) {
+      if (!entity || !entity.value) continue; // Skip invalid entities
+
       let label = 'Entity';
-      
+
       if (entity.type === 'phone_number') label = 'PhoneNumber';
       else if (entity.type === 'crypto_address') label = 'CryptoAddress';
       else if (entity.type === 'ip_address') label = 'IPAddress';
       else if (entity.type === 'email') label = 'Email';
-      
+
+      const value = entity.value || 'unknown';
+      const type = entity.type || 'unknown';
+      const confidence = typeof entity.confidence === 'number' ? entity.confidence : 0.5;
+
       await session.run(
         `MERGE (e:${label} {value: $value})
          SET e.type = $type,
              e.confidence = $confidence`,
         {
-          value: entity.value,
-          type: entity.type,
-          confidence: entity.confidence
+          value,
+          type,
+          confidence
         }
       );
     }
-    
+
     logger.info(`Built knowledge graph for case ${caseId}`);
     return { success: true };
-    
+
   } catch (error) {
     logger.error('Error building knowledge graph:', error);
     throw error;
@@ -149,7 +155,7 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
  */
 export const queryGraph = async (caseId, cypherQuery, params = {}) => {
   const session = neo4jDriver.session();
-  
+
   try {
     const result = await session.run(cypherQuery, { caseId, ...params });
     return result.records.map(record => record.toObject());
@@ -166,7 +172,7 @@ export const queryGraph = async (caseId, cypherQuery, params = {}) => {
  */
 export const getCommunicationNetwork = async (caseId, phoneNumber, depth = 2) => {
   const session = neo4jDriver.session();
-  
+
   try {
     const result = await session.run(
       `MATCH (c:Case {id: $caseId})-[:HAS_DEVICE]->(d:Device)
@@ -174,7 +180,7 @@ export const getCommunicationNetwork = async (caseId, phoneNumber, depth = 2) =>
        RETURN d, r, p`,
       { caseId, phoneNumber }
     );
-    
+
     return result.records.map(record => ({
       device: record.get('d').properties,
       relationships: record.get('r').map(rel => rel.properties),
@@ -193,7 +199,7 @@ export const getCommunicationNetwork = async (caseId, phoneNumber, depth = 2) =>
  */
 export const findSuspiciousPatterns = async (caseId) => {
   const session = neo4jDriver.session();
-  
+
   try {
     // Find foreign numbers with high communication frequency
     const foreignNumbers = await session.run(
@@ -205,14 +211,14 @@ export const findSuspiciousPatterns = async (caseId) => {
        LIMIT 10`,
       { caseId }
     );
-    
+
     // Find crypto addresses
     const cryptoAddresses = await session.run(
       `MATCH (ca:CryptoAddress)
        RETURN ca.value as address, ca.type as type`,
       { caseId }
     );
-    
+
     return {
       foreignNumbers: foreignNumbers.records.map(r => ({
         number: r.get('number'),

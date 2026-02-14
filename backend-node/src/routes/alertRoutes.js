@@ -2,6 +2,7 @@ import express from 'express';
 import alertService from '../services/alertService.js';
 import { authenticate, authorize, requirePermission } from '../middleware/auth.js';
 import { checkCaseAccess } from '../middleware/caseAccess.js';
+import logger from '../config/logger.js';
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ router.get('/', async (req, res) => {
       data: alerts
     });
   } catch (error) {
-    console.error('Get alerts error:', error);
+    logger.error('Get alerts error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve alerts'
@@ -49,7 +50,7 @@ router.get('/statistics', async (req, res) => {
       data: stats
     });
   } catch (error) {
-    console.error('Get alert statistics error:', error);
+    logger.error('Get alert statistics error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve alert statistics'
@@ -73,7 +74,7 @@ router.put('/:alertId/acknowledge', async (req, res) => {
       data: alert
     });
   } catch (error) {
-    console.error('Acknowledge alert error:', error);
+    logger.error('Acknowledge alert error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to acknowledge alert'
@@ -98,7 +99,7 @@ router.put('/:alertId/resolve', async (req, res) => {
       data: alert
     });
   } catch (error) {
-    console.error('Resolve alert error:', error);
+    logger.error('Resolve alert error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to resolve alert'
@@ -127,7 +128,7 @@ router.get('/case/:caseId', checkCaseAccess, async (req, res) => {
       data: alerts
     });
   } catch (error) {
-    console.error('Get case alerts error:', error);
+    logger.error('Get case alerts error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve case alerts'
@@ -139,7 +140,7 @@ router.get('/case/:caseId', checkCaseAccess, async (req, res) => {
  * Create a manual alert (for supervisors/admins)
  * POST /api/alerts
  */
-router.post('/', authorize(['admin', 'supervisor']), async (req, res) => {
+router.post('/', authorize('admin', 'supervisor'), async (req, res) => {
   try {
     const { alertType, severity, title, description, caseId, userId } = req.body;
 
@@ -166,7 +167,7 @@ router.post('/', authorize(['admin', 'supervisor']), async (req, res) => {
       data: alerts
     });
   } catch (error) {
-    console.error('Create alert error:', error);
+    logger.error('Create alert error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to create alert'
@@ -178,7 +179,7 @@ router.post('/', authorize(['admin', 'supervisor']), async (req, res) => {
  * Run alert detection on all cases (admin only)
  * POST /api/alerts/run-detection
  */
-router.post('/run-detection', authorize(['admin']), async (req, res) => {
+router.post('/run-detection', authorize('admin'), async (req, res) => {
   try {
     // This would trigger the alert detection process across all cases
     // For now, return success
@@ -191,7 +192,7 @@ router.post('/run-detection', authorize(['admin']), async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Run alert detection error:', error);
+    logger.error('Run alert detection error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to start alert detection'

@@ -16,6 +16,7 @@ router.use(authenticate);
 // Upload UFDR file (IO only, must have access to case)
 router.post(
   '/case/:caseId',
+  checkCaseAccess,
   upload.single('file'),
   uploadUFDRFile
 );
@@ -29,6 +30,7 @@ router.get(
 // Get case processing summary
 router.get(
   '/case/:caseId/processing-summary',
+  checkCaseAccess,
   getCaseProcessingSummary
 );
 

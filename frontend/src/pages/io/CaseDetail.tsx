@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Search, Bookmark, FileText, Activity, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Activity, Search, Upload, Bookmark, FileText, Loader2, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { caseAPI, uploadAPI } from '../../lib/api';
 import { Navbar } from '../../components/Navbar';
 import { CrossCaseConnections } from '../../components/CrossCaseConnections';
@@ -19,6 +19,7 @@ export const CaseDetail = () => {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [showQueryPrompt, setShowQueryPrompt] = useState(false);
+  const [fileJustProcessed, setFileJustProcessed] = useState(false);
   const pollingInterval = useRef<number | null>(null);
 
   useEffect(() => {
@@ -32,9 +33,34 @@ export const CaseDetail = () => {
     };
   }, [caseId]);
 
-  const startPollingJobs = () => {
-    // Poll for active jobs every 2 seconds
-    pollingInterval.current = setInterval(async () => {
+  // Reset file processing state when case changes
+  useEffect(() => {
+    setFileJustProcessed(false);
+    setShowQueryPrompt(false);
+  }, [caseId]);
+
+  // Stagger component loading to prevent simultaneous API calls
+  const [componentsLoaded, setComponentsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (caseData) {
+      // Small delay to prevent all components from loading simultaneously
+      const timer = setTimeout(() => {
+        setComponentsLoaded(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [caseData]);
+
+  const startPollingJobs = useCallback(() => {
+    // Only start polling if not already polling
+    if (pollingInterval.current) {
+      return; // Already polling
+    }
+
+    let currentInterval = 30000; // Start with 30 seconds
+
+    const pollJobs = async () => {
       try {
         const response = await uploadAPI.getProcessingSummary(parseInt(caseId!));
         const data = response.data.data;
@@ -42,6 +68,18 @@ export const CaseDetail = () => {
         const active = jobs.filter((job: any) => 
           job.status === 'processing' || job.status === 'pending'
         );
+        
+        // Update polling interval based on job progress
+        const hasHighProgress = active.some((job: any) => job.progress >= 80);
+        const newInterval = hasHighProgress ? 5000 : 30000;
+        
+        // If interval changed, restart polling with new interval
+        if (newInterval !== currentInterval && pollingInterval.current) {
+          clearInterval(pollingInterval.current);
+          currentInterval = newInterval;
+          pollingInterval.current = setInterval(pollJobs, currentInterval);
+          console.log(`Updated polling interval to ${currentInterval}ms for high-progress jobs`);
+        }
         
         // Debug logging
         if (active.length > 0) {
@@ -54,8 +92,8 @@ export const CaseDetail = () => {
         // Update processing data (for summary section)
         setProcessing(data);
         
-        // If no active jobs and we have completed jobs, show query prompt
-        if (active.length === 0 && jobs.length > 0) {
+        // If no active jobs and we have completed jobs, show query prompt (only if file was just processed)
+        if (active.length === 0 && jobs.length > 0 && fileJustProcessed) {
           const hasCompleted = jobs.some((job: any) => job.status === 'completed');
           if (hasCompleted && !showQueryPrompt) {
             setShowQueryPrompt(true);
@@ -72,8 +110,13 @@ export const CaseDetail = () => {
         console.error('Failed to poll jobs:', error);
         // Don't clear active jobs on error - keep showing what we have
       }
-    }, 2000);
-  };
+    };
+
+    // Initial poll
+    pollJobs();
+
+    pollingInterval.current = setInterval(pollJobs, currentInterval);
+  }, [caseId, showQueryPrompt, fileJustProcessed]);
 
   const loadCaseData = async () => {
     try {
@@ -99,6 +142,17 @@ export const CaseDetail = () => {
       }
     } catch (error) {
       console.error('Failed to load case:', error);
+      // Set default case data to prevent UI from breaking completely
+      setCaseData({
+        id: parseInt(caseId!),
+        title: `Case ${caseId}`,
+        caseNumber: caseId,
+        description: 'Case details could not be loaded due to server error.',
+        status: 'error',
+        priority: 'Unknown',
+        unit: 'Unknown',
+        created_at: new Date().toISOString()
+      });
     } finally {
       setLoading(false);
     }
@@ -112,6 +166,7 @@ export const CaseDetail = () => {
     setUploadError(null);
     setUploadSuccess(false);
     setShowQueryPrompt(false); // Hide old query prompts
+    setFileJustProcessed(false); // Reset processing flag
     
     // Restart polling if it was stopped
     if (!pollingInterval.current) {
@@ -126,6 +181,7 @@ export const CaseDetail = () => {
       
       // Show success message
       setUploadSuccess(true);
+      setFileJustProcessed(true); // Mark that a file was uploaded and is being processed
       
       // Add the new job to active jobs immediately
       if (response.data.data.jobId) {
@@ -152,6 +208,9 @@ export const CaseDetail = () => {
       }, 2000);
     } catch (error: any) {
       console.error('Upload failed:', error);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
       
       // Extract error message
       const errorMessage = error.response?.data?.message || 
@@ -218,7 +277,12 @@ export const CaseDetail = () => {
             <div>
               <span className="text-gray-500">Created:</span>
               <span className="ml-2 font-medium">
-                {new Date(caseData?.created_at).toLocaleDateString()}
+                {new Date(caseData?.created_at).toLocaleDateString('en-IN', {
+                  timeZone: 'Asia/Kolkata',
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
               </span>
             </div>
           </div>
@@ -238,14 +302,20 @@ export const CaseDetail = () => {
                 </p>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => navigate(`/io/case/${caseId}/query`)}
+                    onClick={() => {
+                      setFileJustProcessed(false); // Reset processing flag
+                      navigate(`/io/case/${caseId}/query`);
+                    }}
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2"
                   >
                     <Search className="w-4 h-4" />
                     Start Querying Data
                   </button>
                   <button
-                    onClick={() => setShowQueryPrompt(false)}
+                    onClick={() => {
+                      setShowQueryPrompt(false);
+                      setFileJustProcessed(false); // Reset processing flag
+                    }}
                     className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
                   >
                     Dismiss
@@ -256,7 +326,7 @@ export const CaseDetail = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <button className="bg-white p-4 rounded-lg shadow hover:shadow-md transition">
             <Upload className="w-6 h-6 text-blue-600 mb-2" />
             <div className="text-sm font-medium">Upload Data</div>
@@ -269,6 +339,13 @@ export const CaseDetail = () => {
             <div className="text-sm font-medium">Execute Query</div>
           </button>
           <button 
+            onClick={() => navigate(`/io/case/${caseId}/entities`)}
+            className="bg-white p-4 rounded-lg shadow hover:shadow-md transition"
+          >
+            <Activity className="w-6 h-6 text-green-600 mb-2" />
+            <div className="text-sm font-medium">View Entities</div>
+          </button>
+          <button 
             onClick={() => navigate(`/io/case/${caseId}/bookmarks`)}
             className="bg-white p-4 rounded-lg shadow hover:shadow-md transition"
           >
@@ -279,7 +356,7 @@ export const CaseDetail = () => {
             onClick={() => navigate(`/io/case/${caseId}/report`)}
             className="bg-white p-4 rounded-lg shadow hover:shadow-md transition"
           >
-            <FileText className="w-6 h-6 text-green-600 mb-2" />
+            <FileText className="w-6 h-6 text-red-600 mb-2" />
             <div className="text-sm font-medium">Generate Report</div>
           </button>
         </div>
@@ -298,7 +375,13 @@ export const CaseDetail = () => {
           {uploadError && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 font-medium">✗ {uploadError}</p>
-              <p className="text-red-600 text-sm mt-1">Please check the file format and try again.</p>
+              <p className="text-red-600 text-sm mt-1">
+                {uploadError.includes('Failed to upload file') ?
+                  'Please check your internet connection and try again.' :
+                  uploadError.includes('Invalid file type') ?
+                  'Only UFDR, XML, JSON, ZIP, and UFD files are supported.' :
+                  'Please check the file format and try again.'}
+              </p>
             </div>
           )}
           
@@ -334,6 +417,99 @@ export const CaseDetail = () => {
           </div>
         </div>
 
+        {/* Processing Summary & Job History */}
+        {processing && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Data Summary */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Activity className="w-5 h-5" />
+                Data Summary
+              </h2>
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-700">Devices Processed</span>
+                    <span className="text-2xl font-bold text-blue-600">{processing.devices?.length || 0}</span>
+                  </div>
+                  <p className="text-xs text-gray-600">Total devices extracted from UFDR files</p>
+                </div>
+
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-700">Entities Extracted</span>
+                    <span className="text-2xl font-bold text-purple-600">{processing.entityCount || 0}</span>
+                  </div>
+                  <p className="text-xs text-gray-600">Names, locations, organizations, etc.</p>
+                </div>
+
+                {processing.entityTypes && processing.entityTypes.length > 0 && (
+                  <div className="pt-2 border-t border-gray-200">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Entity Breakdown:</p>
+                    <div className="space-y-2">
+                      {processing.entityTypes.map((et: any) => (
+                        <div key={et.type} className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600 capitalize">{et.type.replace('_', ' ')}</span>
+                          <span className="font-medium text-gray-900">{et.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recent Jobs */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Recent Processing Jobs
+              </h2>
+              {processing.jobs && processing.jobs.length > 0 ? (
+                <div className="space-y-3">
+                  {processing.jobs.slice(0, 5).map((job: any) => (
+                    <div key={job.id} className="p-3 border border-gray-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-900">
+                          Job #{job.id}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          job.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          job.status === 'failed' ? 'bg-red-100 text-red-800' :
+                          job.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {job.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        {new Date(job.created_at).toLocaleString('en-IN', {
+                          timeZone: 'Asia/Kolkata',
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit'
+                        })}
+                      </p>
+                      {job.errorMessage && (
+                        <p className="text-xs text-red-600 mt-1">Error: {job.errorMessage}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm">No processing jobs yet</p>
+                  <p className="text-xs mt-1">Upload a UFDR file to start processing</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Failed Jobs Alert - Only show if latest job failed */}
         {processing?.jobs && processing.jobs.length > 0 && processing.jobs[0].status === 'failed' && (
           <div className="bg-red-50 border-2 border-red-200 rounded-lg p-6 mb-6">
@@ -364,10 +540,20 @@ export const CaseDetail = () => {
         {/* Active Processing Jobs */}
         {activeJobs.length > 0 && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-              Active Processing Jobs
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                Active Processing Jobs
+              </h2>
+              <button
+                onClick={loadCaseData}
+                className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition flex items-center gap-2"
+                title="Refresh status"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Refresh
+              </button>
+            </div>
             <div className="space-y-4">
               {activeJobs.map((job: any) => (
                 <div key={job.id} className="border border-gray-200 rounded-lg p-4">
@@ -410,110 +596,37 @@ export const CaseDetail = () => {
               <p className="text-sm text-blue-800 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4" />
                 Processing may take several minutes depending on file size. You can navigate away and come back later.
+                {activeJobs.some(job => job.progress >= 80) && (
+                  <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                    If stuck, click Refresh above
+                  </span>
+                )}
               </p>
             </div>
           </div>
         )}
 
         {/* Cross-Case Connections */}
-        {caseData && (
-          <CrossCaseConnections caseId={parseInt(caseId!)} />
+        {caseData && componentsLoaded && (
+          <div className="mb-6">
+            <CrossCaseConnections caseId={parseInt(caseId!)} />
+          </div>
         )}
 
         {/* ML Anomaly Detection */}
-        {caseData && (
-          <AnomalyDetection caseId={parseInt(caseId!)} />
+        {caseData && componentsLoaded && (
+          <div className="mb-6">
+            <AnomalyDetection caseId={parseInt(caseId!)} />
+          </div>
         )}
 
         {/* Predictive Analytics */}
-        {caseData && (
-          <PredictiveAnalytics caseId={parseInt(caseId!)} />
-        )}
-
-        {/* Processing Summary & Job History */}
-        {processing && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Data Summary */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                Data Summary
-              </h2>
-              <div className="space-y-4">
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">Devices Processed</span>
-                    <span className="text-2xl font-bold text-blue-600">{processing.devices?.length || 0}</span>
-                  </div>
-                  <p className="text-xs text-gray-600">Total devices extracted from UFDR files</p>
-                </div>
-                
-                <div className="p-4 bg-purple-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">Entities Extracted</span>
-                    <span className="text-2xl font-bold text-purple-600">{processing.entityCount || 0}</span>
-                  </div>
-                  <p className="text-xs text-gray-600">Names, locations, organizations, etc.</p>
-                </div>
-                
-                {processing.entityTypes && processing.entityTypes.length > 0 && (
-                  <div className="pt-2 border-t border-gray-200">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Entity Breakdown:</p>
-                    <div className="space-y-2">
-                      {processing.entityTypes.map((et: any) => (
-                        <div key={et.type} className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600 capitalize">{et.type.replace('_', ' ')}</span>
-                          <span className="font-medium text-gray-900">{et.count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Recent Jobs */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Recent Processing Jobs
-              </h2>
-              {processing.jobs && processing.jobs.length > 0 ? (
-                <div className="space-y-3">
-                  {processing.jobs.slice(0, 5).map((job: any) => (
-                    <div key={job.id} className="p-3 border border-gray-200 rounded-lg">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-900">
-                          Job #{job.id}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                          job.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          job.status === 'failed' ? 'bg-red-100 text-red-800' :
-                          job.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {job.status}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-600">
-                        {new Date(job.created_at).toLocaleString()}
-                      </p>
-                      {job.errorMessage && (
-                        <p className="text-xs text-red-600 mt-1">Error: {job.errorMessage}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm">No processing jobs yet</p>
-                  <p className="text-xs mt-1">Upload a UFDR file to start processing</p>
-                </div>
-              )}
-            </div>
+        {caseData && componentsLoaded && (
+          <div className="mb-6">
+            <PredictiveAnalytics caseId={parseInt(caseId!)} />
           </div>
         )}
+
       </div>
     </div>
   );

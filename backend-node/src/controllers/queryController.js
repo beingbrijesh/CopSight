@@ -30,14 +30,15 @@ export const createQuery = async (req, res) => {
         queryText,
         req.user.id
       );
+
       resultsCount = aiResult.total_results || 0;
       confidenceScore = aiResult.confidence || null;
     } catch (error) {
       logger.error('AI query execution failed:', error);
-      
+
       // Determine error message based on error type
       let errorMessage = 'Unable to process query.';
-      
+
       if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
         errorMessage = '🔌 AI Service Unavailable\n\nThe AI service is not running. To enable natural language queries:\n\n1. Navigate to the ai-service directory\n2. Install dependencies: pip install -r requirements.txt\n3. Start the service: python app/main.py\n\nFor now, you can still view uploaded data in the Data Summary section below.';
       } else if (error.message && error.message.includes('ETIMEDOUT')) {
@@ -45,7 +46,7 @@ export const createQuery = async (req, res) => {
       } else {
         errorMessage = '📊 No Data Available\n\nNo forensic data was found to query. This could mean:\n\n• The uploaded UFDR file contains no extractable data (messages, calls, contacts)\n• The file only contains images or other non-queryable content\n• Data processing is still in progress\n\nPlease ensure you upload a valid UFDR export from forensic tools like Cellebrite that contains actual communication data.';
       }
-      
+
       // Provide fallback response
       aiResult = {
         answer: errorMessage,

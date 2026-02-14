@@ -9,7 +9,7 @@ class AIClient {
     this.baseURL = process.env.AI_SERVICE_URL || 'http://localhost:8005';
     this.client = axios.create({
       baseURL: this.baseURL,
-      timeout: 30000,
+      timeout: 120000, // 2 minutes timeout for slow local LLM
       headers: {
         'Content-Type': 'application/json'
       }
@@ -26,7 +26,7 @@ class AIClient {
         query,
         user_id: userId
       });
-      
+
       return response.data;
     } catch (error) {
       logger.error('AI query execution failed:', error.message);
@@ -42,7 +42,7 @@ class AIClient {
       const response = await this.client.get(`/api/query/history/${caseId}`, {
         params: { limit }
       });
-      
+
       return response.data;
     } catch (error) {
       logger.error('Failed to get query history:', error.message);
@@ -71,7 +71,7 @@ class AIClient {
       const response = await this.client.post('/api/embeddings/generate', {
         texts
       });
-      
+
       return response.data.embeddings;
     } catch (error) {
       logger.error('Embedding generation failed:', error.message);
@@ -88,7 +88,7 @@ class AIClient {
         case_id: caseId,
         analysis_type: analysisType
       });
-      
+
       return response.data;
     } catch (error) {
       logger.error('Pattern detection failed:', error.message);

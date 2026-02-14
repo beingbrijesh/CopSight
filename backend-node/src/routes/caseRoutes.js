@@ -4,7 +4,9 @@ import {
   getCases,
   getCaseById,
   updateCase,
-  getCaseStatistics
+  getCaseStatistics,
+  getCaseEntities,
+  getCaseChats
 } from '../controllers/caseController.js';
 import { authenticate, authorize, requirePermission } from '../middleware/auth.js';
 import { checkCaseAccess } from '../middleware/caseAccess.js';
@@ -30,6 +32,12 @@ router.get('/statistics', getCaseStatistics);
 
 // Get specific case (with access check)
 router.get('/:caseId', checkCaseAccess, getCaseById);
+
+// Get entities for a case (with access check)
+router.get('/:caseId/entities', checkCaseAccess, getCaseEntities);
+
+// Get chats for a case (with access check)
+router.get('/:caseId/chats', checkCaseAccess, getCaseChats);
 
 // Update case (IO or Admin with access check)
 router.put('/:caseId', checkCaseAccess, updateCase);

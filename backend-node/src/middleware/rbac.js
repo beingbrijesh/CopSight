@@ -4,9 +4,12 @@
 
 /**
  * Authorize middleware - checks if user has required role
- * @param {Array} allowedRoles - Array of roles that can access the route
+ * @param {...string|string[]} allowedRoles - Roles that can access the route (variadic or array)
  */
-export const authorize = (allowedRoles) => {
+export const authorize = (...allowedRoles) => {
+  // Flatten in case an array is passed: authorize(['admin', 'io']) or authorize('admin', 'io')
+  const roles = allowedRoles.flat();
+
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -15,7 +18,7 @@ export const authorize = (allowedRoles) => {
       });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         message: 'Access denied. Insufficient permissions.'

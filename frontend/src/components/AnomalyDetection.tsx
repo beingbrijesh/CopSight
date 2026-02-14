@@ -16,6 +16,23 @@ interface AnomalyResult {
   hour?: number;
   count?: number;
   z_score?: number;
+  expected_count?: number;
+  time_window?: string;
+  day?: string;
+  gap_hours?: number;
+  start_time?: string;
+  end_time?: string;
+  burst_score?: number;
+  window_size?: number;
+  local_density?: number;
+  degree?: number;
+  phone_number?: string;
+  expected_degree?: number;
+  contact_diversity?: number;
+  bridge_score?: number;
+  frequency?: number;
+  diversity?: number;
+  isolation_score?: number;
 }
 
 export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
@@ -171,11 +188,11 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
               <div>
                 <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                   <Network className="w-5 h-5 text-blue-600" />
-                  Communication Anomalies
+                  Communication Anomalies ({results.communication_anomalies.length})
                 </h4>
                 <div className="space-y-3">
                   {results.communication_anomalies.map((anomaly: AnomalyResult, index: number) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -186,13 +203,22 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
                               {(anomaly.confidence * 100).toFixed(0)}% confidence
                             </span>
                           </div>
+                          <p className="text-sm text-gray-600 mb-2">{anomaly.description}</p>
+
                           {anomaly.record && (
                             <div className="text-sm text-gray-600 space-y-1">
-                              <div>Phone: {anomaly.record.phone_number}</div>
-                              <div>Frequency: {anomaly.record.frequency}</div>
+                              <div><strong>Phone:</strong> {anomaly.record.phone_number}</div>
+                              <div><strong>Frequency:</strong> {anomaly.record.frequency}</div>
+                              <div><strong>Source:</strong> {anomaly.record.source_type}</div>
                               {anomaly.record.timestamp && (
-                                <div>Time: {new Date(anomaly.record.timestamp).toLocaleString()}</div>
+                                <div><strong>Time:</strong> {new Date(anomaly.record.timestamp).toLocaleString()}</div>
                               )}
+                            </div>
+                          )}
+
+                          {anomaly.anomaly_score && (
+                            <div className="mt-2 text-xs text-gray-500">
+                              Anomaly Score: {anomaly.anomaly_score.toFixed(3)}
                             </div>
                           )}
                         </div>
@@ -208,24 +234,59 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
               <div>
                 <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-green-600" />
-                  Temporal Anomalies
+                  Temporal Anomalies ({results.temporal_anomalies.length})
                 </h4>
                 <div className="space-y-3">
                   {results.temporal_anomalies.map((anomaly: AnomalyResult, index: number) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="font-medium text-gray-900">
-                              Hour {anomaly.hour}:00 - {anomaly.count} communications
+                              {formatAnomalyType(anomaly.anomaly_type)}
                             </span>
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getConfidenceColor(anomaly.confidence)}`}>
                               {(anomaly.confidence * 100).toFixed(0)}% confidence
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600">
-                            Z-score: {anomaly.z_score?.toFixed(2)} | {anomaly.description}
-                          </p>
+                          <p className="text-sm text-gray-600 mb-2">{anomaly.description}</p>
+
+                          {/* Show specific details based on anomaly type */}
+                          {anomaly.hour !== undefined && (
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <div><strong>Hour:</strong> {anomaly.hour}:00</div>
+                              <div><strong>Communications:</strong> {anomaly.count}</div>
+                              <div><strong>Z-Score:</strong> {anomaly.z_score?.toFixed(2)}</div>
+                              <div><strong>Expected:</strong> {anomaly.expected_count?.toFixed(1)}</div>
+                              <div><strong>Time Window:</strong> {anomaly.time_window}</div>
+                            </div>
+                          )}
+
+                          {anomaly.day && (
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <div><strong>Day:</strong> {anomaly.day}</div>
+                              <div><strong>Communications:</strong> {anomaly.count}</div>
+                              <div><strong>Z-Score:</strong> {anomaly.z_score?.toFixed(2)}</div>
+                              <div><strong>Expected:</strong> {anomaly.expected_count?.toFixed(1)}</div>
+                            </div>
+                          )}
+
+                          {anomaly.gap_hours && (
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <div><strong>Gap Duration:</strong> {anomaly.gap_hours.toFixed(1)} hours</div>
+                              <div><strong>From:</strong> {anomaly.start_time}</div>
+                              <div><strong>To:</strong> {anomaly.end_time}</div>
+                              <div><strong>Z-Score:</strong> {anomaly.z_score?.toFixed(2)}</div>
+                            </div>
+                          )}
+
+                          {anomaly.burst_score && (
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <div><strong>Burst Score:</strong> {anomaly.burst_score.toFixed(2)}</div>
+                              <div><strong>Window Size:</strong> {anomaly.window_size}</div>
+                              <div><strong>Local Density:</strong> {anomaly.local_density?.toFixed(2)}</div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -239,33 +300,74 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
               <div>
                 <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-purple-600" />
-                  Network Anomalies
+                  Network Anomalies ({results.network_anomalies.length})
                 </h4>
                 <div className="space-y-3">
                   {results.network_anomalies.map((anomaly: AnomalyResult, index: number) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="font-medium text-gray-900">
-                              Network Outlier
+                              {formatAnomalyType(anomaly.anomaly_type)}
                             </span>
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getConfidenceColor(anomaly.confidence)}`}>
                               {(anomaly.confidence * 100).toFixed(0)}% confidence
                             </span>
                           </div>
-                          <div className="text-sm text-gray-600">
-                            <div>Phone: {anomaly.record?.phone_number}</div>
-                            <div>Frequency: {anomaly.features?.communication_frequency || 0}</div>
-                            <div>Connections: {anomaly.features?.unique_contacts || 0}</div>
-                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{anomaly.description}</p>
+
+                          {/* Show specific details based on anomaly type */}
+                          {anomaly.degree !== undefined && (
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <div><strong>Phone:</strong> {anomaly.phone_number}</div>
+                              <div><strong>Communication Degree:</strong> {anomaly.degree}</div>
+                              <div><strong>Z-Score:</strong> {anomaly.z_score?.toFixed(2)}</div>
+                              <div><strong>Expected Degree:</strong> {anomaly.expected_degree?.toFixed(1)}</div>
+                            </div>
+                          )}
+
+                          {anomaly.contact_diversity !== undefined && (
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <div><strong>Phone:</strong> {anomaly.phone_number}</div>
+                              <div><strong>Contact Diversity:</strong> {anomaly.contact_diversity}</div>
+                              <div><strong>Z-Score:</strong> {anomaly.z_score?.toFixed(2)}</div>
+                            </div>
+                          )}
+
+                          {anomaly.bridge_score !== undefined && (
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <div><strong>Phone:</strong> {anomaly.phone_number}</div>
+                              <div><strong>Bridge Score:</strong> {anomaly.bridge_score.toFixed(2)}</div>
+                              <div><strong>Frequency:</strong> {anomaly.frequency}</div>
+                              <div><strong>Diversity:</strong> {anomaly.diversity}</div>
+                            </div>
+                          )}
+
+                          {anomaly.isolation_score !== undefined && (
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <div><strong>Phone:</strong> {anomaly.phone_number}</div>
+                              <div><strong>Frequency:</strong> {anomaly.frequency}</div>
+                              <div><strong>Diversity:</strong> {anomaly.diversity}</div>
+                              <div><strong>Isolation Score:</strong> {anomaly.isolation_score.toFixed(3)}</div>
+                            </div>
+                          )}
+
+                          {/* Legacy support for old format */}
+                          {anomaly.record && (
+                            <div className="text-sm text-gray-600">
+                              <div><strong>Phone:</strong> {anomaly.record.phone_number}</div>
+                              <div><strong>Frequency:</strong> {anomaly.record.communication_frequency || 0}</div>
+                              <div><strong>Connections:</strong> {anomaly.record.unique_contacts || 0}</div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
+            )};
 
             {getTotalAnomalies() === 0 && results.summary && (
               <div className="text-center py-8">

@@ -354,7 +354,7 @@ flowchart TD
 ### Encryption
 - **In Transit**: HTTPS/TLS for all API communications
 - **At Rest**: Database encryption for sensitive fields
-- **Passwords**: Bcrypt hashing (10 rounds)
+- **Passwords**: Bcrypt hashing (12 rounds)
 - **Tokens**: JWT with secure signing
 
 ### Access Control

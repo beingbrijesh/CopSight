@@ -1,5 +1,4 @@
 import Queue from 'bull';
-import { redisClient } from '../config/databases.js';
 import logger from '../config/logger.js';
 
 // Create Bull queue for file processing

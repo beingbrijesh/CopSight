@@ -1,6 +1,6 @@
 import express from 'express';
-import { authenticate } from '../middleware/auth.js';
-import { authorize } from '../middleware/rbac.js';
+import { authenticate, authorize } from '../middleware/auth.js';
+import { checkCaseAccess } from '../middleware/caseAccess.js';
 import {
   generateReport,
   getReportHistory,
@@ -19,7 +19,8 @@ router.use(authenticate);
  */
 router.post(
   '/case/:caseId/generate',
-  authorize(['investigating_officer', 'admin']),
+  checkCaseAccess,
+  authorize('investigating_officer', 'admin'),
   generateReport
 );
 
@@ -30,7 +31,8 @@ router.post(
  */
 router.get(
   '/case/:caseId/history',
-  authorize(['investigating_officer', 'admin', 'supervisor']),
+  checkCaseAccess,
+  authorize('investigating_officer', 'admin', 'supervisor'),
   getReportHistory
 );
 
@@ -41,8 +43,9 @@ router.get(
  */
 router.get(
   '/templates',
-  authorize(['investigating_officer', 'admin']),
+  authorize('investigating_officer', 'admin'),
   getReportTemplates
 );
 
 export default router;
+

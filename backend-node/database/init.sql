@@ -181,6 +181,25 @@ CREATE TABLE IF NOT EXISTS case_access_log (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create cross_case_links table for linking related cases
+CREATE TABLE IF NOT EXISTS cross_case_links (
+    id SERIAL PRIMARY KEY,
+    source_case_id INTEGER REFERENCES cases(id) NOT NULL,
+    target_case_id INTEGER REFERENCES cases(id) NOT NULL,
+    link_type VARCHAR(50) NOT NULL,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_value TEXT NOT NULL,
+    strength VARCHAR(20) DEFAULT 'weak',
+    confidence_score DECIMAL(3,2) DEFAULT 0.5,
+    link_metadata JSONB,
+    created_by INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_strength CHECK (strength IN ('weak', 'medium', 'strong', 'critical')),
+    CONSTRAINT check_confidence CHECK (confidence_score >= 0.0 AND confidence_score <= 1.0),
+    CONSTRAINT no_self_link CHECK (source_case_id != target_case_id)
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_supervisor ON users(supervisor_id);
@@ -220,6 +239,14 @@ CREATE INDEX IF NOT EXISTS idx_case_access_log_case ON case_access_log(case_id);
 CREATE INDEX IF NOT EXISTS idx_case_access_log_user ON case_access_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_case_access_log_created ON case_access_log(created_at);
 
+-- Indexes for cross_case_links table
+CREATE UNIQUE INDEX IF NOT EXISTS cross_case_links_unique ON cross_case_links (source_case_id, target_case_id, link_type, entity_type, entity_value);
+CREATE INDEX IF NOT EXISTS idx_cross_case_links_source ON cross_case_links(source_case_id);
+CREATE INDEX IF NOT EXISTS idx_cross_case_links_target ON cross_case_links(target_case_id);
+CREATE INDEX IF NOT EXISTS idx_cross_case_links_type ON cross_case_links(link_type);
+CREATE INDEX IF NOT EXISTS idx_cross_case_links_entity ON cross_case_links(entity_type, entity_value);
+CREATE INDEX IF NOT EXISTS idx_cross_case_links_strength ON cross_case_links(strength);
+
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -238,3 +265,6 @@ CREATE TRIGGER update_cases_updated_at BEFORE UPDATE ON cases FOR EACH ROW EXECU
 
 DROP TRIGGER IF EXISTS update_data_sources_updated_at ON data_sources;
 CREATE TRIGGER update_data_sources_updated_at BEFORE UPDATE ON data_sources FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_cross_case_links_updated_at ON cross_case_links;
+CREATE TRIGGER update_cross_case_links_updated_at BEFORE UPDATE ON cross_case_links FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

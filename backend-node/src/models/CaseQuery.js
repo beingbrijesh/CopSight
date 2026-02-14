@@ -49,6 +49,10 @@ const CaseQuery = sequelize.define('CaseQuery', {
   confidenceScore: {
     type: DataTypes.DECIMAL(3, 2),
     field: 'confidence_score'
+  },
+  answer: {
+    type: DataTypes.TEXT,
+    allowNull: true
   }
 }, {
   tableName: 'case_queries',
