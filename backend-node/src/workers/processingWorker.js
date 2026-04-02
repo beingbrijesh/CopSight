@@ -222,7 +222,7 @@ try {
           errorMessage: error.message,
           completedAt: new Date()
         },
-        { where: { id: jobId } }
+        { where: { id: job.data.jobId } }
       );
 
       throw error;

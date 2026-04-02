@@ -6,7 +6,8 @@ import {
   updateUser,
   resetUserPassword,
   getInvestigatingOfficers,
-  getSupervisors
+  getSupervisors,
+  deleteUser
 } from '../controllers/userController.js';
 import { authenticate, authorize, requirePermission } from '../middleware/auth.js';
 
@@ -55,6 +56,12 @@ router.post(
   '/:userId/reset-password',
   requirePermission('modify_user'),
   resetUserPassword
+);
+
+router.delete(
+  '/:userId',
+  requirePermission('delete_user'),
+  deleteUser
 );
 
 export default router;

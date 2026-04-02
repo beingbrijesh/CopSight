@@ -98,6 +98,17 @@ export const login = async (req, res) => {
     res.json({
       success: true,
       message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        badgeNumber: user.badgeNumber,
+        rank: user.rank,
+        unit: user.unit
+      },
       data: {
         token,
         user: {
@@ -132,6 +143,7 @@ export const getCurrentUser = async (req, res) => {
 
     res.json({
       success: true,
+      user,
       data: { user }
     });
   } catch (error) {
@@ -204,7 +216,7 @@ export const changePassword = async (req, res) => {
     const isPasswordValid = await user.comparePassword(currentPassword);
 
     if (!isPasswordValid) {
-      return res.status(401).json({
+      return res.status(400).json({
         success: false,
         message: 'Current password is incorrect'
       });

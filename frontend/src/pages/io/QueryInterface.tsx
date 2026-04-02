@@ -36,7 +36,15 @@ export const QueryInterface = () => {
       });
 
       console.log('Query response:', response.data);
-      setResults(response.data.data);
+      const payload = response.data.data;
+      setResults({
+        query: payload.query,
+        answer: payload.result?.answer || null,
+        evidence: payload.result?.evidence || [],
+        confidence: payload.result?.confidence || 0,
+        findings: payload.findings || [],
+        query_components: payload.query_components || null
+      });
     } catch (error: any) {
       console.error('Query failed:', error);
       

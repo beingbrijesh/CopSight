@@ -115,24 +115,23 @@ Return ONLY the JSON, no explanation."""
         
         if has_current_evidence:
             # We have current evidence - prioritize it
-            prompt = f"""You are an Expert Forensic Analyst and Criminal Profiler. Your task is to analyze case data for hidden meanings, coded language, and suspicious connections.
+            prompt = f"""Summarize the relationships and patterns in the provided text records based on the query.
 
-Current Evidence:
+Records:
 {context}
 
-Previous Conversation (for context only):
+Previous Context:
 {conversation_context}
 
-Current Query: {query}
+Query: {query}
 
 Instructions:
-1. **Detect Coded Language**: Scrutinize "normal-looking" chats for slang, euphemisms, or unnatural phrasing that may mask illegal activities (e.g., "food", "groceries", "papers" used in suspicious contexts).
-2. **Correlate Events**: Actively link chat messages with financial transactions or other events based on timing and context. Look for patterns like a "delivery" chat followed immediately by a payment.
-3. **Identify Intent**: Look beyond the literal meaning. Assess whether casual conversations are facilitating illicit trafficking, money laundering, or coordination.
-4. **Cite Evidence**: Support every claim by citing specific [Evidence #X] items.
-5. **Be Assertive yet Objective**: State clearly if a conversation appears suspicious, explaining *why* based on the correlations.
+1. Directly answer the query using ONLY the provided records.
+2. Note any unusual phrasing, slang, or sequential patterns (e.g., communications followed by transactions) if they match the query.
+3. Cite the relevant [Evidence #X] items for each claim.
+4. Do not use conversational filler or explanations. Begin your response immediately with the analysis.
 
-Answer:"""
+Analysis:"""
         else:
             # No current evidence - be explicit about this
             prompt = f"""You are a forensic investigation assistant. The query is asking about current case data, but no relevant evidence was found in the case database.

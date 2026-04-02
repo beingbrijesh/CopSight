@@ -27,11 +27,11 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
          MERGE (c)-[:HAS_DEVICE]->(d)`,
         {
           caseId,
-          imei: parsedData.deviceInfo.imei || `device_${caseId}`,
-          name: parsedData.deviceInfo.deviceName || 'Unknown Device',
-          type: parsedData.deviceInfo.deviceType || 'Unknown',
-          phoneNumber: parsedData.deviceInfo.phoneNumber || 'Unknown',
-          manufacturer: parsedData.deviceInfo.manufacturer || 'Unknown'
+          imei: String(parsedData.deviceInfo.imei || `device_${caseId}`),
+          name: String(parsedData.deviceInfo.deviceName || 'Unknown Device'),
+          type: String(parsedData.deviceInfo.deviceType || 'Unknown'),
+          phoneNumber: String(parsedData.deviceInfo.phoneNumber || 'Unknown'),
+          manufacturer: String(parsedData.deviceInfo.manufacturer || 'Unknown')
         }
       );
     }

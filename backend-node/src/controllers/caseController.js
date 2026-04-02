@@ -8,33 +8,51 @@ import logger, { auditLogger } from '../config/logger.js';
 export const createCase = async (req, res) => {
   try {
     const {
-      caseNumber,
+      caseNumber: caseNumberDirect,
+      fir_number,
       title,
       description,
-      assignedTo,
-      supervisorId,
+      assignedTo: assignedToDirect,
+      assigned_to,
+      supervisorId: supervisorIdDirect,
+      supervisor_id,
       unit,
       priority,
       caseType,
       incidentDate,
       location
     } = req.body;
+    const caseNumber = caseNumberDirect || fir_number;
+    const assignedTo = assignedToDirect || assigned_to;
+    const supervisorId = supervisorIdDirect || supervisor_id;
 
     // Validate required fields
-    if (!caseNumber || !title || !assignedTo) {
+    if (!caseNumber || !title) {
       return res.status(400).json({
         success: false,
-        message: 'Case number, title, and assigned officer are required'
+        message: 'Case number and title are required'
       });
     }
 
-    // Verify assigned officer exists and has correct role
-    const assignedOfficer = await User.findByPk(assignedTo);
-    if (!assignedOfficer || assignedOfficer.role !== 'investigating_officer') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid investigating officer'
-      });
+    // If assignedTo not provided, find first IO
+    let resolvedAssignedTo = assignedTo;
+    if (!resolvedAssignedTo) {
+      const firstIO = await User.findOne({ where: { role: 'investigating_officer', isActive: true } });
+      if (firstIO) {
+        resolvedAssignedTo = firstIO.id;
+      }
+    }
+
+    // Verify assigned officer exists and has correct role (if provided)
+    let assignedOfficer = null;
+    if (resolvedAssignedTo) {
+      assignedOfficer = await User.findByPk(resolvedAssignedTo);
+      if (!assignedOfficer || (assignedOfficer.role !== 'investigating_officer' && assignedOfficer.role !== 'admin')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid investigating officer'
+        });
+      }
     }
 
     // Verify supervisor if provided
@@ -53,11 +71,11 @@ export const createCase = async (req, res) => {
       caseNumber,
       title,
       description,
-      assignedTo,
-      supervisorId: supervisorId || assignedOfficer.supervisorId,
+      assignedTo: resolvedAssignedTo,
+      supervisorId: supervisorId || (assignedOfficer ? assignedOfficer.supervisorId : null),
       createdBy: req.user.id,
-      unit: unit || assignedOfficer.unit,
-      priority: priority || 'medium',
+      unit: unit || (assignedOfficer ? assignedOfficer.unit : null),
+      priority: priority ? priority.toLowerCase() : 'medium',
       caseType,
       incidentDate,
       location,
@@ -73,7 +91,7 @@ export const createCase = async (req, res) => {
       resourceId: newCase.caseNumber,
       details: {
         caseNumber: newCase.caseNumber,
-        assignedTo: assignedOfficer.fullName
+        assignedTo: assignedOfficer ? assignedOfficer.fullName : 'unassigned'
       },
       ipAddress: req.ip,
       userAgent: req.get('user-agent'),
@@ -84,13 +102,21 @@ export const createCase = async (req, res) => {
       caseId: newCase.id,
       caseNumber: newCase.caseNumber,
       createdBy: req.user.id,
-      assignedTo
+      assignedTo: resolvedAssignedTo
     });
+
+    const responseCase = {
+      ...newCase.toJSON(),
+      fir_number: newCase.caseNumber,
+      assigned_to: newCase.assignedTo,
+      supervisor_id: newCase.supervisorId
+    };
 
     res.status(201).json({
       success: true,
       message: 'Case created successfully',
-      data: { case: newCase }
+      case: responseCase,
+      data: { case: responseCase }
     });
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
@@ -158,6 +184,7 @@ export const getCases = async (req, res) => {
 
     res.json({
       success: true,
+      cases,
       data: {
         cases,
         pagination: {
@@ -454,6 +481,58 @@ export const getCaseChats = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve chats'
+    });
+  }
+};
+/**
+ * Delete case (Admin only)
+ */
+export const deleteCase = async (req, res) => {
+  try {
+    const { caseId } = req.params;
+
+    const caseData = await Case.findByPk(caseId);
+
+    if (!caseData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Case not found'
+      });
+    }
+
+    // Log deletion
+    await AuditLog.create({
+      userId: req.user.id,
+      caseId: caseData.id,
+      action: 'case_deleted',
+      resourceType: 'case',
+      resourceId: caseData.caseNumber,
+      details: {
+        caseNumber: caseData.caseNumber,
+        title: caseData.title
+      },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+      sessionId: req.sessionId
+    });
+
+    auditLogger.warn('Case deleted', {
+      deletedBy: req.user.id,
+      caseId: caseData.id,
+      caseNumber: caseData.caseNumber
+    });
+
+    await caseData.destroy();
+
+    res.json({
+      success: true,
+      message: 'Case deleted successfully'
+    });
+  } catch (error) {
+    logger.error('Delete case error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete case'
     });
   }
 };

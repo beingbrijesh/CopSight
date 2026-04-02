@@ -59,6 +59,7 @@ export const uploadUFDRFile = async (req, res) => {
     res.json({
       success: true,
       message: 'File uploaded successfully. Processing started.',
+      jobId: job.id.toString(),
       data: {
         jobId: job.id,
         filename: file.originalname,

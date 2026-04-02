@@ -23,7 +23,7 @@ export const createRateLimit = (options = {}) => {
 // Different rate limits for different types of endpoints
 export const authRateLimit = createRateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 attempts per 15 minutes for auth endpoints
+  max: process.env.NODE_ENV === 'development' ? 100 : 10, // Higher limit in dev for testing
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later.',

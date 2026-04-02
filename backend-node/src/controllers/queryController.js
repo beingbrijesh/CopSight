@@ -8,7 +8,8 @@ import aiClient from '../services/ai/aiClient.js';
 export const createQuery = async (req, res) => {
   try {
     const { caseId } = req.params;
-    const { queryText, queryType, filters } = req.body;
+    const { queryText: queryTextDirect, query: queryAlias, queryType, filters } = req.body;
+    const queryText = queryTextDirect || queryAlias;
 
     if (!queryText) {
       return res.status(400).json({
@@ -88,15 +89,20 @@ export const createQuery = async (req, res) => {
       sessionId: req.sessionId
     });
 
+    const resultObj = {
+      answer: aiResult?.answer || null,
+      evidence: aiResult?.evidence || [],
+      confidence: confidenceScore || 0.0
+    };
+
     res.json({
       success: true,
       message: 'Query executed successfully',
+      result: resultObj,
       data: {
         query,
-        answer: aiResult?.answer || null,
+        result: resultObj,
         findings: aiResult?.findings || [],
-        evidence: aiResult?.evidence || [],
-        confidence: confidenceScore,
         query_components: aiResult?.query_components || null
       }
     });

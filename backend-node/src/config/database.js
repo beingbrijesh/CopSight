@@ -42,12 +42,11 @@ export const connectDatabase = async () => {
     await sequelize.authenticate();
     logger.info('Database connection established successfully');
 
-    // Sync models in development - disabled (schema already created in Docker PostgreSQL)
-    // To recreate schema, temporarily uncomment the sync line below:
-    // if (process.env.NODE_ENV === 'development') {
-    //   await sequelize.sync({ alter: true });
-    //   logger.info('Database schema synced (development mode)');
-    // }
+    // Sync models in development
+    if (process.env.NODE_ENV === 'development') {
+      await sequelize.sync();
+      logger.info('Database schema synced (development mode)');
+    }
   } catch (error) {
     logger.error('Unable to connect to database:', error);
     process.exit(1);

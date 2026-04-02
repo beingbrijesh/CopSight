@@ -11,13 +11,17 @@ export const createUser = async (req, res) => {
       username,
       email,
       password,
-      fullName,
+      fullName: fullNameDirect,
+      full_name,
       role,
       badgeNumber,
+      badge_number,
       rank,
       unit,
       supervisorId
     } = req.body;
+    const fullName = fullNameDirect || full_name;
+    const badgeNum = badgeNumber || badge_number;
 
     // Validate required fields
     if (!username || !email || !password || !fullName || !role) {
@@ -54,7 +58,7 @@ export const createUser = async (req, res) => {
       passwordHash: password, // Will be hashed by model hook
       fullName,
       role,
-      badgeNumber,
+      badgeNumber: badgeNum,
       rank,
       unit,
       supervisorId,
@@ -84,10 +88,18 @@ export const createUser = async (req, res) => {
       role: newUser.role
     });
 
+    // Create response user object that includes snake_case aliases for backward compatibility
+    const responseUser = {
+      ...newUser.toJSON(),
+      full_name: newUser.fullName,
+      badge_number: newUser.badgeNumber
+    };
+
     res.status(201).json({
       success: true,
       message: 'User created successfully',
-      data: { user: newUser }
+      user: responseUser,
+      data: { user: responseUser }
     });
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
@@ -136,6 +148,7 @@ export const getUsers = async (req, res) => {
 
     res.json({
       success: true,
+      users,
       data: {
         users,
         pagination: {
@@ -361,6 +374,7 @@ export const getInvestigatingOfficers = async (req, res) => {
 
     res.json({
       success: true,
+      officers,
       data: { officers }
     });
   } catch (error) {
@@ -403,6 +417,65 @@ export const getSupervisors = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve supervisors'
+    });
+  }
+};
+/**
+ * Delete user (Admin only)
+ */
+export const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Don't allow deleting self
+    if (parseInt(userId) === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete your own account'
+      });
+    }
+
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Log deletion
+    await AuditLog.create({
+      userId: req.user.id,
+      action: 'user_deleted',
+      resourceType: 'user',
+      resourceId: user.id.toString(),
+      details: {
+        username: user.username,
+        role: user.role
+      },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+      sessionId: req.sessionId
+    });
+
+    auditLogger.warn('User deleted', {
+      deletedBy: req.user.id,
+      userId: user.id,
+      username: user.username
+    });
+
+    await user.destroy();
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    logger.error('Delete user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete user'
     });
   }
 };
