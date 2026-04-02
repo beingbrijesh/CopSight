@@ -1,4 +1,4 @@
-import { CaseQuery, EvidenceBookmark, AuditLog } from '../models/index.js';
+import { CaseQuery, EvidenceBookmark, AuditLog, Case } from '../models/index.js';
 import logger from '../config/logger.js';
 import aiClient from '../services/ai/aiClient.js';
 
@@ -114,10 +114,50 @@ export const createQuery = async (req, res) => {
     });
   }
 };
-
 /**
- * Get query history for a case
+ * STREAM query via SSE — proxies LLM token stream to browser
+ * Uses in-memory cache to replay identical queries instantly.
  */
+export const streamQuery = async (req, res) => {
+  const { caseId } = req.params;
+  const { queryText, query: queryAlias, queryType } = req.body;
+  const queryText_ = queryText || queryAlias;
+
+  if (!queryText_) {
+    // End SSE-style even for validation errors so the client handles it uniformly
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.write(`data: ${JSON.stringify({ type: 'error', message: 'Query text is required' })}\n\n`);
+    res.write('data: [DONE]\n\n');
+    res.end();
+    return;
+  }
+
+  // Check case exists before opening stream
+  try {
+    const caseRecord = await Case.findByPk(parseInt(caseId));
+    if (!caseRecord) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.write(`data: ${JSON.stringify({ type: 'error', message: 'Case not found' })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+      return;
+    }
+  } catch (dbError) {
+    logger.error('streamQuery db check error:', dbError);
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.write(`data: ${JSON.stringify({ type: 'error', message: 'Database error. Please try again.' })}\n\n`);
+    res.write('data: [DONE]\n\n');
+    res.end();
+    return;
+  }
+
+  logger.info(`Starting SSE stream for case ${caseId}: "${queryText_.slice(0, 60)}..."`);
+
+  // Hand off to aiClient — it handles all SSE headers, piping, caching, and errors
+  await aiClient.streamQuery(parseInt(caseId), queryText_, req.user.id, res);
+};
+
+
 export const getQueryHistory = async (req, res) => {
   try {
     const { caseId } = req.params;

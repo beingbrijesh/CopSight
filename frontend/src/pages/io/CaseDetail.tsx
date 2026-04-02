@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Activity, Search, Upload, Bookmark, FileText, Loader2, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Activity, Search, Upload, Bookmark, FileText, Loader2, AlertCircle, CheckCircle2, RefreshCw, Network } from 'lucide-react';
 import { caseAPI, uploadAPI } from '../../lib/api';
 import { Navbar } from '../../components/Navbar';
 import { CrossCaseConnections } from '../../components/CrossCaseConnections';
@@ -326,7 +326,7 @@ export const CaseDetail = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <button className="bg-white p-4 rounded-lg shadow hover:shadow-md transition">
             <Upload className="w-6 h-6 text-blue-600 mb-2" />
             <div className="text-sm font-medium">Upload Data</div>
@@ -358,6 +358,13 @@ export const CaseDetail = () => {
           >
             <FileText className="w-6 h-6 text-red-600 mb-2" />
             <div className="text-sm font-medium">Generate Report</div>
+          </button>
+          <button 
+            onClick={() => navigate(`/io/case/${caseId}/network`)}
+            className="bg-white p-4 rounded-lg shadow hover:shadow-md transition"
+          >
+            <Network className="w-6 h-6 text-indigo-600 mb-2" />
+            <div className="text-sm font-medium">Network Graph</div>
           </button>
         </div>
 

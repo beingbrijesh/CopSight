@@ -41,6 +41,7 @@ import crossCaseRoutes from './routes/crossCaseRoutes.js';
 import alertRoutes from './routes/alertRoutes.js';
 import integrationRoutes from './routes/integrationRoutes.js';
 import performanceRoutes from './routes/performanceRoutes.js';
+import graphRoutes from './routes/graphRoutes.js';
 
 // Import middleware
 import { apiRateLimit, authRateLimit, searchRateLimit, uploadRateLimit, aiRateLimit } from './middleware/rateLimit.js';
@@ -92,7 +93,7 @@ app.use('/api/cross-case', apiRateLimit, performanceMiddleware, crossCaseRoutes)
 app.use('/api/alerts', apiRateLimit, performanceMiddleware, alertRoutes);
 app.use('/api/integration', apiRateLimit, performanceMiddleware, integrationRoutes);
 app.use('/api/performance', apiRateLimit, performanceMiddleware, performanceRoutes);
-
+app.use('/api/graph', apiRateLimit, performanceMiddleware, graphRoutes);
 
 // 404 handler
 app.use((req, res) => {

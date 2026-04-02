@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   createQuery,
+  streamQuery,
   getQueryHistory,
   getQueryById
 } from '../controllers/queryController.js';
@@ -17,6 +18,13 @@ router.post(
   '/case/:caseId',
   checkCaseAccess,
   createQuery
+);
+
+// STREAM query via SSE — returns real-time tokens from local LLM
+router.post(
+  '/case/:caseId/stream',
+  checkCaseAccess,
+  streamQuery
 );
 
 // Get query history (IO and Supervisor)

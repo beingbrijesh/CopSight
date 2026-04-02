@@ -11,7 +11,7 @@
     "dev:parser": "nodemon src/services/parser-service/server.js",
     "dev:search": "nodemon src/services/search-service/server.js",
     "dev:graph": "nodemon src/services/graph-service/server.js",
-    "test": "jest --coverage",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "lint": "eslint src/**/*.js"
   },
   "keywords": [

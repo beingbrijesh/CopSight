@@ -128,10 +128,13 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
       const confidence = typeof entity.confidence === 'number' ? entity.confidence : 0.5;
 
       await session.run(
-        `MERGE (e:${label} {value: $value})
+        `MATCH (c:Case {id: $caseId})
+         MERGE (e:${label} {value: $value})
          SET e.type = $type,
-             e.confidence = $confidence`,
+             e.confidence = $confidence
+         MERGE (c)-[:HAS_ENTITY]->(e)`,
         {
+          caseId,
           value,
           type,
           confidence
