@@ -7,14 +7,31 @@ from typing import Dict, List, Any, Optional
 from pydantic import BaseModel
 import logging
 
-from ..services.anomaly_detector import anomaly_detector
-from ..services.deep_learning_analyzer import deep_learning_analyzer
-from ..services.evidence_classifier import evidence_classifier
-from ..services.pattern_recognition import pattern_recognition_engine
+try:
+    from ..services.anomaly_detector import anomaly_detector
+    from ..services.deep_learning_analyzer import deep_learning_analyzer
+    from ..services.evidence_classifier import evidence_classifier
+    from ..services.pattern_recognition import pattern_recognition_engine
+    ANALYSIS_IMPORT_ERROR = None
+except Exception as import_error:
+    anomaly_detector = None
+    deep_learning_analyzer = None
+    evidence_classifier = None
+    pattern_recognition_engine = None
+    ANALYSIS_IMPORT_ERROR = import_error
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def ensure_analysis_dependencies() -> None:
+    """Fail analysis endpoints gracefully when optional ML deps are unavailable."""
+    if ANALYSIS_IMPORT_ERROR is not None:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Advanced analysis dependencies are unavailable: {ANALYSIS_IMPORT_ERROR}"
+        )
 
 # Pydantic models for request/response
 class AnomalyDetectionRequest(BaseModel):
@@ -52,6 +69,7 @@ class AnalysisRequest(BaseModel):
 async def detect_anomalies(request: AnomalyDetectionRequest):
     """Enhanced anomaly detection with multiple algorithms"""
     try:
+        ensure_analysis_dependencies()
         # This endpoint now uses the enhanced anomaly detector
         # Implementation would query the appropriate data based on case_id and data_type
 
@@ -76,6 +94,7 @@ async def detect_anomalies(request: AnomalyDetectionRequest):
 async def deep_learning_analysis(request: DeepLearningRequest, background_tasks: BackgroundTasks):
     """Advanced deep learning analysis endpoint"""
     try:
+        ensure_analysis_dependencies()
         operation = request.operation
         data = request.data
         parameters = request.parameters or {}
@@ -150,6 +169,7 @@ async def deep_learning_analysis(request: DeepLearningRequest, background_tasks:
 async def classify_evidence(request: EvidenceClassificationRequest):
     """ML-based evidence classification endpoint"""
     try:
+        ensure_analysis_dependencies()
         evidence_list = request.evidence_list
         algorithm = request.algorithm
         batch_size = min(request.batch_size, len(evidence_list))
@@ -196,6 +216,7 @@ async def cluster_evidence(
 ):
     """Cluster evidence using unsupervised learning"""
     try:
+        ensure_analysis_dependencies()
         if len(evidence_list) < n_clusters:
             raise HTTPException(
                 status_code=400,
@@ -218,6 +239,7 @@ async def cluster_evidence(
 async def recognize_patterns(request: PatternRecognitionRequest):
     """Advanced pattern recognition analysis"""
     try:
+        ensure_analysis_dependencies()
         data = request.data
         pattern_types = request.pattern_types
         analysis_depth = request.analysis_depth
@@ -249,6 +271,7 @@ async def recognize_patterns(request: PatternRecognitionRequest):
 async def train_model(request: TrainingRequest, background_tasks: BackgroundTasks):
     """Train ML models for various tasks"""
     try:
+        ensure_analysis_dependencies()
         training_data = request.training_data
         model_type = request.model_type
         parameters = request.parameters or {}

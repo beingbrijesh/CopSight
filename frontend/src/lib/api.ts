@@ -161,6 +161,9 @@ export const caseAPI = {
   getCaseChats: (caseId: number, params?: any) => api.get(`/cases/${caseId}/chats`, { params }),
   
   getStatistics: () => api.get('/cases/statistics'),
+
+  reviewCase: (caseId: number, data: { action: string; feedback?: string }) => 
+    api.post(`/cases/${caseId}/review`, data),
 };
 
 // Upload API
@@ -199,10 +202,10 @@ export const queryAPI = {
 // Bookmark API
 export const bookmarkAPI = {
   createBookmark: (caseId: number, data: any) =>
-    api.post(`/cases/${caseId}/bookmarks`, data),
+    api.post(`/bookmarks/case/${caseId}`, data),
   
   getBookmarks: (caseId: number, params?: any) =>
-    api.get(`/cases/${caseId}/bookmarks`, { params }),
+    api.get(`/bookmarks/case/${caseId}`, { params }),
   
   updateBookmark: (bookmarkId: number, data: any) =>
     api.put(`/bookmarks/${bookmarkId}`, data),
@@ -211,7 +214,31 @@ export const bookmarkAPI = {
     api.delete(`/bookmarks/${bookmarkId}`),
   
   reorderBookmarks: (caseId: number, bookmarkIds: number[]) =>
-    api.post(`/cases/${caseId}/bookmarks/reorder`, { bookmarkIds }),
+    api.post(`/bookmarks/case/${caseId}/reorder`, { bookmarkIds }),
+};
+
+// Report API
+export const reportAPI = {
+  generateReport: (caseId: number, options: any) =>
+    api.post(`/reports/case/${caseId}/generate`, options, { responseType: 'blob' }),
+    
+  getReportHistory: (caseId: number) =>
+    api.get(`/reports/case/${caseId}/history`),
+    
+  getTemplates: () =>
+    api.get('/reports/templates'),
+};
+
+// Notification API
+export const notificationAPI = {
+  getNotifications: (params?: any) => 
+    api.get('/notifications', { params }),
+
+  markAsRead: (notificationId: number) => 
+    api.put(`/notifications/${notificationId}/read`),
+
+  markAllAsRead: () => 
+    api.put('/notifications/read-all'),
 };
 
 // Cross-Case API

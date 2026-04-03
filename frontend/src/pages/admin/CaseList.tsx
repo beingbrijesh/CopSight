@@ -1,15 +1,36 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Eye } from 'lucide-react';
 import { caseAPI } from '../../lib/api';
-import { Navbar } from '../../components/Navbar';
+import { useAuthStore } from '../../store/authStore';
 import { CreateCase } from './CreateCase';
+import { ViewCaseModal } from './ViewCaseModal';
+import { CaseReviewModal } from '../../components/CaseReviewModal';
+import { useLocation } from 'react-router-dom';
 
 export const CaseList = () => {
-  const [cases, setCases] = useState([]);
+  const [cases, setCases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showCreateCase, setShowCreateCase] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<any>(null);
+  const [reviewCase, setReviewCase] = useState<any>(null);
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
+  const isSupervisor = user?.role === 'supervisor';
+  const location = useLocation();
+
+  // Handle URL parameters for direct linking to review
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const reviewTargetId = searchParams.get('reviewCase');
+    if (reviewTargetId && cases.length > 0) {
+      const targetCase = cases.find((c: any) => c.id.toString() === reviewTargetId);
+      if (targetCase && targetCase.status === 'created' && isSupervisor) {
+        setReviewCase(targetCase);
+      }
+    }
+  }, [location.search, cases, isSupervisor]);
 
   useEffect(() => {
     loadCases();
@@ -34,22 +55,21 @@ export const CaseList = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="mx-auto max-w-7xl">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Case Management</h2>
             <p className="text-gray-600 mt-1">Manage all investigation cases</p>
           </div>
-          <button
-            onClick={() => setShowCreateCase(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-          >
-            <Plus className="w-4 h-4" />
-            Create Case
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setShowCreateCase(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            >
+              <Plus className="w-4 h-4" />
+              Create Case
+            </button>
+          )}
         </div>
 
         <div className="bg-white rounded-lg shadow">
@@ -120,21 +140,49 @@ export const CaseList = () => {
                         <span>Created: {new Date(c.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition">
-                      <Eye className="w-4 h-4" />
-                      View
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setSelectedCase(c)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition text-sm font-medium"
+                      >
+                        <Eye className="w-4 h-4" />
+                        View
+                      </button>
+                      
+                      {isSupervisor && c.status === 'created' && (
+                        <button 
+                          onClick={() => setReviewCase(c)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-indigo-600 hover:bg-indigo-50 border border-indigo-200 rounded-lg transition text-sm font-medium bg-white shadow-sm"
+                        >
+                          Review
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-      </div>
 
       {showCreateCase && (
         <CreateCase
           onClose={() => setShowCreateCase(false)}
+          onSuccess={loadCases}
+        />
+      )}
+
+      {selectedCase && (
+        <ViewCaseModal
+          caseData={selectedCase}
+          onClose={() => setSelectedCase(null)}
+        />
+      )}
+
+      {reviewCase && (
+        <CaseReviewModal
+          caseData={reviewCase}
+          onClose={() => setReviewCase(null)}
           onSuccess={loadCases}
         />
       )}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, AlertCircle, MessageSquare, Phone, Users, Bookmark, Download } from 'lucide-react';
+import { AlertCircle, Bookmark, CheckCircle, Download, MessageSquare, Phone, Users } from 'lucide-react';
 
 interface QueryResultsProps {
   results: {
@@ -12,265 +12,209 @@ interface QueryResultsProps {
   };
 }
 
+const getConfidenceTone = (confidence: number) => {
+  if (confidence >= 0.8) return 'bg-emerald-50 text-emerald-700';
+  if (confidence >= 0.6) return 'bg-amber-50 text-amber-700';
+  return 'bg-red-50 text-red-700';
+};
+
+const getSourceIcon = (sourceType: string) => {
+  if (sourceType === 'sms' || sourceType === 'whatsapp') return MessageSquare;
+  if (sourceType === 'call_log') return Phone;
+  return Users;
+};
+
 export const QueryResults = ({ results }: QueryResultsProps) => {
   const [activeTab, setActiveTab] = useState<'answer' | 'evidence' | 'analysis'>('answer');
   const [bookmarkedItems, setBookmarkedItems] = useState<Set<string>>(new Set());
 
   const handleBookmark = (itemId: string) => {
-    const newBookmarks = new Set(bookmarkedItems);
-    if (newBookmarks.has(itemId)) {
-      newBookmarks.delete(itemId);
-    } else {
-      newBookmarks.add(itemId);
-    }
-    setBookmarkedItems(newBookmarks);
-  };
-
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return 'text-green-600 bg-green-100';
-    if (confidence >= 0.6) return 'text-yellow-600 bg-yellow-100';
-    return 'text-red-600 bg-red-100';
-  };
-
-  const getConfidenceLabel = (confidence: number) => {
-    if (confidence >= 0.8) return 'High Confidence';
-    if (confidence >= 0.6) return 'Medium Confidence';
-    return 'Low Confidence';
+    setBookmarkedItems((previous) => {
+      const next = new Set(previous);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4">
-        <div className="flex items-center justify-between">
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="border-b border-gray-200 px-5 py-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-white">Query Results</h2>
-            <p className="text-purple-100 text-sm mt-1">
-              Found {results.evidence?.length || 0} relevant items
+            <h2 className="text-lg font-semibold text-gray-900">Query Results</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              {results.evidence?.length || 0} evidence items matched this request.
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className={`px-3 py-1 rounded-full text-sm font-medium ${getConfidenceColor(results.confidence || 0)}`}>
-              {getConfidenceLabel(results.confidence || 0)}
-            </div>
-            <button className="px-4 py-2 bg-white text-purple-600 rounded-lg hover:bg-purple-50 transition flex items-center gap-2">
-              <Download className="w-4 h-4" />
+          <div className="flex items-center gap-3">
+            <span className={`rounded-full px-3 py-1 text-xs font-medium ${getConfidenceTone(results.confidence || 0)}`}>
+              Confidence {Math.round((results.confidence || 0) * 100)}%
+            </span>
+            <button className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900">
+              <Download className="h-4 w-4" />
               Export
             </button>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b">
-        <div className="flex">
-          <button
-            onClick={() => setActiveTab('answer')}
-            className={`px-6 py-3 font-medium transition ${
-              activeTab === 'answer'
-                ? 'text-purple-600 border-b-2 border-purple-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            AI Answer
-          </button>
-          <button
-            onClick={() => setActiveTab('evidence')}
-            className={`px-6 py-3 font-medium transition ${
-              activeTab === 'evidence'
-                ? 'text-purple-600 border-b-2 border-purple-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Evidence ({results.evidence?.length || 0})
-          </button>
-          <button
-            onClick={() => setActiveTab('analysis')}
-            className={`px-6 py-3 font-medium transition ${
-              activeTab === 'analysis'
-                ? 'text-purple-600 border-b-2 border-purple-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Analysis
-          </button>
+      <div className="border-b border-gray-200 px-2 sm:px-4">
+        <div className="flex gap-1">
+          {[
+            ['answer', 'AI Answer'],
+            ['evidence', `Evidence (${results.evidence?.length || 0})`],
+            ['analysis', 'Analysis'],
+          ].map(([tab, label]) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab as 'answer' | 'evidence' | 'analysis')}
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                activeTab === tab ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-6">
-        {/* Answer Tab */}
+      <div className="p-5">
         {activeTab === 'answer' && (
-          <div>
+          <div className="space-y-6">
             {results.answer ? (
-              <div className="prose max-w-none">
-                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-                  <div className="flex items-start">
-                    <CheckCircle className="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
-                    <div className="text-gray-800 whitespace-pre-wrap">{results.answer}</div>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-700" />
+                  <p className="whitespace-pre-wrap text-sm leading-6 text-gray-800">{results.answer}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-gray-200 p-6 text-sm text-gray-500">
+                No answer is available for this query yet.
+              </div>
+            )}
+
+            {results.findings?.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Key Findings</h3>
+                {results.findings.map((finding: any, index: number) => (
+                  <div key={`${finding.finding || finding}-${index}`} className="flex gap-3 rounded-lg border border-gray-200 p-4">
+                    <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-800">{finding.finding || finding}</p>
+                      {finding.type && <p className="mt-1 text-xs text-gray-400">{finding.type}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'evidence' && (
+          <div className="space-y-4">
+            {results.evidence?.length > 0 ? (
+              results.evidence.map((item: any, index: number) => {
+                const sourceType = item.source?.type || item.metadata?.sourceType || 'unknown';
+                const SourceIcon = getSourceIcon(sourceType);
+
+                return (
+                  <div key={item.id || index} className="rounded-lg border border-gray-200 p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex min-w-0 flex-1 gap-3">
+                        <div className="rounded-lg bg-gray-100 p-2">
+                          <SourceIcon className="h-4 w-4 text-gray-700" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-medium capitalize text-gray-900">{sourceType.replaceAll('_', ' ')}</span>
+                            <span className="text-xs text-gray-400">Score {(item.score || 0).toFixed(2)}</span>
+                          </div>
+                          <p className="mt-2 text-sm leading-6 text-gray-700">{item.content || item.source?.content}</p>
+                          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-400">
+                            {item.metadata?.phoneNumber && <span>From {item.metadata.phoneNumber}</span>}
+                            {item.metadata?.timestamp && <span>{new Date(item.metadata.timestamp).toLocaleString()}</span>}
+                          </div>
+                          {item.highlight?.content?.[0] && (
+                            <div className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                              <span dangerouslySetInnerHTML={{ __html: item.highlight.content[0] }} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleBookmark(item.id || String(index))}
+                        className={`rounded-lg p-2 transition ${
+                          bookmarkedItems.has(item.id || String(index))
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
+                        }`}
+                      >
+                        <Bookmark className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="rounded-lg border border-dashed border-gray-200 p-6 text-sm text-gray-500">
+                No evidence matched this query.
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'analysis' && (
+          <div className="space-y-6">
+            {results.query_components && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Intent</p>
+                  <p className="mt-2 text-sm text-gray-900">{results.query_components.intent || 'N/A'}</p>
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Keywords</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {(results.query_components.keywords || []).map((keyword: string) => (
+                      <span key={keyword} className="rounded-full bg-white px-2.5 py-1 text-xs text-gray-700">
+                        {keyword}
+                      </span>
+                    ))}
                   </div>
                 </div>
-
-                {results.findings && results.findings.length > 0 && (
-                  <div className="mt-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Findings</h3>
-                    <div className="space-y-3">
-                      {results.findings.map((finding: any, idx: number) => (
-                        <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                          <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="text-gray-800">{finding.finding || finding}</p>
-                            {finding.type && (
-                              <span className="text-xs text-gray-500 mt-1 inline-block">
-                                Type: {finding.type}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                {results.query_components.entities?.length > 0 && (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 md:col-span-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Detected Entities</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {results.query_components.entities.map((entity: string) => (
+                        <span key={entity} className="rounded-full bg-white px-2.5 py-1 text-xs text-gray-700">
+                          {entity}
+                        </span>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No answer available. The AI service may not be running.
-              </div>
             )}
-          </div>
-        )}
 
-        {/* Evidence Tab */}
-        {activeTab === 'evidence' && (
-          <div className="space-y-4">
-            {results.evidence && results.evidence.length > 0 ? (
-              results.evidence.map((item: any, idx: number) => (
-                <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      {item.source?.type === 'sms' || item.source?.type === 'whatsapp' ? (
-                        <MessageSquare className="w-5 h-5 text-blue-600" />
-                      ) : item.source?.type === 'call_log' ? (
-                        <Phone className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <Users className="w-5 h-5 text-purple-600" />
-                      )}
-                      <span className="text-sm font-medium text-gray-700">
-                        {item.source?.type || item.metadata?.sourceType || 'Unknown'}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        Score: {(item.score || 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => handleBookmark(item.id)}
-                      className={`p-1 rounded hover:bg-gray-100 transition ${
-                        bookmarkedItems.has(item.id) ? 'text-yellow-500' : 'text-gray-400'
-                      }`}
-                    >
-                      <Bookmark className="w-5 h-5" fill={bookmarkedItems.has(item.id) ? 'currentColor' : 'none'} />
-                    </button>
-                  </div>
-
-                  <div className="mb-3">
-                    <p className="text-gray-800">{item.content || item.source?.content}</p>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
-                    {item.metadata?.phoneNumber && (
-                      <span>From: {item.metadata.phoneNumber}</span>
-                    )}
-                    {item.metadata?.timestamp && (
-                      <span>Date: {new Date(item.metadata.timestamp).toLocaleString()}</span>
-                    )}
-                    {item.source && (
-                      <span className="text-blue-600 cursor-pointer hover:underline">
-                        View Source
-                      </span>
-                    )}
-                  </div>
-
-                  {item.highlight && (
-                    <div className="mt-3 p-2 bg-yellow-50 border-l-2 border-yellow-400 text-sm">
-                      <span dangerouslySetInnerHTML={{ __html: item.highlight.content?.[0] }} />
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No evidence found for this query
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
+                <p className="text-2xl font-semibold text-gray-900">{results.evidence?.length || 0}</p>
+                <p className="mt-1 text-sm text-gray-500">Evidence Items</p>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Analysis Tab */}
-        {activeTab === 'analysis' && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Query Analysis</h3>
-              
-              {results.query_components && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Intent</h4>
-                    <p className="text-gray-900">{results.query_components.intent || 'N/A'}</p>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Keywords</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {results.query_components.keywords?.map((keyword: string, idx: number) => (
-                        <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                          {keyword}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {results.query_components.entities && results.query_components.entities.length > 0 && (
-                    <div className="bg-gray-50 p-4 rounded-lg col-span-2">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Detected Entities</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {results.query_components.entities.map((entity: string, idx: number) => (
-                          <span key={idx} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                            {entity}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {results.query_components.filters && Object.keys(results.query_components.filters).length > 0 && (
-                    <div className="bg-gray-50 p-4 rounded-lg col-span-2">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Applied Filters</h4>
-                      <pre className="text-xs text-gray-700 overflow-auto">
-                        {JSON.stringify(results.query_components.filters, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-blue-600">{results.evidence?.length || 0}</div>
-                  <div className="text-sm text-gray-600">Evidence Items</div>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {Math.round((results.confidence || 0) * 100)}%
-                  </div>
-                  <div className="text-sm text-gray-600">Confidence</div>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-purple-600">{results.findings?.length || 0}</div>
-                  <div className="text-sm text-gray-600">Key Findings</div>
-                </div>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
+                <p className="text-2xl font-semibold text-gray-900">{Math.round((results.confidence || 0) * 100)}%</p>
+                <p className="mt-1 text-sm text-gray-500">Confidence</p>
+              </div>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
+                <p className="text-2xl font-semibold text-gray-900">{results.findings?.length || 0}</p>
+                <p className="mt-1 text-sm text-gray-500">Findings</p>
               </div>
             </div>
           </div>

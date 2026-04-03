@@ -42,6 +42,7 @@ import alertRoutes from './routes/alertRoutes.js';
 import integrationRoutes from './routes/integrationRoutes.js';
 import performanceRoutes from './routes/performanceRoutes.js';
 import graphRoutes from './routes/graphRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 // Import middleware
 import { apiRateLimit, authRateLimit, searchRateLimit, uploadRateLimit, aiRateLimit } from './middleware/rateLimit.js';
@@ -81,6 +82,10 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.get('/api/ping', (req, res) => {
+  res.json({ success: true, message: 'pong', version: '1.0.1' });
+});
+
 // API Routes with rate limiting and performance monitoring
 app.use('/api/auth', authRateLimit, performanceMiddleware, authRoutes);
 app.use('/api/users', apiRateLimit, performanceMiddleware, userRoutes);
@@ -94,6 +99,7 @@ app.use('/api/alerts', apiRateLimit, performanceMiddleware, alertRoutes);
 app.use('/api/integration', apiRateLimit, performanceMiddleware, integrationRoutes);
 app.use('/api/performance', apiRateLimit, performanceMiddleware, performanceRoutes);
 app.use('/api/graph', apiRateLimit, performanceMiddleware, graphRoutes);
+app.use('/api/notifications', apiRateLimit, performanceMiddleware, notificationRoutes);
 
 // 404 handler
 app.use((req, res) => {

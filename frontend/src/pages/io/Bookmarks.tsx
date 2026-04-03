@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Bookmark, Trash2, Tag, Search, Download, Star } from 'lucide-react';
-import { Navbar } from '../../components/Navbar';
-import { api } from '../../lib/api';
+import { bookmarkAPI } from '../../lib/api';
 
 export const Bookmarks = () => {
   const { caseId } = useParams();
@@ -18,7 +17,7 @@ export const Bookmarks = () => {
   const loadBookmarks = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/bookmarks/case/${caseId}`);
+      const response = await bookmarkAPI.getBookmarks(Number(caseId));
       setBookmarks(response.data.data?.bookmarks || []);
     } catch (error) {
       console.error('Failed to load bookmarks:', error);
@@ -31,7 +30,7 @@ export const Bookmarks = () => {
     if (!confirm('Are you sure you want to delete this bookmark?')) return;
 
     try {
-      await api.delete(`/api/bookmarks/${bookmarkId}`);
+      await bookmarkAPI.deleteBookmark(bookmarkId);
       setBookmarks(bookmarks.filter(b => b.id !== bookmarkId));
     } catch (error) {
       console.error('Failed to delete bookmark:', error);
@@ -60,10 +59,7 @@ export const Bookmarks = () => {
   const allTags = Array.from(new Set(bookmarks.flatMap(b => b.tags || [])));
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-7xl">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -199,6 +195,5 @@ export const Bookmarks = () => {
           </div>
         )}
       </div>
-    </div>
   );
 };

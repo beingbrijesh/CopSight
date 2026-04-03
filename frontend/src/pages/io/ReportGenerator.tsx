@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { FileText, Download, Clock, CheckCircle, Settings } from 'lucide-react';
-import { Navbar } from '../../components/Navbar';
 import { api } from '../../lib/api';
 
 export const ReportGenerator = () => {
@@ -28,15 +27,15 @@ export const ReportGenerator = () => {
   const loadData = async () => {
     try {
       // Load case data
-      const caseResponse = await api.get(`/api/cases/${caseId}`);
+      const caseResponse = await api.get(`/cases/${caseId}`);
       setCaseData(caseResponse.data.data?.case);
 
       // Load templates
-      const templatesResponse = await api.get('/api/reports/templates');
+      const templatesResponse = await api.get('/reports/templates');
       setTemplates(templatesResponse.data.data?.templates || []);
 
       // Load report history
-      const historyResponse = await api.get(`/api/reports/case/${caseId}/history`);
+      const historyResponse = await api.get(`/reports/case/${caseId}/history`);
       setReportHistory(historyResponse.data.data?.reports || []);
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -47,7 +46,7 @@ export const ReportGenerator = () => {
     setGenerating(true);
     try {
       const response = await api.post(
-        `/api/reports/case/${caseId}/generate`,
+        `/reports/case/${caseId}/generate`,
         options,
         { responseType: 'blob' }
       );
@@ -87,10 +86,7 @@ export const ReportGenerator = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-7xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <FileText className="w-6 h-6 text-green-600" />
@@ -270,6 +266,5 @@ export const ReportGenerator = () => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
