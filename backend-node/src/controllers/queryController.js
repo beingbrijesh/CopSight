@@ -8,7 +8,7 @@ import aiClient from '../services/ai/aiClient.js';
 export const createQuery = async (req, res) => {
   try {
     const { caseId } = req.params;
-    const { queryText: queryTextDirect, query: queryAlias, queryType, filters } = req.body;
+    const { queryText: queryTextDirect, query: queryAlias, queryType, filters, sessionId } = req.body;
     const queryText = queryTextDirect || queryAlias;
 
     if (!queryText) {
@@ -29,7 +29,8 @@ export const createQuery = async (req, res) => {
       aiResult = await aiClient.executeQuery(
         parseInt(caseId),
         queryText,
-        req.user.id
+        req.user.id,
+        sessionId
       );
 
       resultsCount = aiResult.total_results || 0;
@@ -69,7 +70,8 @@ export const createQuery = async (req, res) => {
       filters: filters || {},
       resultsCount,
       processingTimeMs: processingTime,
-      confidenceScore
+      confidenceScore,
+      sessionId
     });
 
     // Log query
@@ -120,7 +122,7 @@ export const createQuery = async (req, res) => {
  */
 export const streamQuery = async (req, res) => {
   const { caseId } = req.params;
-  const { queryText, query: queryAlias, queryType } = req.body;
+  const { queryText, query: queryAlias, queryType, sessionId } = req.body;
   const queryText_ = queryText || queryAlias;
 
   if (!queryText_) {
@@ -154,7 +156,7 @@ export const streamQuery = async (req, res) => {
   logger.info(`Starting SSE stream for case ${caseId}: "${queryText_.slice(0, 60)}..."`);
 
   // Hand off to aiClient — it handles all SSE headers, piping, caching, and errors
-  await aiClient.streamQuery(parseInt(caseId), queryText_, req.user.id, res);
+  await aiClient.streamQuery(parseInt(caseId), queryText_, req.user.id, res, sessionId);
 };
 
 
@@ -177,6 +179,8 @@ export const getQueryHistory = async (req, res) => {
       offset: parseInt(offset),
       order: [['created_at', 'DESC']]
     });
+
+    logger.info(`[getQueryHistory] Found ${count} queries for case ${caseId}`);
 
     res.json({
       success: true,

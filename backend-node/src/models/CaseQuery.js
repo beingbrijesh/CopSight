@@ -53,6 +53,16 @@ const CaseQuery = sequelize.define('CaseQuery', {
   answer: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  sessionId: {
+    type: DataTypes.STRING(100),
+    field: 'session_id'
+  },
+  findings: {
+    type: DataTypes.JSONB
+  },
+  evidence: {
+    type: DataTypes.JSONB
   }
 }, {
   tableName: 'case_queries',

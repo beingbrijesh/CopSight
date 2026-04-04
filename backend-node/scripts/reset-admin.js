@@ -1,37 +1,51 @@
-import bcrypt from 'bcryptjs';
 import sequelize from '../src/config/database.js';
 import User from '../src/models/User.js';
+import bcrypt from 'bcryptjs'; // Import bcrypt for manual hashing
 
 async function resetAdmin() {
   try {
     await sequelize.authenticate();
     console.log('✓ Database connected');
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    let admin = await User.findOne({ where: { username: 'admin' } });
 
-    // Update admin user
-    const [updated] = await User.update(
-      { passwordHash: hashedPassword },
-      { where: { username: 'admin' } }
-    );
-
-    if (updated) {
-      console.log('✓ Admin password reset to: admin123');
-    } else {
-      console.log('⚠ Admin user not found, creating...');
+    if (admin) {
+      console.log('✓ Found admin user. Hashing password manually for reliability...');
+      const salt = await bcrypt.genSalt(12);
+      const hash = await bcrypt.hash('admin123', salt);
       
-      await User.create({
+      // Update with the already-hashed password
+      admin.passwordHash = hash;
+      await admin.save();
+      console.log('✓ Admin password updated with MANUAL hashing');
+    } else {
+      console.log('⚠ Admin user not found, creating new one natively...');
+      // create...
+      const salt = await bcrypt.genSalt(12);
+      const hash = await bcrypt.hash('admin123', salt);
+
+      admin = await User.create({
         fullName: 'System Administrator',
         username: 'admin',
         email: 'admin@ufdr.system',
-        passwordHash: hashedPassword,
+        passwordHash: hash, // Already hashed
         role: 'admin',
         badgeNumber: 'ADMIN001',
         isActive: true
       });
-      
-      console.log('✓ Admin user created');
+      console.log('✓ Admin user created with manual hashing');
+    }
+
+    // Double check from the database
+    const verified = await User.findOne({ where: { username: 'admin' }, raw: true });
+    console.log('Verification:');
+    console.log(`- Username: ${verified.username}`);
+    console.log(`- Password Hash in DB: ${verified.password_hash.substring(0, 15)}...`);
+    
+    if (verified.password_hash.startsWith('$2a$')) {
+      console.log('✓ SUCCESS: Password is now correctly hashed in the database.');
+    } else {
+      console.log('✗ FAILURE: Password is STILL not hashed! Verify column names.');
     }
 
     await sequelize.close();

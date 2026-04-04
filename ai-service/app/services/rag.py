@@ -20,7 +20,8 @@ class RAGPipeline:
         self,
         case_id: int,
         query: str,
-        user_id: int
+        user_id: int,
+        session_id: str = None
     ) -> Dict[str, Any]:
         """Execute complete RAG pipeline"""
         
@@ -31,9 +32,9 @@ class RAGPipeline:
             query_components = await llm_service.decompose_query(query)
             logger.info(f"Query decomposed: {query_components}")
             
-            # Step 2: Get conversation history
-            conversation_history = await self._get_conversation_history(case_id, user_id)
-            logger.info(f"Retrieved {len(conversation_history)} previous queries")
+            # Step 2: Get conversation history (filtered by session if provided)
+            conversation_history = await self._get_conversation_history(case_id, user_id, session_id=session_id)
+            logger.info(f"Retrieved {len(conversation_history)} previous queries for session {session_id}")
             
             # Step 2.5: Get cross-case connections
             cross_case_context = await self._get_cross_case_context(case_id)
@@ -69,7 +70,8 @@ class RAGPipeline:
                 user_id,
                 query,
                 query_components,
-                answer
+                answer,
+                session_id=session_id
             )
             
             return {
@@ -381,7 +383,8 @@ class RAGPipeline:
         self,
         case_id: int,
         user_id: int,
-        limit: int = 5
+        limit: int = 5,
+        session_id: str = None
     ) -> List[Dict[str, Any]]:
         """Get recent conversation history for the case and user"""
         
@@ -394,15 +397,24 @@ class RAGPipeline:
                     return []
                     
             async with db_manager.postgres.acquire() as conn:
-                queries = await conn.fetch("""
+                where_clause = "WHERE case_id = $1 AND user_id = $2 AND answer IS NOT NULL"
+                params = [case_id, user_id]
+                
+                if session_id:
+                    where_clause += " AND session_id = $3"
+                    params.append(session_id)
+                
+                limit_idx = len(params) + 1
+                where_clause += f" ORDER BY created_at DESC LIMIT ${limit_idx}"
+                params.append(limit)
+
+                queries = await conn.fetch(f"""
                     SELECT 
                         id, query_text, answer, results_count, confidence_score,
                         created_at
                     FROM case_queries
-                    WHERE case_id = $1 AND user_id = $2 AND answer IS NOT NULL
-                    ORDER BY created_at DESC
-                    LIMIT $3
-                """, case_id, user_id, limit)
+                    {where_clause}
+                """, *params)
                 
                 # Convert to list and reverse to get chronological order (oldest first)
                 history = []
@@ -580,7 +592,8 @@ class RAGPipeline:
         user_id: int,
         query: str,
         query_components: Dict[str, Any],
-        answer: Dict[str, Any]
+        answer: Dict[str, Any],
+        session_id: str = None
     ) -> int:
         """Save query to database"""
         
@@ -598,8 +611,9 @@ class RAGPipeline:
                 query_id = await conn.fetchval("""
                     INSERT INTO case_queries (
                         case_id, user_id, query_text, query_type,
-                        filters, results_count, confidence_score, answer, created_at
-                    ) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, NOW())
+                        filters, results_count, confidence_score, answer, session_id,
+                        findings, evidence, created_at
+                    ) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10::jsonb, $11::jsonb, NOW())
                     RETURNING id
                 """,
                     case_id,
@@ -607,9 +621,12 @@ class RAGPipeline:
                     query,
                     query_components.get("intent", "search"),
                     json.dumps(query_components.get("filters", {})),
-                    answer.get("evidence_count", 0),
+                    answer.get("results_count", 0),
                     answer.get("confidence", 0.0),
-                    answer.get("answer", "")
+                    answer.get("answer", ""),
+                    session_id,
+                    json.dumps(answer.get("findings", [])),
+                    json.dumps(answer.get("evidence", []))
                 )
                 
                 return query_id

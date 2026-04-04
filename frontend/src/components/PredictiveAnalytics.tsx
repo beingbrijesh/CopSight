@@ -82,8 +82,8 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="px-6 py-4 border-b border-gray-200">
+    <div className="bg-white rounded-lg shadow h-[600px] flex flex-col overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-purple-600" />
@@ -135,7 +135,8 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
+
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2">

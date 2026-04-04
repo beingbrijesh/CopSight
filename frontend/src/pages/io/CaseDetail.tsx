@@ -426,14 +426,14 @@ export const CaseDetail = () => {
 
         {/* Processing Summary & Job History */}
         {processing && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Data Summary */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-6 h-[450px] flex flex-col overflow-hidden">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Activity className="w-5 h-5" />
                 Data Summary
               </h2>
-              <div className="space-y-4">
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4">
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-gray-700">Devices Processed</span>
@@ -467,53 +467,56 @@ export const CaseDetail = () => {
             </div>
 
             {/* Recent Jobs */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-6 h-[450px] flex flex-col overflow-hidden">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <FileText className="w-5 h-5" />
                 Recent Processing Jobs
               </h2>
-              {processing.jobs && processing.jobs.length > 0 ? (
-                <div className="space-y-3">
-                  {processing.jobs.slice(0, 5).map((job: any) => (
-                    <div key={job.id} className="p-3 border border-gray-200 rounded-lg">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-900">
-                          Job #{job.id}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                          job.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          job.status === 'failed' ? 'bg-red-100 text-red-800' :
-                          job.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {job.status}
-                        </span>
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                {processing.jobs && processing.jobs.length > 0 ? (
+                  <div className="space-y-3">
+                    {processing.jobs.slice(0, 5).map((job: any) => (
+                      <div key={job.id} className="p-3 border border-gray-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-gray-900">
+                            Job #{job.id}
+                          </span>
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                            job.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            job.status === 'failed' ? 'bg-red-100 text-red-800' :
+                            job.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {job.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600">
+                          {new Date(job.created_at).toLocaleString('en-IN', {
+                            timeZone: 'Asia/Kolkata',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                          })}
+                        </p>
+                        {job.errorMessage && (
+                          <p className="text-xs text-red-600 mt-1">Error: {job.errorMessage}</p>
+                        )}
                       </div>
-                      <p className="text-xs text-gray-600">
-                        {new Date(job.created_at).toLocaleString('en-IN', {
-                          timeZone: 'Asia/Kolkata',
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit'
-                        })}
-                      </p>
-                      {job.errorMessage && (
-                        <p className="text-xs text-red-600 mt-1">Error: {job.errorMessage}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm">No processing jobs yet</p>
-                  <p className="text-xs mt-1">Upload a UFDR file to start processing</p>
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <FileText className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm">No processing jobs yet</p>
+                    <p className="text-xs mt-1">Upload a UFDR file to start processing</p>
+                  </div>
+                )}
+              </div>
             </div>
+
           </div>
         )}
 
@@ -546,7 +549,7 @@ export const CaseDetail = () => {
 
         {/* Active Processing Jobs */}
         {activeJobs.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="bg-white rounded-lg shadow p-6 mb-6 max-h-[400px] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
@@ -561,8 +564,9 @@ export const CaseDetail = () => {
                 Refresh
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4 px-1">
               {activeJobs.map((job: any) => (
+
                 <div key={job.id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -615,21 +619,21 @@ export const CaseDetail = () => {
 
         {/* Cross-Case Connections */}
         {caseData && componentsLoaded && (
-          <div className="mb-6">
+          <div className="mb-8 overflow-hidden">
             <CrossCaseConnections caseId={parseInt(caseId!)} />
           </div>
         )}
 
         {/* ML Anomaly Detection */}
         {caseData && componentsLoaded && (
-          <div className="mb-6">
+          <div className="mb-8">
             <AnomalyDetection caseId={parseInt(caseId!)} />
           </div>
         )}
 
         {/* Predictive Analytics */}
         {caseData && componentsLoaded && (
-          <div className="mb-6">
+          <div className="mb-8">
             <PredictiveAnalytics caseId={parseInt(caseId!)} />
           </div>
         )}

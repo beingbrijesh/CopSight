@@ -16,7 +16,7 @@ router.use(authenticate);
 
 // Create bookmark (IO only)
 router.post(
-  '/',
+  '/case/:caseId',
   createBookmark
 );
 

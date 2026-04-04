@@ -1,25 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Clock, Search } from 'lucide-react';
+import { Clock, Search, MessageSquare, ShieldCheck } from 'lucide-react';
 import { api } from '../lib/api';
 
 interface QueryHistoryProps {
   caseId: number;
-  onSelectQuery: (query: string) => void;
+  onSelectQuery: (item: any) => void;
+  refreshTrigger?: number;
 }
 
-export const QueryHistory = ({ caseId, onSelectQuery }: QueryHistoryProps) => {
+export const QueryHistory = ({ caseId, onSelectQuery, refreshTrigger }: QueryHistoryProps) => {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadHistory();
-  }, [caseId]);
+  }, [caseId, refreshTrigger]);
 
   const loadHistory = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/query/case/${caseId}/history`);
-      setHistory(response.data.data?.queries || []);
+      const response = await api.get(`/query/case/${caseId}/history`);
+      setHistory(response.data.data.queries || []);
     } catch (error) {
       console.error('Failed to load query history:', error);
     } finally {
@@ -29,59 +30,60 @@ export const QueryHistory = ({ caseId, onSelectQuery }: QueryHistoryProps) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-        </div>
+      <div className="space-y-3 p-2">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="animate-pulse bg-gray-800/30 rounded-xl p-4 border border-gray-800/50">
+            <div className="h-3 bg-gray-700/50 rounded w-3/4 mb-3"></div>
+            <div className="h-2 bg-gray-700/30 rounded w-1/2"></div>
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="px-6 py-4 border-b">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <Clock className="w-5 h-5" />
-          Query History
-        </h3>
-      </div>
-
-      <div className="divide-y max-h-96 overflow-y-auto">
-        {history.length > 0 ? (
-          history.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => onSelectQuery(item.queryText || item.query_text)}
-              className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <p className="text-gray-900 font-medium">{item.queryText || item.query_text}</p>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                    <span>{new Date(item.createdAt || item.created_at).toLocaleString()}</span>
-                    <span>•</span>
-                    <span>{item.resultsCount || item.results_count || 0} results</span>
-                    {item.confidenceScore && (
-                      <>
-                        <span>•</span>
-                        <span>Confidence: {Math.round((item.confidenceScore || item.confidence_score) * 100)}%</span>
-                      </>
-                    )}
-                  </div>
+    <div className="space-y-2">
+      {history.length > 0 ? (
+        history.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => onSelectQuery(item)}
+            className="w-full text-left p-4 rounded-xl bg-gray-800/20 hover:bg-purple-600/10 border border-gray-800/50 hover:border-purple-500/30 transition-all group relative overflow-hidden"
+          >
+            {/* Hover Accent */}
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-gray-300 font-medium text-xs line-clamp-2 group-hover:text-white transition-colors duration-200 leading-relaxed mb-2">
+                  {item.queryText || item.query_text}
+                </p>
+                <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-widest text-gray-600 group-hover:text-gray-500 transition-colors">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-2.5 h-2.5" />
+                    {new Date(item.createdAt || item.created_at).toLocaleDateString()}
+                  </span>
+                  {item.resultsCount || item.results_count ? (
+                    <span className="flex items-center gap-1">
+                      <ShieldCheck className="w-2.5 h-2.5 text-emerald-500/50" />
+                      {item.resultsCount || item.results_count} hits
+                    </span>
+                  ) : null}
                 </div>
-                <Search className="w-4 h-4 text-gray-400 flex-shrink-0 ml-4" />
               </div>
+              <MessageSquare className="w-3 h-3 text-gray-700 group-hover:text-purple-400 mt-0.5 flex-shrink-0 transition-colors" />
             </div>
-          ))
-        ) : (
-          <div className="px-6 py-8 text-center text-gray-500">
-            <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p>No query history yet</p>
-            <p className="text-sm mt-1">Your previous queries will appear here</p>
+          </button>
+        )
+      )) : (
+        <div className="py-20 text-center px-4">
+          <div className="w-12 h-12 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center mx-auto mb-4">
+            <Search className="w-6 h-6 text-gray-700" />
           </div>
-        )}
-      </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mb-1">No Query Logs Found</p>
+          <p className="text-[9px] text-gray-700">Submit a forensic query to begin.</p>
+        </div>
+      )}
     </div>
   );
 };

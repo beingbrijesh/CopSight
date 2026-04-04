@@ -112,13 +112,14 @@ CREATE TABLE IF NOT EXISTS evidence_bookmarks (
     case_id INTEGER REFERENCES cases(id) ON DELETE CASCADE,
     user_id INTEGER REFERENCES users(id),
     query_id INTEGER REFERENCES case_queries(id),
-    evidence_id VARCHAR(255),
-    evidence_type VARCHAR(50),
+    evidence_id VARCHAR(255) NOT NULL,
+    evidence_type VARCHAR(50) NOT NULL,
+    evidence_source VARCHAR(100),
+    evidence_content JSONB NOT NULL,
     content TEXT,
     notes TEXT,
     tags TEXT[],
-    source VARCHAR(50),
-    metadata JSONB,
+    bookmark_order INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -234,10 +235,10 @@ CREATE TABLE IF NOT EXISTS alert_rules (
 );
 
 -- Seed Users (passwords hashed with bcrypt, 12 rounds)
--- Password: Admin@123
+-- Password: admin123
 INSERT INTO users (username, email, password_hash, full_name, role, badge_number, rank, is_active)
 VALUES ('admin', 'admin@ufdr.local', 
-    crypt('Admin@123', gen_salt('bf', 12)),
+    crypt('admin123', gen_salt('bf', 12)),
     'System Administrator', 'admin', 'ADMIN-001', 'System Admin', true)
 ON CONFLICT (username) DO NOTHING;
 

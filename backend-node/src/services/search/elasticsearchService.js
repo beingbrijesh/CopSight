@@ -108,16 +108,21 @@ export const indexToElasticsearch = async (caseId, parsedData, entities) => {
 export const searchElasticsearch = async (caseId, query, filters = {}) => {
   try {
     const must = [
-      { term: { caseId } },
-      {
+      { term: { caseId } }
+    ];
+
+    if (query && query.trim() !== '') {
+      must.push({
         multi_match: {
           query,
           fields: ['content^2', 'phoneNumber', 'appName'],
           type: 'best_fields',
           fuzziness: 'AUTO'
         }
-      }
-    ];
+      });
+    } else {
+      must.push({ match_all: {} });
+    }
 
     // Add filters
     if (filters.sourceType) {

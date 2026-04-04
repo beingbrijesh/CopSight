@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  SYNTHETIC UFDR — COORDINATED CRIMINAL NETWORK
+  File: crime_network_syndicate.ufdr
+  Purpose: Simulates a tightly-knit criminal group (6 members, hub-and-spoke topology)
+           planning drug trafficking using encrypted comms, offshore coordination,
+           and cryptocurrency payments.
+  Use-case: Test graph-based network analysis, cross-device entity linking,
+             and anomaly detection (foreign comms, late-night bursts, VPN tunnels).
+-->
+<ufdr:UFDR xmlns:ufdr="http://www.forensicinstitute.org/ufdr"
+           xmlns:dc="http://purl.org/dc/elements/1.1/"
+           version="1.0">
+
+  <ufdr:metadata>
+    <dc:title>Operation ShadowRing — Criminal Network Communication Intercept</dc:title>
+    <dc:creator>CIU Digital Forensics Lab — Unit 7</dc:creator>
+    <dc:description>Extraction from 6 seized mobile devices belonging to suspects in an ongoing narcotics trafficking and money laundering investigation. Devices show coordinated encrypted communication, off-hours coordination meetings, crypto wallet transactions, and foreign handler contacts.</dc:description>
+    <dc:date>2025-03-15T08:00:00Z</dc:date>
+    <ufdr:caseNumber>CIU-2025-0078</ufdr:caseNumber>
+    <ufdr:investigator>IO Priya Sharma</ufdr:investigator>
+    <ufdr:extractionTool>Cellebrite UFED 7.60 / MSAB XRY 10.1</ufdr:extractionTool>
+    <ufdr:classification>RESTRICTED — LAW ENFORCEMENT ONLY</ufdr:classification>
+  </ufdr:metadata>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       DEVICE 1 — RINGLEADER: Karan Mehta (alias "KM")
+       IMEI: 352038101234567   Phone: +919876500001
+       Role: Hub — coordinates all 5 members, contacts foreign handler
+  ═══════════════════════════════════════════════════════════════ -->
+  <ufdr:device>
+    <ufdr:deviceInfo>
+      <ufdr:deviceType>mobile_phone</ufdr:deviceType>
+      <ufdr:manufacturer>OnePlus</ufdr:manufacturer>
+      <ufdr:model>OnePlus 11</ufdr:model>
+      <ufdr:imei>352038101234567</ufdr:imei>
+      <ufdr:imsi>404201234567890</ufdr:imsi>
+      <ufdr:msisdn>+919876500001</ufdr:msisdn>
+      <ufdr:serialNumber>KM-DEV-001</ufdr:serialNumber>
+      <ufdr:os>Android 14</ufdr:os>
+      <ufdr:extractionDate>2025-03-15T06:30:00Z</ufdr:extractionDate>
+      <ufdr:ownerName>Karan Mehta</ufdr:ownerName>
+      <ufdr:ownerAlias>KM / Boss</ufdr:ownerAlias>
+      <ufdr:role>ringleader</ufdr:role>
+    </ufdr:deviceInfo>
+
+    <ufdr:calls>
+      <!-- Daily sync with Deputy (Rahul) — always encrypted via Signal -->
+      <ufdr:call><ufdr:id>KM-C001</ufdr:id><ufdr:timestamp>2025-03-01T22:30:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500002</ufdr:phoneNumber><ufdr:contactName>Rahul Deputy</ufdr:contactName><ufdr:duration>1842</ufdr:duration><ufdr:app>Signal</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+      <ufdr:call><ufdr:id>KM-C002</ufdr:id><ufdr:timestamp>2025-03-02T23:15:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500002</ufdr:phoneNumber><ufdr:contactName>Rahul Deputy</ufdr:contactName><ufdr:duration>2100</ufdr:duration><ufdr:app>Signal</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+      <ufdr:call><ufdr:id>KM-C003</ufdr:id><ufdr:timestamp>2025-03-03T01:45:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500002</ufdr:phoneNumber><ufdr:contactName>Rahul Deputy</ufdr:contactName><ufdr:duration>3600</ufdr:duration><ufdr:app>Signal</ufdr:app><ufdr:encrypted>true</ufdr:encrypted><ufdr:note>LATE NIGHT — 1:45 AM coordination call</ufdr:note></ufdr:call>
+      <!-- Contact with foreign handler in UAE -->
+      <ufdr:call><ufdr:id>KM-C004</ufdr:id><ufdr:timestamp>2025-03-04T03:00:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+971501234567</ufdr:phoneNumber><ufdr:contactName>Dubai Handler</ufdr:contactName><ufdr:duration>4320</ufdr:duration><ufdr:app>WhatsApp</ufdr:app><ufdr:encrypted>true</ufdr:encrypted><ufdr:note>FOREIGN — UAE +971 at 3 AM</ufdr:note></ufdr:call>
+      <ufdr:call><ufdr:id>KM-C005</ufdr:id><ufdr:timestamp>2025-03-08T02:30:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+971501234567</ufdr:phoneNumber><ufdr:contactName>Dubai Handler</ufdr:contactName><ufdr:duration>5400</ufdr:duration><ufdr:app>WhatsApp</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+      <ufdr:call><ufdr:id>KM-C006</ufdr:id><ufdr:timestamp>2025-03-12T02:15:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+971501234567</ufdr:phoneNumber><ufdr:contactName>Dubai Handler</ufdr:contactName><ufdr:duration>7200</ufdr:duration><ufdr:app>WhatsApp</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+      <!-- Instructions to courier (Deepak) -->
+      <ufdr:call><ufdr:id>KM-C007</ufdr:id><ufdr:timestamp>2025-03-05T14:20:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500003</ufdr:phoneNumber><ufdr:contactName>Deepak Courier</ufdr:contactName><ufdr:duration>620</ufdr:duration><ufdr:app>regular</ufdr:app><ufdr:encrypted>false</ufdr:encrypted></ufdr:call>
+      <ufdr:call><ufdr:id>KM-C008</ufdr:id><ufdr:timestamp>2025-03-09T10:45:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500003</ufdr:phoneNumber><ufdr:contactName>Deepak Courier</ufdr:contactName><ufdr:duration>480</ufdr:duration><ufdr:app>regular</ufdr:app><ufdr:encrypted>false</ufdr:encrypted></ufdr:call>
+      <ufdr:call><ufdr:id>KM-C009</ufdr:id><ufdr:timestamp>2025-03-13T15:30:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500003</ufdr:phoneNumber><ufdr:contactName>Deepak Courier</ufdr:contactName><ufdr:duration>380</ufdr:duration><ufdr:app>regular</ufdr:app><ufdr:encrypted>false</ufdr:encrypted></ufdr:call>
+      <!-- Finance coordinator -->
+      <ufdr:call><ufdr:id>KM-C010</ufdr:id><ufdr:timestamp>2025-03-06T20:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500004</ufdr:phoneNumber><ufdr:contactName>Vikram Finance</ufdr:contactName><ufdr:duration>1200</ufdr:duration><ufdr:app>Telegram</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+      <ufdr:call><ufdr:id>KM-C011</ufdr:id><ufdr:timestamp>2025-03-10T21:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500004</ufdr:phoneNumber><ufdr:contactName>Vikram Finance</ufdr:contactName><ufdr:duration>1800</ufdr:duration><ufdr:app>Telegram</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+    </ufdr:calls>
+
+    <ufdr:messages>
+      <ufdr:message><ufdr:id>KM-M001</ufdr:id><ufdr:timestamp>2025-03-01T22:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500002</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Consignment confirmed. 40 units. Route via Bhiwandi warehouse. Share only on this app.</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>KM-M002</ufdr:id><ufdr:timestamp>2025-03-03T23:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500005</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Watcher: Keep eyes on the godown from 2 AM. No lights, no phones visible.</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>KM-M003</ufdr:id><ufdr:timestamp>2025-03-04T01:00:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+971501234567</ufdr:phoneNumber><ufdr:app>WhatsApp</ufdr:app><ufdr:content>Payment sent. USDT 85000 to wallet 1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2. Confirm receipt and proceed.</ufdr:content><ufdr:encrypted>true</ufdr:encrypted><ufdr:note>CRYPTOCURRENCY PAYMENT INSTRUCTION — USDT 85,000</ufdr:note></ufdr:message>
+      <ufdr:message><ufdr:id>KM-M004</ufdr:id><ufdr:timestamp>2025-03-04T01:05:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500004</ufdr:phoneNumber><ufdr:app>Telegram</ufdr:app><ufdr:content>Vikram — check wallet 1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2. 85k USDT incoming. Move to cold wallet immediately.</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>KM-M005</ufdr:id><ufdr:timestamp>2025-03-07T22:30:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500002</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Change of plan. Courier leaves Thursday not Wednesday. Deepak confirmed. Remove all traces from WhatsApp after reading.</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>KM-M006</ufdr:id><ufdr:timestamp>2025-03-10T00:30:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500002</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Next batch bigger. 80 units. Dubai confirmed. Same route.</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+    </ufdr:messages>
+
+    <ufdr:cryptoWallets>
+      <ufdr:wallet>
+        <ufdr:id>KM-W001</ufdr:id>
+        <ufdr:address>1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2</ufdr:address>
+        <ufdr:currency>USDT (TRC-20)</ufdr:currency>
+        <ufdr:balance>85000.00</ufdr:balance>
+        <ufdr:transactions>
+          <ufdr:transaction><ufdr:txid>tx_a1b2c3d4e5f6</ufdr:txid><ufdr:timestamp>2025-03-04T00:55:00Z</ufdr:timestamp><ufdr:type>receive</ufdr:type><ufdr:amount>85000.00</ufdr:amount><ufdr:fromAddress>TXduBAiHandler971</ufdr:fromAddress><ufdr:note>Payment from Dubai handler — linked to consignment</ufdr:note></ufdr:transaction>
+          <ufdr:transaction><ufdr:txid>tx_b2c3d4e5f6a1</ufdr:txid><ufdr:timestamp>2025-03-04T01:10:00Z</ufdr:timestamp><ufdr:type>send</ufdr:type><ufdr:amount>84500.00</ufdr:amount><ufdr:toAddress>1A1zP1eP5QGefi2DMPTfTL5SLmv7Divf</ufdr:toAddress><ufdr:note>Immediate transfer to cold wallet — laundering step</ufdr:note></ufdr:transaction>
+        </ufdr:transactions>
+      </ufdr:wallet>
+    </ufdr:cryptoWallets>
+
+    <ufdr:locations>
+      <ufdr:location><ufdr:id>KM-L001</ufdr:id><ufdr:timestamp>2025-03-01T22:00:00Z</ufdr:timestamp><ufdr:latitude>19.0760</ufdr:latitude><ufdr:longitude>72.8777</ufdr:longitude><ufdr:accuracy>15</ufdr:accuracy><ufdr:source>GPS</ufdr:source><ufdr:note>Dharavi — suspected storage area</ufdr:note></ufdr:location>
+      <ufdr:location><ufdr:id>KM-L002</ufdr:id><ufdr:timestamp>2025-03-05T02:00:00Z</ufdr:timestamp><ufdr:latitude>19.2403</ufdr:latitude><ufdr:longitude>72.8601</ufdr:longitude><ufdr:accuracy>20</ufdr:accuracy><ufdr:source>GPS</ufdr:source><ufdr:note>Bhiwandi — warehouse district (2 AM visit)</ufdr:note></ufdr:location>
+      <ufdr:location><ufdr:id>KM-L003</ufdr:id><ufdr:timestamp>2025-03-09T01:30:00Z</ufdr:timestamp><ufdr:latitude>19.2403</ufdr:latitude><ufdr:longitude>72.8601</ufdr:longitude><ufdr:accuracy>18</ufdr:accuracy><ufdr:source>GPS</ufdr:source><ufdr:note>Bhiwandi — same warehouse repeat visit at 1:30 AM</ufdr:note></ufdr:location>
+    </ufdr:locations>
+
+    <ufdr:apps>
+      <ufdr:app><ufdr:name>Signal</ufdr:name><ufdr:installed>true</ufdr:installed><ufdr:version>7.1.3</ufdr:version><ufdr:lastUsed>2025-03-14T23:50:00Z</ufdr:lastUsed><ufdr:note>Primary coordination — end-to-end encrypted, disappearing messages enabled</ufdr:note></ufdr:app>
+      <ufdr:app><ufdr:name>Telegram</ufdr:name><ufdr:installed>true</ufdr:installed><ufdr:version>10.2.1</ufdr:version><ufdr:lastUsed>2025-03-14T21:00:00Z</ufdr:lastUsed><ufdr:note>Used for finance coordination with Vikram</ufdr:note></ufdr:app>
+      <ufdr:app><ufdr:name>Trust Wallet</ufdr:name><ufdr:installed>true</ufdr:installed><ufdr:version>9.0.0</ufdr:version><ufdr:lastUsed>2025-03-04T01:10:00Z</ufdr:lastUsed><ufdr:note>Crypto wallet — active transactions matching USDT transfers</ufdr:note></ufdr:app>
+      <ufdr:app><ufdr:name>ProtonVPN</ufdr:name><ufdr:installed>true</ufdr:installed><ufdr:version>4.2.0</ufdr:version><ufdr:lastUsed>2025-03-14T22:00:00Z</ufdr:lastUsed><ufdr:note>VPN active during all suspicious communications</ufdr:note></ufdr:app>
+    </ufdr:apps>
+  </ufdr:device>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       DEVICE 2 — DEPUTY: Rahul Verma (alias "RV")
+       IMEI: 352038101234568   Phone: +919876500002
+       Role: Receives orders from KM, distributes to ground team
+  ═══════════════════════════════════════════════════════════════ -->
+  <ufdr:device>
+    <ufdr:deviceInfo>
+      <ufdr:deviceType>mobile_phone</ufdr:deviceType>
+      <ufdr:manufacturer>Samsung</ufdr:manufacturer>
+      <ufdr:model>Galaxy S23</ufdr:model>
+      <ufdr:imei>352038101234568</ufdr:imei>
+      <ufdr:msisdn>+919876500002</ufdr:msisdn>
+      <ufdr:os>Android 14 (One UI 6)</ufdr:os>
+      <ufdr:ownerName>Rahul Verma</ufdr:ownerName>
+      <ufdr:ownerAlias>RV / Deputy</ufdr:ownerAlias>
+      <ufdr:role>deputy</ufdr:role>
+    </ufdr:deviceInfo>
+
+    <ufdr:calls>
+      <ufdr:call><ufdr:id>RV-C001</ufdr:id><ufdr:timestamp>2025-03-01T22:30:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+919876500001</ufdr:phoneNumber><ufdr:contactName>Boss KM</ufdr:contactName><ufdr:duration>1842</ufdr:duration><ufdr:app>Signal</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+      <ufdr:call><ufdr:id>RV-C002</ufdr:id><ufdr:timestamp>2025-03-02T00:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500003</ufdr:phoneNumber><ufdr:contactName>Deepak</ufdr:contactName><ufdr:duration>360</ufdr:duration><ufdr:app>Signal</ufdr:app><ufdr:encrypted>true</ufdr:encrypted><ufdr:note>Passing orders to courier at midnight</ufdr:note></ufdr:call>
+      <ufdr:call><ufdr:id>RV-C003</ufdr:id><ufdr:timestamp>2025-03-02T00:05:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500005</ufdr:phoneNumber><ufdr:contactName>Suresh Watcher</ufdr:contactName><ufdr:duration>240</ufdr:duration><ufdr:app>Signal</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+      <ufdr:call><ufdr:id>RV-C004</ufdr:id><ufdr:timestamp>2025-03-03T23:15:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+919876500001</ufdr:phoneNumber><ufdr:contactName>Boss KM</ufdr:contactName><ufdr:duration>2100</ufdr:duration><ufdr:app>Signal</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+      <!-- Call to Pakistan-based contact -->
+      <ufdr:call><ufdr:id>RV-C005</ufdr:id><ufdr:timestamp>2025-03-06T03:30:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+923001234567</ufdr:phoneNumber><ufdr:contactName>PK Contact</ufdr:contactName><ufdr:duration>1500</ufdr:duration><ufdr:app>WhatsApp</ufdr:app><ufdr:encrypted>true</ufdr:encrypted><ufdr:note>FOREIGN — Pakistan +92 at 3:30 AM</ufdr:note></ufdr:call>
+      <ufdr:call><ufdr:id>RV-C006</ufdr:id><ufdr:timestamp>2025-03-11T03:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+923001234567</ufdr:phoneNumber><ufdr:contactName>PK Contact</ufdr:contactName><ufdr:duration>1800</ufdr:duration><ufdr:app>WhatsApp</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+    </ufdr:calls>
+
+    <ufdr:messages>
+      <ufdr:message><ufdr:id>RV-M001</ufdr:id><ufdr:timestamp>2025-03-02T00:01:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500003</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Deepak bhai — be at Bhiwandi godown by 2:30 AM Thursday. All 3 bags. You know what to do. Delete after reading.</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>RV-M002</ufdr:id><ufdr:timestamp>2025-03-06T03:35:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+923001234567</ufdr:phoneNumber><ufdr:app>WhatsApp</ufdr:app><ufdr:content>Next route confirmed: Lahore-Delhi train. Parcel wrapped as textile goods. Contact will be on platform 4. 40 units as agreed. Allah Hafiz.</ufdr:content><ufdr:encrypted>true</ufdr:encrypted><ufdr:note>ROUTE PLANNING — cross-border trafficking intelligence</ufdr:note></ufdr:message>
+      <ufdr:message><ufdr:id>RV-M003</ufdr:id><ufdr:timestamp>2025-03-07T20:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500001</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Route changed per our PK friend. Wednesday works. I will brief Deepak and Suresh separately.</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+    </ufdr:messages>
+
+    <ufdr:locations>
+      <ufdr:location><ufdr:id>RV-L001</ufdr:id><ufdr:timestamp>2025-03-02T02:30:00Z</ufdr:timestamp><ufdr:latitude>19.2403</ufdr:latitude><ufdr:longitude>72.8601</ufdr:longitude><ufdr:accuracy>10</ufdr:accuracy><ufdr:source>GPS</ufdr:source><ufdr:note>Bhiwandi — same warehouse as KM (corroboration)</ufdr:note></ufdr:location>
+    </ufdr:locations>
+  </ufdr:device>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       DEVICE 3 — COURIER: Deepak Sahu
+       Phone: +919876500003
+       Role: Physical transport, pickup & delivery
+  ═══════════════════════════════════════════════════════════════ -->
+  <ufdr:device>
+    <ufdr:deviceInfo>
+      <ufdr:deviceType>mobile_phone</ufdr:deviceType>
+      <ufdr:manufacturer>Xiaomi</ufdr:manufacturer>
+      <ufdr:model>Redmi Note 13</ufdr:model>
+      <ufdr:imei>352038101234569</ufdr:imei>
+      <ufdr:msisdn>+919876500003</ufdr:msisdn>
+      <ufdr:os>Android 13 (MIUI 14)</ufdr:os>
+      <ufdr:ownerName>Deepak Sahu</ufdr:ownerName>
+      <ufdr:ownerAlias>Deepak Bhai / Courier</ufdr:ownerAlias>
+      <ufdr:role>courier</ufdr:role>
+    </ufdr:deviceInfo>
+
+    <ufdr:calls>
+      <ufdr:call><ufdr:id>DS-C001</ufdr:id><ufdr:timestamp>2025-03-02T00:05:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+919876500002</ufdr:phoneNumber><ufdr:contactName>Rahul bhai</ufdr:contactName><ufdr:duration>360</ufdr:duration><ufdr:app>Signal</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+      <ufdr:call><ufdr:id>DS-C002</ufdr:id><ufdr:timestamp>2025-03-05T14:20:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+919876500001</ufdr:phoneNumber><ufdr:contactName>Boss</ufdr:contactName><ufdr:duration>620</ufdr:duration><ufdr:app>regular</ufdr:app><ufdr:encrypted>false</ufdr:encrypted></ufdr:call>
+      <!-- After pickup — calls Suresh Watcher immediately -->
+      <ufdr:call><ufdr:id>DS-C003</ufdr:id><ufdr:timestamp>2025-03-06T02:45:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500005</ufdr:phoneNumber><ufdr:contactName>Suresh</ufdr:contactName><ufdr:duration>90</ufdr:duration><ufdr:app>regular</ufdr:app><ufdr:encrypted>false</ufdr:encrypted><ufdr:note>Short status call after pickup — 2:45 AM</ufdr:note></ufdr:call>
+      <!-- Delivery confirmation to Rahul -->
+      <ufdr:call><ufdr:id>DS-C004</ufdr:id><ufdr:timestamp>2025-03-06T08:30:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500002</ufdr:phoneNumber><ufdr:contactName>Rahul bhai</ufdr:contactName><ufdr:duration>120</ufdr:duration><ufdr:app>regular</ufdr:app><ufdr:encrypted>false</ufdr:encrypted><ufdr:note>Delivery confirmed via unsecured call — evidence of operational security failure</ufdr:note></ufdr:call>
+    </ufdr:calls>
+
+    <ufdr:locations>
+      <ufdr:location><ufdr:id>DS-L001</ufdr:id><ufdr:timestamp>2025-03-06T02:30:00Z</ufdr:timestamp><ufdr:latitude>19.2403</ufdr:latitude><ufdr:longitude>72.8601</ufdr:longitude><ufdr:accuracy>8</ufdr:accuracy><ufdr:source>GPS</ufdr:source><ufdr:note>Bhiwandi — pickup point at 2:30 AM (corroborates RV and KM)</ufdr:note></ufdr:location>
+      <ufdr:location><ufdr:id>DS-L002</ufdr:id><ufdr:timestamp>2025-03-06T07:00:00Z</ufdr:timestamp><ufdr:latitude>28.6139</ufdr:latitude><ufdr:longitude>77.2090</ufdr:longitude><ufdr:accuracy>12</ufdr:accuracy><ufdr:source>GPS</ufdr:source><ufdr:note>New Delhi — delivery destination</ufdr:note></ufdr:location>
+    </ufdr:locations>
+  </ufdr:device>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       DEVICE 4 — FINANCE: Vikram Patel
+       Phone: +919876500004
+       Role: Cryptocurrency laundering & financial management
+  ═══════════════════════════════════════════════════════════════ -->
+  <ufdr:device>
+    <ufdr:deviceInfo>
+      <ufdr:deviceType>mobile_phone</ufdr:deviceType>
+      <ufdr:manufacturer>Apple</ufdr:manufacturer>
+      <ufdr:model>iPhone 15 Pro</ufdr:model>
+      <ufdr:imei>352038101234570</ufdr:imei>
+      <ufdr:msisdn>+919876500004</ufdr:msisdn>
+      <ufdr:os>iOS 17.3</ufdr:os>
+      <ufdr:ownerName>Vikram Patel</ufdr:ownerName>
+      <ufdr:ownerAlias>Vikram / Finance</ufdr:ownerAlias>
+      <ufdr:role>finance_laundering</ufdr:role>
+    </ufdr:deviceInfo>
+
+    <ufdr:calls>
+      <ufdr:call><ufdr:id>VP-C001</ufdr:id><ufdr:timestamp>2025-03-06T20:00:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+919876500001</ufdr:phoneNumber><ufdr:contactName>KM</ufdr:contactName><ufdr:duration>1200</ufdr:duration><ufdr:app>Telegram</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+      <!-- Calls hawala broker in Gujarat -->
+      <ufdr:call><ufdr:id>VP-C002</ufdr:id><ufdr:timestamp>2025-03-04T09:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919898001234</ufdr:phoneNumber><ufdr:contactName>Hawala Broker</ufdr:contactName><ufdr:duration>900</ufdr:duration><ufdr:app>regular</ufdr:app><ufdr:encrypted>false</ufdr:encrypted></ufdr:call>
+      <ufdr:call><ufdr:id>VP-C003</ufdr:id><ufdr:timestamp>2025-03-04T14:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919898001234</ufdr:phoneNumber><ufdr:contactName>Hawala Broker</ufdr:contactName><ufdr:duration>600</ufdr:duration><ufdr:app>regular</ufdr:app><ufdr:encrypted>false</ufdr:encrypted></ufdr:call>
+    </ufdr:calls>
+
+    <ufdr:cryptoWallets>
+      <ufdr:wallet>
+        <ufdr:id>VP-W001</ufdr:id>
+        <ufdr:address>1A1zP1eP5QGefi2DMPTfTL5SLmv7Divf</ufdr:address>
+        <ufdr:currency>USDT (TRC-20)</ufdr:currency>
+        <ufdr:balance>12500.00</ufdr:balance>
+        <ufdr:transactions>
+          <ufdr:transaction><ufdr:txid>tx_b2c3d4e5f6a1</ufdr:txid><ufdr:timestamp>2025-03-04T01:10:00Z</ufdr:timestamp><ufdr:type>receive</ufdr:type><ufdr:amount>84500.00</ufdr:amount><ufdr:fromAddress>1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2</ufdr:fromAddress><ufdr:note>Laundering step 1 — received from KM hot wallet</ufdr:note></ufdr:transaction>
+          <ufdr:transaction><ufdr:txid>tx_c3d4e5f6a1b2</ufdr:txid><ufdr:timestamp>2025-03-04T02:00:00Z</ufdr:timestamp><ufdr:type>send</ufdr:type><ufdr:amount>40000.00</ufdr:amount><ufdr:toAddress>TLaunderShell1234XYZ</ufdr:toAddress><ufdr:note>Divided and sent to shell account — layering</ufdr:note></ufdr:transaction>
+          <ufdr:transaction><ufdr:txid>tx_d4e5f6a1b2c3</ufdr:txid><ufdr:timestamp>2025-03-04T02:10:00Z</ufdr:timestamp><ufdr:type>send</ufdr:type><ufdr:amount>32000.00</ufdr:amount><ufdr:toAddress>TLaunderShell5678ABC</ufdr:toAddress><ufdr:note>Layering — split across two shell wallets</ufdr:note></ufdr:transaction>
+        </ufdr:transactions>
+      </ufdr:wallet>
+    </ufdr:cryptoWallets>
+  </ufdr:device>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       DEVICE 5 — LOOKOUT: Suresh Yadav
+       Phone: +919876500005
+       Role: Physical surveillance of warehouse and delivery points
+  ═══════════════════════════════════════════════════════════════ -->
+  <ufdr:device>
+    <ufdr:deviceInfo>
+      <ufdr:deviceType>mobile_phone</ufdr:deviceType>
+      <ufdr:manufacturer>Vivo</ufdr:manufacturer>
+      <ufdr:model>V27</ufdr:model>
+      <ufdr:imei>352038101234571</ufdr:imei>
+      <ufdr:msisdn>+919876500005</ufdr:msisdn>
+      <ufdr:os>Android 13</ufdr:os>
+      <ufdr:ownerName>Suresh Yadav</ufdr:ownerName>
+      <ufdr:ownerAlias>Suresh / Watcher</ufdr:ownerAlias>
+      <ufdr:role>lookout</ufdr:role>
+    </ufdr:deviceInfo>
+
+    <ufdr:calls>
+      <ufdr:call><ufdr:id>SY-C001</ufdr:id><ufdr:timestamp>2025-03-03T23:05:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+919876500001</ufdr:phoneNumber><ufdr:contactName>Boss</ufdr:contactName><ufdr:duration>240</ufdr:duration><ufdr:app>Signal</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+      <ufdr:call><ufdr:id>SY-C002</ufdr:id><ufdr:timestamp>2025-03-05T23:50:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+919876500002</ufdr:phoneNumber><ufdr:contactName>Rahul bhai</ufdr:contactName><ufdr:duration>180</ufdr:duration><ufdr:app>Signal</ufdr:app><ufdr:encrypted>true</ufdr:encrypted></ufdr:call>
+      <!-- All clear signal to Deepak during courier run -->
+      <ufdr:call><ufdr:id>SY-C003</ufdr:id><ufdr:timestamp>2025-03-06T02:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919876500003</ufdr:phoneNumber><ufdr:contactName>Deepak</ufdr:contactName><ufdr:duration>30</ufdr:duration><ufdr:app>regular</ufdr:app><ufdr:encrypted>false</ufdr:encrypted><ufdr:note>Very short call (30 seconds) — "all clear" signal during active courier op</ufdr:note></ufdr:call>
+    </ufdr:calls>
+
+    <ufdr:locations>
+      <ufdr:location><ufdr:id>SY-L001</ufdr:id><ufdr:timestamp>2025-03-06T01:30:00Z</ufdr:timestamp><ufdr:latitude>19.2403</ufdr:latitude><ufdr:longitude>72.8601</ufdr:longitude><ufdr:accuracy>5</ufdr:accuracy><ufdr:source>GPS</ufdr:source><ufdr:note>Bhiwandi — lookout at warehouse at 1:30 AM</ufdr:note></ufdr:location>
+      <ufdr:location><ufdr:id>SY-L002</ufdr:id><ufdr:timestamp>2025-03-06T04:00:00Z</ufdr:timestamp><ufdr:latitude>19.2403</ufdr:latitude><ufdr:longitude>72.8601</ufdr:longitude><ufdr:accuracy>6</ufdr:accuracy><ufdr:source>GPS</ufdr:source><ufdr:note>Still at warehouse post-delivery — monitoring</ufdr:note></ufdr:location>
+    </ufdr:locations>
+  </ufdr:device>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       COMMUNICATION NETWORK GRAPH
+       (Explicit edge list for graph analysis)
+  ═══════════════════════════════════════════════════════════════ -->
+  <ufdr:networkGraph>
+    <ufdr:nodes>
+      <ufdr:node><ufdr:id>N1</ufdr:id><ufdr:phone>+919876500001</ufdr:phone><ufdr:name>Karan Mehta (KM)</ufdr:name><ufdr:role>ringleader</ufdr:role></ufdr:node>
+      <ufdr:node><ufdr:id>N2</ufdr:id><ufdr:phone>+919876500002</ufdr:phone><ufdr:name>Rahul Verma (RV)</ufdr:name><ufdr:role>deputy</ufdr:role></ufdr:node>
+      <ufdr:node><ufdr:id>N3</ufdr:id><ufdr:phone>+919876500003</ufdr:phone><ufdr:name>Deepak Sahu</ufdr:name><ufdr:role>courier</ufdr:role></ufdr:node>
+      <ufdr:node><ufdr:id>N4</ufdr:id><ufdr:phone>+919876500004</ufdr:phone><ufdr:name>Vikram Patel</ufdr:name><ufdr:role>finance</ufdr:role></ufdr:node>
+      <ufdr:node><ufdr:id>N5</ufdr:id><ufdr:phone>+919876500005</ufdr:phone><ufdr:name>Suresh Yadav</ufdr:name><ufdr:role>lookout</ufdr:role></ufdr:node>
+      <ufdr:node><ufdr:id>N6</ufdr:id><ufdr:phone>+971501234567</ufdr:phone><ufdr:name>Dubai Handler (Unknown)</ufdr:name><ufdr:role>foreign_controller</ufdr:role></ufdr:node>
+      <ufdr:node><ufdr:id>N7</ufdr:id><ufdr:phone>+923001234567</ufdr:phone><ufdr:name>Pakistan Contact (Unknown)</ufdr:name><ufdr:role>foreign_supplier</ufdr:role></ufdr:node>
+    </ufdr:nodes>
+    <ufdr:edges>
+      <ufdr:edge><ufdr:from>N1</ufdr:from><ufdr:to>N2</ufdr:to><ufdr:callCount>11</ufdr:callCount><ufdr:messageCount>6</ufdr:messageCount><ufdr:relationship>command_relay</ufdr:relationship></ufdr:edge>
+      <ufdr:edge><ufdr:from>N1</ufdr:from><ufdr:to>N3</ufdr:to><ufdr:callCount>3</ufdr:callCount><ufdr:messageCount>0</ufdr:messageCount><ufdr:relationship>direct_command</ufdr:relationship></ufdr:edge>
+      <ufdr:edge><ufdr:from>N1</ufdr:from><ufdr:to>N4</ufdr:to><ufdr:callCount>2</ufdr:callCount><ufdr:messageCount>1</ufdr:messageCount><ufdr:relationship>finance_control</ufdr:relationship></ufdr:edge>
+      <ufdr:edge><ufdr:from>N1</ufdr:from><ufdr:to>N5</ufdr:to><ufdr:callCount>1</ufdr:callCount><ufdr:messageCount>1</ufdr:messageCount><ufdr:relationship>surveillance_order</ufdr:relationship></ufdr:edge>
+      <ufdr:edge><ufdr:from>N1</ufdr:from><ufdr:to>N6</ufdr:to><ufdr:callCount>3</ufdr:callCount><ufdr:messageCount>2</ufdr:messageCount><ufdr:relationship>foreign_handler</ufdr:relationship></ufdr:edge>
+      <ufdr:edge><ufdr:from>N2</ufdr:from><ufdr:to>N3</ufdr:to><ufdr:callCount>2</ufdr:callCount><ufdr:messageCount>1</ufdr:messageCount><ufdr:relationship>operational_relay</ufdr:relationship></ufdr:edge>
+      <ufdr:edge><ufdr:from>N2</ufdr:from><ufdr:to>N5</ufdr:to><ufdr:callCount>2</ufdr:callCount><ufdr:messageCount>0</ufdr:messageCount><ufdr:relationship>surveillance_coordination</ufdr:relationship></ufdr:edge>
+      <ufdr:edge><ufdr:from>N2</ufdr:from><ufdr:to>N7</ufdr:to><ufdr:callCount>2</ufdr:callCount><ufdr:messageCount>2</ufdr:messageCount><ufdr:relationship>supply_chain_contact</ufdr:relationship></ufdr:edge>
+      <ufdr:edge><ufdr:from>N3</ufdr:from><ufdr:to>N5</ufdr:to><ufdr:callCount>1</ufdr:callCount><ufdr:messageCount>0</ufdr:messageCount><ufdr:relationship>operational_signal</ufdr:relationship></ufdr:edge>
+      <ufdr:edge><ufdr:from>N4</ufdr:from><ufdr:to>N1</ufdr:to><ufdr:walletTransactions>2</ufdr:walletTransactions><ufdr:relationship>crypto_laundering</ufdr:relationship></ufdr:edge>
+    </ufdr:edges>
+  </ufdr:networkGraph>
+
+  <ufdr:forensicSummary>
+    <ufdr:keyFindings>
+      <ufdr:finding>Hub-and-spoke criminal network — Karan Mehta (KM) is central node with edges to all 5 other domestic actors</ufdr:finding>
+      <ufdr:finding>Foreign handler contacts in UAE (+971) and Pakistan (+923) — all calls during 1 AM - 4 AM window</ufdr:finding>
+      <ufdr:finding>Cryptocurrency USDT 85,000 received from UAE and immediately laundered through split transfers</ufdr:finding>
+      <ufdr:finding>All 5 devices present at Bhiwandi warehouse between 1:30 AM - 4:00 AM on 2025-03-06 (GPS corroboration)</ufdr:finding>
+      <ufdr:finding>Primary communication via Signal with disappearing messages — suggests operational security awareness</ufdr:finding>
+      <ufdr:finding>Message content references "40 units", "80 units", "consignment", "godown" — consistent with narcotics trafficking terminology</ufdr:finding>
+    </ufdr:keyFindings>
+  </ufdr:forensicSummary>
+
+</ufdr:UFDR>

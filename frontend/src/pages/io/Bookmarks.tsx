@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Bookmark, Trash2, Tag, Search, Download, Star } from 'lucide-react';
+import { Bookmark, Trash2, Tag, Search, Download, Star, FileText } from 'lucide-react';
 import { Navbar } from '../../components/Navbar';
-import { api } from '../../lib/api';
+import { bookmarkAPI } from '../../lib/api';
+import { EvidenceChip } from '../../components/EvidenceChip';
 
 export const Bookmarks = () => {
   const { caseId } = useParams();
@@ -18,7 +19,7 @@ export const Bookmarks = () => {
   const loadBookmarks = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/bookmarks/case/${caseId}`);
+      const response = await bookmarkAPI.getBookmarks(parseInt(caseId!));
       setBookmarks(response.data.data?.bookmarks || []);
     } catch (error) {
       console.error('Failed to load bookmarks:', error);
@@ -31,7 +32,7 @@ export const Bookmarks = () => {
     if (!confirm('Are you sure you want to delete this bookmark?')) return;
 
     try {
-      await api.delete(`/api/bookmarks/${bookmarkId}`);
+      await bookmarkAPI.deleteBookmark(bookmarkId);
       setBookmarks(bookmarks.filter(b => b.id !== bookmarkId));
     } catch (error) {
       console.error('Failed to delete bookmark:', error);
@@ -51,7 +52,8 @@ export const Bookmarks = () => {
 
   const filteredBookmarks = bookmarks.filter(bookmark => {
     const matchesSearch = bookmark.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         bookmark.evidenceData?.content?.toLowerCase().includes(searchTerm.toLowerCase());
+                         bookmark.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         bookmark.metadata?.value?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTag = !tagFilter || bookmark.tags?.includes(tagFilter);
     return matchesSearch && matchesTag;
   });
@@ -132,8 +134,8 @@ export const Bookmarks = () => {
                         </span>
                       </div>
                       
-                      {bookmark.evidenceData?.content && (
-                        <p className="text-gray-800 mb-3">{bookmark.evidenceData.content}</p>
+                      {bookmark.content && (
+                        <p className="text-gray-800 mb-3">{bookmark.content}</p>
                       )}
 
                       {bookmark.notes && (
@@ -143,6 +145,43 @@ export const Bookmarks = () => {
                           </p>
                         </div>
                       )}
+
+                      {/* Citation Block */}
+                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3">
+                        <div className="flex items-center gap-1 mb-1">
+                          <FileText className="w-3 h-3 text-slate-400" />
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Citation</span>
+                        </div>
+                        <div className="text-xs text-slate-600 space-y-0.5">
+                          {bookmark.source && (
+                            <div>Source: <span className="font-medium text-slate-800">{bookmark.source}</span></div>
+                          )}
+                          <div>Case: <span className="font-medium text-slate-800">#{caseId}</span></div>
+                          {bookmark.evidenceId && (
+                            <div>Evidence ID: <span className="font-mono text-slate-800">{bookmark.evidenceId}</span></div>
+                          )}
+                        </div>
+                      </div>
+
+                       <div className="mb-3">
+                        <EvidenceChip
+                          evidence={{
+                            id: bookmark.evidenceId || `bookmark_${bookmark.id}`,
+                            type: bookmark.evidenceType || 'other',
+                            value: bookmark.metadata?.value || bookmark.content?.substring(0, 60) || bookmark.evidenceType || 'Evidence',
+                            content: bookmark.content,
+                            summary: bookmark.metadata?.summary || bookmark.notes,
+                            source: {
+                              view: bookmark.source || 'Bookmarks',
+                              caseId: caseId,
+                              evidenceId: bookmark.evidenceId,
+                              timestamp: bookmark.createdAt || bookmark.created_at,
+                            },
+                            metadata: bookmark.metadata?.metadata || bookmark.metadata,
+                          }}
+                          label="View Full Evidence"
+                        />
+                      </div>
 
                       {bookmark.tags && bookmark.tags.length > 0 && (
                         <div className="flex items-center gap-2 flex-wrap">
@@ -158,16 +197,16 @@ export const Bookmarks = () => {
                         </div>
                       )}
 
-                      {bookmark.evidenceData && (
+                      {bookmark.metadata && (
                         <div className="mt-3 text-xs text-gray-500 space-y-1">
-                          {bookmark.evidenceData.phoneNumber && (
-                            <div>Phone: {bookmark.evidenceData.phoneNumber}</div>
+                          {bookmark.metadata.phoneNumber && (
+                            <div>Phone: {bookmark.metadata.phoneNumber}</div>
                           )}
-                          {bookmark.evidenceData.timestamp && (
-                            <div>Time: {new Date(bookmark.evidenceData.timestamp).toLocaleString()}</div>
+                          {bookmark.metadata.timestamp && (
+                            <div>Time: {new Date(bookmark.metadata.timestamp).toLocaleString()}</div>
                           )}
-                          {bookmark.evidenceData.sourceType && (
-                            <div className="capitalize">Source: {bookmark.evidenceData.sourceType}</div>
+                          {bookmark.source && (
+                            <div className="capitalize">Source: {bookmark.source}</div>
                           )}
                         </div>
                       )}

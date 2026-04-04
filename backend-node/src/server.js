@@ -42,6 +42,7 @@ import alertRoutes from './routes/alertRoutes.js';
 import integrationRoutes from './routes/integrationRoutes.js';
 import performanceRoutes from './routes/performanceRoutes.js';
 import graphRoutes from './routes/graphRoutes.js';
+import analysisRoutes from './routes/analysisRoutes.js';
 
 // Import middleware
 import { apiRateLimit, authRateLimit, searchRateLimit, uploadRateLimit, aiRateLimit } from './middleware/rateLimit.js';
@@ -94,6 +95,7 @@ app.use('/api/alerts', apiRateLimit, performanceMiddleware, alertRoutes);
 app.use('/api/integration', apiRateLimit, performanceMiddleware, integrationRoutes);
 app.use('/api/performance', apiRateLimit, performanceMiddleware, performanceRoutes);
 app.use('/api/graph', apiRateLimit, performanceMiddleware, graphRoutes);
+app.use('/api/analysis', aiRateLimit, performanceMiddleware, analysisRoutes);
 
 // 404 handler
 app.use((req, res) => {

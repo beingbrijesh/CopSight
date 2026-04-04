@@ -231,27 +231,33 @@ class AlertService {
       const whereClause = { userId };
 
       if (filters.status) {
-        if (filters.status.includes(',')) {
-          whereClause.status = { [Op.in]: filters.status.split(',') };
-        } else {
-          whereClause.status = filters.status;
-        }
+        const statusValues = typeof filters.status === 'string' 
+          ? filters.status.split(',') 
+          : (Array.isArray(filters.status) ? filters.status : [filters.status]);
+        
+        whereClause.status = statusValues.length > 1 
+          ? { [Op.in]: statusValues } 
+          : statusValues[0];
       }
 
       if (filters.severity) {
-        if (filters.severity.includes(',')) {
-          whereClause.severity = { [Op.in]: filters.severity.split(',') };
-        } else {
-          whereClause.severity = filters.severity;
-        }
+        const severityValues = typeof filters.severity === 'string'
+          ? filters.severity.split(',')
+          : (Array.isArray(filters.severity) ? filters.severity : [filters.severity]);
+
+        whereClause.severity = severityValues.length > 1
+          ? { [Op.in]: severityValues }
+          : severityValues[0];
       }
 
       if (filters.alertType) {
-        if (filters.alertType.includes(',')) {
-          whereClause.alertType = { [Op.in]: filters.alertType.split(',') };
-        } else {
-          whereClause.alertType = filters.alertType;
-        }
+        const typeValues = typeof filters.alertType === 'string'
+          ? filters.alertType.split(',')
+          : (Array.isArray(filters.alertType) ? filters.alertType : [filters.alertType]);
+
+        whereClause.alertType = typeValues.length > 1
+          ? { [Op.in]: typeValues }
+          : typeValues[0];
       }
 
       const alerts = await Alert.findAll({

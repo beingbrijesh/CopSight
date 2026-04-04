@@ -127,9 +127,13 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
       const type = entity.type || 'unknown';
       const confidence = typeof entity.confidence === 'number' ? entity.confidence : 0.5;
 
+      // Unify property keys based on label to ensure merging with Data Source nodes
+      const propertyKey = label === 'PhoneNumber' ? 'number' : 
+                          (label === 'Contact' ? 'name' : 'value');
+
       await session.run(
         `MATCH (c:Case {id: $caseId})
-         MERGE (e:${label} {value: $value})
+         MERGE (e:${label} {${propertyKey}: $value})
          SET e.type = $type,
              e.confidence = $confidence
          MERGE (c)-[:HAS_ENTITY]->(e)`,

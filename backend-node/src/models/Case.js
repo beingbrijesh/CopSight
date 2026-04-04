@@ -31,28 +31,16 @@ const Case = sequelize.define('Case', {
   assignedTo: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    field: 'assigned_to',
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+    field: 'assigned_to'
   },
   supervisorId: {
     type: DataTypes.INTEGER,
-    field: 'supervisor_id',
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+    field: 'supervisor_id'
   },
   createdBy: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    field: 'created_by',
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+    field: 'created_by'
   },
   unit: {
     type: DataTypes.STRING(100)

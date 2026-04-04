@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { CheckCircle, AlertCircle, MessageSquare, Phone, Users, Bookmark, Download } from 'lucide-react';
+import { CheckCircle, AlertCircle, MessageSquare, Phone, Users, Download } from 'lucide-react';
+import { EvidenceChip } from './EvidenceChip';
+import type { EvidenceItem } from '../store/evidenceStore';
 
 interface QueryResultsProps {
   results: {
@@ -14,17 +16,6 @@ interface QueryResultsProps {
 
 export const QueryResults = ({ results }: QueryResultsProps) => {
   const [activeTab, setActiveTab] = useState<'answer' | 'evidence' | 'analysis'>('answer');
-  const [bookmarkedItems, setBookmarkedItems] = useState<Set<string>>(new Set());
-
-  const handleBookmark = (itemId: string) => {
-    const newBookmarks = new Set(bookmarkedItems);
-    if (newBookmarks.has(itemId)) {
-      newBookmarks.delete(itemId);
-    } else {
-      newBookmarks.add(itemId);
-    }
-    setBookmarkedItems(newBookmarks);
-  };
 
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 0.8) return 'text-green-600 bg-green-100';
@@ -144,7 +135,27 @@ export const QueryResults = ({ results }: QueryResultsProps) => {
         {activeTab === 'evidence' && (
           <div className="space-y-4">
             {results.evidence && results.evidence.length > 0 ? (
-              results.evidence.map((item: any, idx: number) => (
+              results.evidence.map((item: any, idx: number) => {
+                const evidenceItem: EvidenceItem = {
+                  id: item.id || `evidence_${idx}`,
+                  type: item.source?.type === 'call_log' ? 'call' : item.source?.type === 'sms' || item.source?.type === 'whatsapp' ? 'message' : 'entity',
+                  value: item.content || item.source?.content || 'Evidence Record',
+                  content: item.content || item.source?.content,
+                  summary: `${item.source?.type || 'Unknown'} evidence with relevance score ${(item.score || 0).toFixed(2)}`,
+                  source: {
+                    view: 'Query Results',
+                    evidenceId: item.id,
+                    timestamp: item.metadata?.timestamp,
+                  },
+                  metadata: {
+                    phoneNumber: item.metadata?.phoneNumber,
+                    sourceType: item.source?.type || item.metadata?.sourceType,
+                    score: item.score,
+                    ...(item.metadata || {}),
+                  },
+                };
+
+                return (
                 <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -162,14 +173,7 @@ export const QueryResults = ({ results }: QueryResultsProps) => {
                         Score: {(item.score || 0).toFixed(2)}
                       </span>
                     </div>
-                    <button
-                      onClick={() => handleBookmark(item.id)}
-                      className={`p-1 rounded hover:bg-gray-100 transition ${
-                        bookmarkedItems.has(item.id) ? 'text-yellow-500' : 'text-gray-400'
-                      }`}
-                    >
-                      <Bookmark className="w-5 h-5" fill={bookmarkedItems.has(item.id) ? 'currentColor' : 'none'} />
-                    </button>
+                    <EvidenceChip evidence={evidenceItem} label="View Details" compact />
                   </div>
 
                   <div className="mb-3">
@@ -178,15 +182,19 @@ export const QueryResults = ({ results }: QueryResultsProps) => {
 
                   <div className="flex items-center gap-4 text-xs text-gray-500">
                     {item.metadata?.phoneNumber && (
-                      <span>From: {item.metadata.phoneNumber}</span>
+                      <EvidenceChip
+                        evidence={{
+                          ...evidenceItem,
+                          id: `phone_${item.metadata.phoneNumber}`,
+                          type: 'phone',
+                          value: item.metadata.phoneNumber,
+                          summary: `Phone number found in ${item.source?.type || 'evidence'}`,
+                        }}
+                        compact
+                      />
                     )}
                     {item.metadata?.timestamp && (
                       <span>Date: {new Date(item.metadata.timestamp).toLocaleString()}</span>
-                    )}
-                    {item.source && (
-                      <span className="text-blue-600 cursor-pointer hover:underline">
-                        View Source
-                      </span>
                     )}
                   </div>
 
@@ -196,7 +204,8 @@ export const QueryResults = ({ results }: QueryResultsProps) => {
                     </div>
                   )}
                 </div>
-              ))
+              );
+              })
             ) : (
               <div className="text-center py-8 text-gray-500">
                 No evidence found for this query

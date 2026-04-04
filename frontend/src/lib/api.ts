@@ -196,13 +196,12 @@ export const queryAPI = {
   getQuery: (queryId: number) => api.get(`/query/${queryId}`),
 };
 
-// Bookmark API
 export const bookmarkAPI = {
   createBookmark: (caseId: number, data: any) =>
-    api.post(`/cases/${caseId}/bookmarks`, data),
+    api.post(`/bookmarks/case/${caseId}`, data),
   
   getBookmarks: (caseId: number, params?: any) =>
-    api.get(`/cases/${caseId}/bookmarks`, { params }),
+    api.get(`/bookmarks/case/${caseId}`, { params }),
   
   updateBookmark: (bookmarkId: number, data: any) =>
     api.put(`/bookmarks/${bookmarkId}`, data),

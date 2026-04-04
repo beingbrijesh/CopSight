@@ -28,15 +28,15 @@ export const ReportGenerator = () => {
   const loadData = async () => {
     try {
       // Load case data
-      const caseResponse = await api.get(`/api/cases/${caseId}`);
+      const caseResponse = await api.get(`/cases/${caseId}`);
       setCaseData(caseResponse.data.data?.case);
 
       // Load templates
-      const templatesResponse = await api.get('/api/reports/templates');
+      const templatesResponse = await api.get('/reports/templates');
       setTemplates(templatesResponse.data.data?.templates || []);
 
       // Load report history
-      const historyResponse = await api.get(`/api/reports/case/${caseId}/history`);
+      const historyResponse = await api.get(`/reports/case/${caseId}/history`);
       setReportHistory(historyResponse.data.data?.reports || []);
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -47,7 +47,7 @@ export const ReportGenerator = () => {
     setGenerating(true);
     try {
       const response = await api.post(
-        `/api/reports/case/${caseId}/generate`,
+        `/reports/case/${caseId}/generate`,
         options,
         { responseType: 'blob' }
       );

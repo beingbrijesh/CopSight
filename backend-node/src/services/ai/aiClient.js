@@ -70,7 +70,7 @@ class AIClient {
   /**
    * Execute natural language query (non-streaming, cached)
    */
-  async executeQuery(caseId, query, userId) {
+  async executeQuery(caseId, query, userId, sessionId = null) {
     try {
       // 1. Check cache first
       const cached = queryCache.get(caseId, query);
@@ -83,7 +83,8 @@ class AIClient {
       const response = await this.client.post('/api/query/execute', {
         case_id: caseId,
         query,
-        user_id: userId
+        user_id: userId,
+        session_id: sessionId
       });
 
       // 3. Cache successful responses
@@ -103,8 +104,9 @@ class AIClient {
    * @param {string} query
    * @param {number} userId
    * @param {import('express').Response} res - Express response to pipe into
+   * @param {string} sessionId
    */
-  async streamQuery(caseId, query, userId, res) {
+  async streamQuery(caseId, query, userId, res, sessionId = null) {
     // Check cache first — if we have a cached result, replay it as an SSE stream
     const cached = queryCache.get(caseId, query);
     if (cached) {
@@ -154,7 +156,7 @@ class AIClient {
     try {
       const upstream = await axios.post(
         `${this.baseURL}/api/query/stream`,
-        { case_id: caseId, query, user_id: userId },
+        { case_id: caseId, query, user_id: userId, session_id: sessionId },
         {
           responseType: 'stream',
           timeout: 130000
@@ -314,6 +316,24 @@ class AIClient {
     } catch (error) {
       logger.error('Pattern detection failed:', error.message);
       throw new Error('Failed to detect patterns');
+    }
+  }
+
+  /**
+   * Get detailed cross-case analysis
+   */
+  async getCrossCaseAnalysis(caseId, targetCaseId, commonEntity, entityType) {
+    try {
+      const response = await this.client.post('/api/analysis/cross-case', {
+        case_id: caseId,
+        target_case_id: targetCaseId,
+        common_entity: commonEntity,
+        entity_type: entityType
+      });
+      return response.data;
+    } catch (error) {
+      logger.error('Cross-case analysis failed:', error.message);
+      throw new Error('Failed to perform cross-case analysis');
     }
   }
 

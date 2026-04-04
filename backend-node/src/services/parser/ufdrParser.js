@@ -18,6 +18,98 @@ class UFDRParser {
   }
 
   /**
+   * More lenient XML sanitation to fix forensic tool export bugs
+   * (e.g. redundant </ufdr:http> tags identified in Job 7)
+   */
+  sanitizeXML(xml) {
+    try {
+      logger.info('Sanitizing XML structure before parsing...');
+      
+      // 1. Initial cleanup: Remove comments to avoid parsing issues inside them
+      let content = xml.replace(/<!--[\s\S]*?-->/g, '');
+      
+      // 2. Structural Fix with tag injection
+      const tagRegex = /<(\/?[a-zA-Z0-9:_.-]+)(?:\s+[^>]*?)?>/g;
+      const stack = [];
+      let match;
+      let sanitized = content;
+      let offset = 0; // Track change in string length to adjust indices
+
+      // Re-scan properly with the current string or a copy
+      // To be safe and simple, let's build the new string
+      let result = '';
+      let lastIndex = 0;
+
+      while ((match = tagRegex.exec(content)) !== null) {
+        const fullTag = match[0];
+        const tagName = match[1];
+        const index = match.index;
+
+        // Add everything before the tag
+        result += content.substring(lastIndex, index);
+
+        if (tagName.startsWith('!--') || tagName.startsWith('![CDATA[')) {
+            result += fullTag;
+            lastIndex = index + fullTag.length;
+            continue;
+        }
+
+        if (tagName.startsWith('/')) {
+          const closingName = tagName.substring(1);
+          const stackIndex = stack.lastIndexOf(closingName);
+          
+          if (stackIndex !== -1) {
+            // Found a matching opener in stack.
+            // Check if there are unclosed tags on top of it.
+            if (stack.length - 1 > stackIndex) {
+                const skipped = stack.slice(stackIndex + 1).reverse();
+                logger.warn(`Lenient parser: Injecting missing closers for ${skipped.join(', ')} before </${closingName}>`);
+                for (const skippedTag of skipped) {
+                    result += `</${skippedTag}>`;
+                }
+            }
+            // Pop everything up to and including the matching tag
+            while (stack.length > stackIndex) {
+               stack.pop();
+            }
+            result += fullTag;
+          } else {
+            // No matching opener! 
+            logger.warn(`Removing redundant closing tag </${closingName}>`);
+            // Do NOT add to result (effectively removing it)
+          }
+        } else if (fullTag.endsWith('/>')) {
+            // Self-closing
+            result += fullTag;
+        } else {
+            // Regular opening tag
+            stack.push(tagName);
+            result += fullTag;
+        }
+        
+        lastIndex = index + fullTag.length;
+      }
+
+      // Add the rest of the string
+      result += content.substring(lastIndex);
+
+      // 3. Close any remaining unclosed tags at the end
+      if (stack.length > 0) {
+        logger.info(`Closing unclosed tags at end of file: ${stack.join(', ')}`);
+        while (stack.length > 0) {
+          const tag = stack.pop();
+          result += `</${tag}>`;
+        }
+      }
+
+      return result;
+    } catch (error) {
+      logger.error('Error during XML sanitization:', error);
+      return xml;
+    }
+  }
+
+  /**
    * Parse UFDR XML file (handles both plain XML and ZIP archives)
    */
   async parseUFDRFile(filePath) {
@@ -57,7 +149,10 @@ class UFDRParser {
         throw new Error('Invalid UFDR file format. File must contain valid XML. Please ensure you are uploading a proper UFDR/XML export file.');
       }
 
-      const result = await this.parser.parseStringPromise(xmlContent);
+      // Sanitize XML to fix common forensic tool bugs (e.g., redundant closing tags)
+      const sanitizedXml = this.sanitizeXML(xmlContent);
+
+      const result = await this.parser.parseStringPromise(sanitizedXml);
 
       // Extract device information
       const deviceInfo = this.extractDeviceInfo(result);
@@ -203,8 +298,8 @@ class UFDRParser {
     try {
       // Handle UFDR XML structure
       const ufdr = parsedData['ufdr:UFDR'] || parsedData.UFDR || parsedData;
-      const device = ufdr['ufdr:device'] || ufdr.device || {};
-      const deviceInfo = device['ufdr:deviceInfo'] || device.deviceInfo || {};
+      const device = ufdr['ufdr:device'] || ufdr.device || ufdr['ufdr:network'] || ufdr.network || {};
+      const deviceInfo = device['ufdr:deviceInfo'] || device.deviceInfo || ufdr['ufdr:metadata'] || ufdr.metadata || {};
 
       // If we have actual UFDR device info, use it
       if (deviceInfo['ufdr:manufacturer'] || deviceInfo.manufacturer) {
@@ -285,6 +380,12 @@ class UFDRParser {
       if (ufdr['ufdr:device'] || ufdr.device) {
         logger.info('Detected UFDR XML structure, extracting from ufdr:device');
         return this.extractCellebriteDataSources(ufdr);
+      }
+
+      // Handle UFDR Network Traffic structure
+      if (ufdr['ufdr:network'] || ufdr.network) {
+        logger.info('Detected UFDR Network Traffic structure, extracting from ufdr:network');
+        return this.extractNetworkDataSources(ufdr);
       }
 
       // Handle Cellebrite XML structure - check multiple ways
@@ -593,6 +694,83 @@ class UFDRParser {
 
     } catch (error) {
       logger.error('Error extracting calls from UFDR:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Extract data sources from UFDR Network Traffic
+   */
+  extractNetworkDataSources(ufdr) {
+    const sources = [];
+    try {
+      const network = ufdr['ufdr:network'] || ufdr.network || {};
+      
+      // 1. HTTP Requests
+      if (network['ufdr:http'] || network.http) {
+        const http = network['ufdr:http'] || network.http;
+        const requestsContainer = http['ufdr:requests'] || http.requests || http;
+        const requests = this.normalizeArray(requestsContainer['ufdr:request'] || requestsContainer.request || []);
+        
+        if (requests.length > 0) {
+          sources.push({
+            sourceType: 'http',
+            appName: 'Web Browser',
+            data: requests.map((req, i) => ({
+              id: req['ufdr:id'] || req.id || `http_${i}`,
+              url: req['ufdr:url'] || req.url || '',
+              method: req['ufdr:method'] || req.method || 'GET',
+              timestamp: req['ufdr:timestamp'] || req.timestamp || new Date(),
+              userAgent: req['ufdr:userAgent'] || req.userAgent || ''
+            })),
+            totalRecords: requests.length
+          });
+        }
+      }
+
+      // 2. DNS Queries
+      if (network['ufdr:dns'] || network.dns) {
+          const dns = network['ufdr:dns'] || network.dns;
+          const dnsContainer = dns['ufdr:queries'] || dns.queries || dns;
+          const queries = this.normalizeArray(dnsContainer['ufdr:query'] || dnsContainer.query || []);
+          if (queries.length > 0) {
+              sources.push({
+                  sourceType: 'dns',
+                  appName: 'Network',
+                  data: queries.map((q, i) => ({
+                      id: q['ufdr:id'] || q.id || `dns_${i}`,
+                      name: q['ufdr:name'] || q.name || q.query || '',
+                      type: q['ufdr:type'] || q.type || 'A',
+                      timestamp: q['ufdr:timestamp'] || q.timestamp || new Date()
+                  })),
+                  totalRecords: queries.length
+              });
+          }
+      }
+
+      // 3. SSL Sessions
+      if (network['ufdr:ssl'] || network.ssl) {
+          const ssl = network['ufdr:ssl'] || network.ssl;
+          const sslContainer = ssl['ufdr:sessions'] || ssl.sessions || ssl;
+          const sessions = this.normalizeArray(sslContainer['ufdr:session'] || sslContainer.session || []);
+          if (sessions.length > 0) {
+              sources.push({
+                  sourceType: 'network_session',
+                  appName: 'SSL/TLS',
+                  data: sessions.map((s, i) => ({
+                      id: s['ufdr:id'] || s.id || `ssl_${i}`,
+                      host: s['ufdr:host'] || s.host || s.serverName || '',
+                      protocol: s['ufdr:protocol'] || s.protocol || 'TLS',
+                      timestamp: s['ufdr:timestamp'] || s.timestamp || new Date()
+                  })),
+                  totalRecords: sessions.length
+              });
+          }
+      }
+
+      return sources;
+    } catch (error) {
+      logger.error('Error extracting Network data sources:', error);
       return [];
     }
   }

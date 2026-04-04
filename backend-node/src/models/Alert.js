@@ -27,28 +27,16 @@ const Alert = sequelize.define('Alert', {
   caseId: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    references: {
-      model: 'cases',
-      key: 'id'
-    },
     field: 'case_id'
   },
   userId: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    references: {
-      model: 'users',
-      key: 'id'
-    },
     field: 'user_id'
   },
   createdBy: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    references: {
-      model: 'users',
-      key: 'id'
-    },
     field: 'created_by'
   },
   status: {

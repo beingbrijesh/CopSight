@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SYNTHETIC UFDR — ALL-ANOMALY STRESS TEST
+  File: anomaly_stress_test.ufdr
+  Purpose: Contains every anomaly type the detection pipeline can find:
+    - Late-night communication bursts (temporal)
+    - Off-hours spikes (temporal)
+    - Communication silence gaps (temporal)
+    - High-frequency burst windows (temporal)
+    - Hub degree anomalies (network)
+    - Isolation score anomalies (network)
+    - Bridge node anomalies (network)
+    - Contact diversity anomalies (network)
+    - Isolation Forest outliers (communication)
+    - Foreign number contacts (communication)
+    - Encrypted-app-only patterns (communication)
+-->
+<ufdr:UFDR xmlns:ufdr="http://www.forensicinstitute.org/ufdr"
+           xmlns:dc="http://purl.org/dc/elements/1.1/"
+           version="1.0">
+
+  <ufdr:metadata>
+    <dc:title>Anomaly Stress Test — Full Spectrum Forensic Dataset</dc:title>
+    <dc:creator>CIU Digital Forensics Lab — Testing Unit</dc:creator>
+    <dc:description>Synthetic dataset designed to trigger every anomaly detection algorithm. Contains temporal spikes, silence gaps, late-night bursts, network hub outliers, isolated nodes, bridge contacts, foreign communications, and isolation forest outliers across multiple suspects.</dc:description>
+    <dc:date>2025-02-01T00:00:00Z</dc:date>
+    <ufdr:caseNumber>CIU-TEST-ANOMALY-001</ufdr:caseNumber>
+    <ufdr:investigator>IO Test Engineer</ufdr:investigator>
+    <ufdr:extractionTool>Cellebrite UFED 7.60</ufdr:extractionTool>
+  </ufdr:metadata>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SUSPECT A — +919111000001
+       Anomalies: Late-night bursts, huge volume spike, off-hours pattern,
+                  foreign contacts, hub with extreme degree centrality
+  ═══════════════════════════════════════════════════════════════ -->
+  <ufdr:device>
+    <ufdr:deviceInfo>
+      <ufdr:deviceType>mobile_phone</ufdr:deviceType>
+      <ufdr:manufacturer>Samsung</ufdr:manufacturer>
+      <ufdr:model>Galaxy S22</ufdr:model>
+      <ufdr:imei>490154203237518</ufdr:imei>
+      <ufdr:msisdn>+919111000001</ufdr:msisdn>
+      <ufdr:os>Android 13</ufdr:os>
+      <ufdr:ownerName>Suspect A (Hub Node)</ufdr:ownerName>
+    </ufdr:deviceInfo>
+
+    <ufdr:calls>
+      <!-- Normal daytime calls (baseline) -->
+      <ufdr:call><ufdr:id>A-C001</ufdr:id><ufdr:timestamp>2025-02-03T10:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000002</ufdr:phoneNumber><ufdr:duration>120</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C002</ufdr:id><ufdr:timestamp>2025-02-03T11:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000003</ufdr:phoneNumber><ufdr:duration>200</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C003</ufdr:id><ufdr:timestamp>2025-02-03T14:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000004</ufdr:phoneNumber><ufdr:duration>95</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+
+      <!-- ANOMALY TYPE 1: LATE-NIGHT BURST — 2 AM to 4 AM cluster on 2025-02-05 -->
+      <ufdr:call><ufdr:id>A-C010</ufdr:id><ufdr:timestamp>2025-02-05T02:01:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000002</ufdr:phoneNumber><ufdr:duration>540</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType><ufdr:note>ANOMALY: late-night burst start</ufdr:note></ufdr:call>
+      <ufdr:call><ufdr:id>A-C011</ufdr:id><ufdr:timestamp>2025-02-05T02:15:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000003</ufdr:phoneNumber><ufdr:duration>720</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C012</ufdr:id><ufdr:timestamp>2025-02-05T02:28:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000005</ufdr:phoneNumber><ufdr:duration>300</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C013</ufdr:id><ufdr:timestamp>2025-02-05T02:40:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000006</ufdr:phoneNumber><ufdr:duration>480</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C014</ufdr:id><ufdr:timestamp>2025-02-05T03:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000007</ufdr:phoneNumber><ufdr:duration>600</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C015</ufdr:id><ufdr:timestamp>2025-02-05T03:20:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000008</ufdr:phoneNumber><ufdr:duration>400</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C016</ufdr:id><ufdr:timestamp>2025-02-05T03:45:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000009</ufdr:phoneNumber><ufdr:duration>350</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C017</ufdr:id><ufdr:timestamp>2025-02-05T04:05:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000010</ufdr:phoneNumber><ufdr:duration>210</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+
+      <!-- ANOMALY TYPE 2: FOREIGN NUMBER CONTACTS — multiple countries -->
+      <ufdr:call><ufdr:id>A-C020</ufdr:id><ufdr:timestamp>2025-02-06T03:10:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+441234567890</ufdr:phoneNumber><ufdr:duration>1800</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType><ufdr:note>ANOMALY: UK +44 at 3 AM</ufdr:note></ufdr:call>
+      <ufdr:call><ufdr:id>A-C021</ufdr:id><ufdr:timestamp>2025-02-08T02:30:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+971509876543</ufdr:phoneNumber><ufdr:duration>2700</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType><ufdr:note>ANOMALY: UAE +971 at 2:30 AM</ufdr:note></ufdr:call>
+      <ufdr:call><ufdr:id>A-C022</ufdr:id><ufdr:timestamp>2025-02-10T01:00:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+6591234567</ufdr:phoneNumber><ufdr:duration>3600</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType><ufdr:note>ANOMALY: Singapore +65 at 1 AM</ufdr:note></ufdr:call>
+
+      <!-- ANOMALY TYPE 3: VOLUME SPIKE — 20 calls in one hour on 2025-02-12 -->
+      <ufdr:call><ufdr:id>A-C030</ufdr:id><ufdr:timestamp>2025-02-12T15:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000002</ufdr:phoneNumber><ufdr:duration>30</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C031</ufdr:id><ufdr:timestamp>2025-02-12T15:03:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000003</ufdr:phoneNumber><ufdr:duration>25</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C032</ufdr:id><ufdr:timestamp>2025-02-12T15:06:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000004</ufdr:phoneNumber><ufdr:duration>20</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C033</ufdr:id><ufdr:timestamp>2025-02-12T15:09:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000005</ufdr:phoneNumber><ufdr:duration>18</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C034</ufdr:id><ufdr:timestamp>2025-02-12T15:12:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000006</ufdr:phoneNumber><ufdr:duration>22</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C035</ufdr:id><ufdr:timestamp>2025-02-12T15:15:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000007</ufdr:phoneNumber><ufdr:duration>28</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C036</ufdr:id><ufdr:timestamp>2025-02-12T15:18:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000008</ufdr:phoneNumber><ufdr:duration>15</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C037</ufdr:id><ufdr:timestamp>2025-02-12T15:21:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000009</ufdr:phoneNumber><ufdr:duration>32</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C038</ufdr:id><ufdr:timestamp>2025-02-12T15:24:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000010</ufdr:phoneNumber><ufdr:duration>19</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C039</ufdr:id><ufdr:timestamp>2025-02-12T15:27:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000011</ufdr:phoneNumber><ufdr:duration>21</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C040</ufdr:id><ufdr:timestamp>2025-02-12T15:30:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000012</ufdr:phoneNumber><ufdr:duration>17</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C041</ufdr:id><ufdr:timestamp>2025-02-12T15:33:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000013</ufdr:phoneNumber><ufdr:duration>25</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C042</ufdr:id><ufdr:timestamp>2025-02-12T15:36:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000014</ufdr:phoneNumber><ufdr:duration>20</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C043</ufdr:id><ufdr:timestamp>2025-02-12T15:39:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000015</ufdr:phoneNumber><ufdr:duration>14</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C044</ufdr:id><ufdr:timestamp>2025-02-12T15:42:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000016</ufdr:phoneNumber><ufdr:duration>29</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C045</ufdr:id><ufdr:timestamp>2025-02-12T15:45:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000017</ufdr:phoneNumber><ufdr:duration>16</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C046</ufdr:id><ufdr:timestamp>2025-02-12T15:48:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000018</ufdr:phoneNumber><ufdr:duration>23</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C047</ufdr:id><ufdr:timestamp>2025-02-12T15:51:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000019</ufdr:phoneNumber><ufdr:duration>18</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C048</ufdr:id><ufdr:timestamp>2025-02-12T15:54:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000020</ufdr:phoneNumber><ufdr:duration>27</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>A-C049</ufdr:id><ufdr:timestamp>2025-02-12T15:57:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000021</ufdr:phoneNumber><ufdr:duration>22</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+    </ufdr:calls>
+
+    <ufdr:messages>
+      <!-- ANOMALY TYPE 4: HIGH FREQUENCY MESSAGE BURST — 30 messages within 10 minutes -->
+      <ufdr:message><ufdr:id>A-M001</ufdr:id><ufdr:timestamp>2025-02-14T02:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000002</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Confirm status</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>A-M002</ufdr:id><ufdr:timestamp>2025-02-14T02:01:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000003</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>All clear?</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>A-M003</ufdr:id><ufdr:timestamp>2025-02-14T02:02:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000004</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Proceed</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>A-M004</ufdr:id><ufdr:timestamp>2025-02-14T02:03:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000005</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Ready</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>A-M005</ufdr:id><ufdr:timestamp>2025-02-14T02:04:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000006</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Go now</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>A-M006</ufdr:id><ufdr:timestamp>2025-02-14T02:05:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000007</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Move</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>A-M007</ufdr:id><ufdr:timestamp>2025-02-14T02:06:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000008</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Now</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>A-M008</ufdr:id><ufdr:timestamp>2025-02-14T02:07:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000009</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Stand by</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>A-M009</ufdr:id><ufdr:timestamp>2025-02-14T02:08:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000010</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>10 min eta</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>A-M010</ufdr:id><ufdr:timestamp>2025-02-14T02:09:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000011</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Done</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+    </ufdr:messages>
+  </ufdr:device>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SUSPECT B — +919111000050
+       Anomalies: Isolated node, single contact, extreme silence gap (8 days no comms)
+  ═══════════════════════════════════════════════════════════════ -->
+  <ufdr:device>
+    <ufdr:deviceInfo>
+      <ufdr:deviceType>mobile_phone</ufdr:deviceType>
+      <ufdr:manufacturer>Apple</ufdr:manufacturer>
+      <ufdr:model>iPhone 13</ufdr:model>
+      <ufdr:imei>490154203237600</ufdr:imei>
+      <ufdr:msisdn>+919111000050</ufdr:msisdn>
+      <ufdr:os>iOS 16.7</ufdr:os>
+      <ufdr:ownerName>Suspect B (Isolated Node)</ufdr:ownerName>
+    </ufdr:deviceInfo>
+
+    <ufdr:calls>
+      <!-- ANOMALY TYPE 5: SILENCE GAP — nothing between Feb 01 and Feb 09 (8 days) -->
+      <ufdr:call><ufdr:id>B-C001</ufdr:id><ufdr:timestamp>2025-02-01T10:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000001</ufdr:phoneNumber><ufdr:duration>60</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType><ufdr:note>Last call before 8-day silence</ufdr:note></ufdr:call>
+      <!-- 8-day gap here — no calls at all Feb 01 to Feb 09 -->
+      <ufdr:call><ufdr:id>B-C002</ufdr:id><ufdr:timestamp>2025-02-09T09:00:00Z</ufdr:timestamp><ufdr:direction>incoming</ufdr:direction><ufdr:phoneNumber>+919111000001</ufdr:phoneNumber><ufdr:duration>45</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType><ufdr:note>ANOMALY: First call after 8-day silence gap</ufdr:note></ufdr:call>
+      <ufdr:call><ufdr:id>B-C003</ufdr:id><ufdr:timestamp>2025-02-10T11:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000001</ufdr:phoneNumber><ufdr:duration>30</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <!-- ANOMALY TYPE 6: ONLY ONE CONTACT — isolation score anomaly -->
+      <!-- B only ever talks to +919111000001 — zero contact diversity -->
+    </ufdr:calls>
+  </ufdr:device>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SUSPECT C — +919111000060
+       Anomaly: Bridge node — connects two completely separate clusters
+                (A-group and Z-group who never talk to each other)
+  ═══════════════════════════════════════════════════════════════ -->
+  <ufdr:device>
+    <ufdr:deviceInfo>
+      <ufdr:deviceType>mobile_phone</ufdr:deviceType>
+      <ufdr:manufacturer>Oppo</ufdr:manufacturer>
+      <ufdr:model>Reno 10</ufdr:model>
+      <ufdr:imei>490154203237700</ufdr:imei>
+      <ufdr:msisdn>+919111000060</ufdr:msisdn>
+      <ufdr:os>Android 13</ufdr:os>
+      <ufdr:ownerName>Suspect C (Bridge Node)</ufdr:ownerName>
+    </ufdr:deviceInfo>
+
+    <ufdr:calls>
+      <!-- Talks to A-group -->
+      <ufdr:call><ufdr:id>C-C001</ufdr:id><ufdr:timestamp>2025-02-03T12:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000001</ufdr:phoneNumber><ufdr:duration>300</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>C-C002</ufdr:id><ufdr:timestamp>2025-02-05T13:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000002</ufdr:phoneNumber><ufdr:duration>240</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <!-- Talks to Z-group (completely separate cluster) -->
+      <ufdr:call><ufdr:id>C-C003</ufdr:id><ufdr:timestamp>2025-02-04T15:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000090</ufdr:phoneNumber><ufdr:duration>180</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType><ufdr:note>ANOMALY: Bridge to Z-cluster (otherwise disconnected)</ufdr:note></ufdr:call>
+      <ufdr:call><ufdr:id>C-C004</ufdr:id><ufdr:timestamp>2025-02-06T16:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000091</ufdr:phoneNumber><ufdr:duration>200</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>C-C005</ufdr:id><ufdr:timestamp>2025-02-08T10:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000092</ufdr:phoneNumber><ufdr:duration>150</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <!-- Also contacts foreign number -->
+      <ufdr:call><ufdr:id>C-C006</ufdr:id><ufdr:timestamp>2025-02-10T04:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+33123456789</ufdr:phoneNumber><ufdr:duration>900</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType><ufdr:note>ANOMALY: France +33 at 4 AM</ufdr:note></ufdr:call>
+    </ufdr:calls>
+  </ufdr:device>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SUSPECT D — +919111000070
+       Anomaly: Extreme outlier — 500 calls/day (isolation forest trigger)
+                Roboscam / call center fraud pattern
+  ═══════════════════════════════════════════════════════════════ -->
+  <ufdr:device>
+    <ufdr:deviceInfo>
+      <ufdr:deviceType>mobile_phone</ufdr:deviceType>
+      <ufdr:manufacturer>Realme</ufdr:manufacturer>
+      <ufdr:model>Narzo 60</ufdr:model>
+      <ufdr:imei>490154203237800</ufdr:imei>
+      <ufdr:msisdn>+919111000070</ufdr:msisdn>
+      <ufdr:os>Android 13</ufdr:os>
+      <ufdr:ownerName>Suspect D (Isolation Forest Outlier)</ufdr:ownerName>
+    </ufdr:deviceInfo>
+
+    <ufdr:calls>
+      <!-- ANOMALY TYPE 7: EXTREME FREQUENCY — 40+ unique contacts in one day -->
+      <ufdr:call><ufdr:id>D-C001</ufdr:id><ufdr:timestamp>2025-02-07T09:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000001</ufdr:phoneNumber><ufdr:duration>45</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C002</ufdr:id><ufdr:timestamp>2025-02-07T09:03:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000002</ufdr:phoneNumber><ufdr:duration>30</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C003</ufdr:id><ufdr:timestamp>2025-02-07T09:06:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000003</ufdr:phoneNumber><ufdr:duration>28</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C004</ufdr:id><ufdr:timestamp>2025-02-07T09:09:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000004</ufdr:phoneNumber><ufdr:duration>35</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C005</ufdr:id><ufdr:timestamp>2025-02-07T09:12:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000005</ufdr:phoneNumber><ufdr:duration>42</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C006</ufdr:id><ufdr:timestamp>2025-02-07T09:15:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000006</ufdr:phoneNumber><ufdr:duration>25</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C007</ufdr:id><ufdr:timestamp>2025-02-07T09:18:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000007</ufdr:phoneNumber><ufdr:duration>38</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C008</ufdr:id><ufdr:timestamp>2025-02-07T09:21:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000008</ufdr:phoneNumber><ufdr:duration>20</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C009</ufdr:id><ufdr:timestamp>2025-02-07T09:24:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000009</ufdr:phoneNumber><ufdr:duration>31</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C010</ufdr:id><ufdr:timestamp>2025-02-07T09:27:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000010</ufdr:phoneNumber><ufdr:duration>27</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C011</ufdr:id><ufdr:timestamp>2025-02-07T09:30:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000011</ufdr:phoneNumber><ufdr:duration>33</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C012</ufdr:id><ufdr:timestamp>2025-02-07T09:33:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000012</ufdr:phoneNumber><ufdr:duration>29</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C013</ufdr:id><ufdr:timestamp>2025-02-07T09:36:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000013</ufdr:phoneNumber><ufdr:duration>40</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C014</ufdr:id><ufdr:timestamp>2025-02-07T09:39:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000014</ufdr:phoneNumber><ufdr:duration>22</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C015</ufdr:id><ufdr:timestamp>2025-02-07T09:42:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000015</ufdr:phoneNumber><ufdr:duration>36</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C016</ufdr:id><ufdr:timestamp>2025-02-07T09:45:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000016</ufdr:phoneNumber><ufdr:duration>18</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C017</ufdr:id><ufdr:timestamp>2025-02-07T09:48:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000017</ufdr:phoneNumber><ufdr:duration>44</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C018</ufdr:id><ufdr:timestamp>2025-02-07T09:51:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000018</ufdr:phoneNumber><ufdr:duration>26</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C019</ufdr:id><ufdr:timestamp>2025-02-07T09:54:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000019</ufdr:phoneNumber><ufdr:duration>39</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C020</ufdr:id><ufdr:timestamp>2025-02-07T09:57:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500000020</ufdr:phoneNumber><ufdr:duration>21</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <!-- Additional day same pattern -->
+      <ufdr:call><ufdr:id>D-C021</ufdr:id><ufdr:timestamp>2025-02-08T09:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500001001</ufdr:phoneNumber><ufdr:duration>43</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C022</ufdr:id><ufdr:timestamp>2025-02-08T09:03:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500001002</ufdr:phoneNumber><ufdr:duration>19</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+      <ufdr:call><ufdr:id>D-C023</ufdr:id><ufdr:timestamp>2025-02-08T09:06:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919500001003</ufdr:phoneNumber><ufdr:duration>37</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType></ufdr:call>
+    </ufdr:calls>
+  </ufdr:device>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SUSPECT E — +919111000080
+       Anomalies: Day-of-week anomaly (only active Sundays at 3 AM),
+                  extremely long call durations (outlier),
+                  odd hours only — never active during business hours
+  ═══════════════════════════════════════════════════════════════ -->
+  <ufdr:device>
+    <ufdr:deviceInfo>
+      <ufdr:deviceType>mobile_phone</ufdr:deviceType>
+      <ufdr:manufacturer>Motorola</ufdr:manufacturer>
+      <ufdr:model>Edge 40</ufdr:model>
+      <ufdr:imei>490154203237900</ufdr:imei>
+      <ufdr:msisdn>+919111000080</ufdr:msisdn>
+      <ufdr:os>Android 13</ufdr:os>
+      <ufdr:ownerName>Suspect E (Temporal Pattern Outlier)</ufdr:ownerName>
+    </ufdr:deviceInfo>
+
+    <ufdr:calls>
+      <!-- ANOMALY TYPE 8: DAY-OF-WEEK ANOMALY — only active Sunday early mornings -->
+      <!-- 2025-02-02 is Sunday -->
+      <ufdr:call><ufdr:id>E-C001</ufdr:id><ufdr:timestamp>2025-02-02T03:00:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000001</ufdr:phoneNumber><ufdr:duration>7200</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType><ufdr:note>ANOMALY: Sunday 3 AM — 2 hour call</ufdr:note></ufdr:call>
+      <!-- 2025-02-09 is Sunday -->
+      <ufdr:call><ufdr:id>E-C002</ufdr:id><ufdr:timestamp>2025-02-09T03:15:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000060</ufdr:phoneNumber><ufdr:duration>5400</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType><ufdr:note>ANOMALY: Sunday 3 AM — 1.5 hour call</ufdr:note></ufdr:call>
+      <!-- 2025-02-16 is Sunday -->
+      <ufdr:call><ufdr:id>E-C003</ufdr:id><ufdr:timestamp>2025-02-16T02:45:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000001</ufdr:phoneNumber><ufdr:duration>9000</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType><ufdr:note>ANOMALY: Sunday 2:45 AM — 2.5 hour call</ufdr:note></ufdr:call>
+      <!-- Very high duration outlier -->
+      <ufdr:call><ufdr:id>E-C004</ufdr:id><ufdr:timestamp>2025-02-23T03:30:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000060</ufdr:phoneNumber><ufdr:duration>10800</ufdr:duration><ufdr:sourceType>call_log</ufdr:sourceType><ufdr:note>ANOMALY: Sunday 3:30 AM — 3 hour call (extreme duration outlier)</ufdr:note></ufdr:call>
+    </ufdr:calls>
+
+    <ufdr:messages>
+      <!-- ANOMALY TYPE 9: ENCRYPTED-ONLY PATTERN — no unencrypted comms ever -->
+      <ufdr:message><ufdr:id>E-M001</ufdr:id><ufdr:timestamp>2025-02-02T02:55:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000001</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Ready for weekly debrief</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+      <ufdr:message><ufdr:id>E-M002</ufdr:id><ufdr:timestamp>2025-02-09T03:10:00Z</ufdr:timestamp><ufdr:direction>outgoing</ufdr:direction><ufdr:phoneNumber>+919111000060</ufdr:phoneNumber><ufdr:app>Signal</ufdr:app><ufdr:content>Handover done. Confirm next week same time.</ufdr:content><ufdr:encrypted>true</ufdr:encrypted></ufdr:message>
+    </ufdr:messages>
+  </ufdr:device>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       ANOMALY METADATA — explicit list for validation
+  ═══════════════════════════════════════════════════════════════ -->
+  <ufdr:embeddedAnomalies>
+    <ufdr:anomaly>
+      <ufdr:id>EMB-001</ufdr:id>
+      <ufdr:type>late_night_communication_burst</ufdr:type>
+      <ufdr:affectedNumber>+919111000001</ufdr:affectedNumber>
+      <ufdr:timestamp>2025-02-05T02:00:00Z</ufdr:timestamp>
+      <ufdr:description>8 calls between 2 AM and 4 AM to 8 different numbers in a 2-hour window</ufdr:description>
+      <ufdr:expectedModel>temporal_anomaly_detector</ufdr:expectedModel>
+    </ufdr:anomaly>
+    <ufdr:anomaly>
+      <ufdr:id>EMB-002</ufdr:id>
+      <ufdr:type>foreign_contact_off_hours</ufdr:type>
+      <ufdr:affectedNumber>+919111000001</ufdr:affectedNumber>
+      <ufdr:timestamp>2025-02-06T03:10:00Z</ufdr:timestamp>
+      <ufdr:description>UK +44, UAE +971, and Singapore +65 contacts all between 1-4 AM</ufdr:description>
+      <ufdr:expectedModel>communication_anomaly_detector</ufdr:expectedModel>
+    </ufdr:anomaly>
+    <ufdr:anomaly>
+      <ufdr:id>EMB-003</ufdr:id>
+      <ufdr:type>communication_volume_spike</ufdr:type>
+      <ufdr:affectedNumber>+919111000001</ufdr:affectedNumber>
+      <ufdr:timestamp>2025-02-12T15:00:00Z</ufdr:timestamp>
+      <ufdr:description>20 calls to 20 unique numbers within 1 hour — statistical spike</ufdr:description>
+      <ufdr:expectedModel>temporal_anomaly_detector + isolation_forest</ufdr:expectedModel>
+    </ufdr:anomaly>
+    <ufdr:anomaly>
+      <ufdr:id>EMB-004</ufdr:id>
+      <ufdr:type>message_burst</ufdr:type>
+      <ufdr:affectedNumber>+919111000001</ufdr:affectedNumber>
+      <ufdr:timestamp>2025-02-14T02:00:00Z</ufdr:timestamp>
+      <ufdr:description>10 encrypted messages in 9 minutes at 2 AM — coordination burst</ufdr:description>
+      <ufdr:expectedModel>temporal_anomaly_detector</ufdr:expectedModel>
+    </ufdr:anomaly>
+    <ufdr:anomaly>
+      <ufdr:id>EMB-005</ufdr:id>
+      <ufdr:type>communication_silence_gap</ufdr:type>
+      <ufdr:affectedNumber>+919111000050</ufdr:affectedNumber>
+      <ufdr:startTime>2025-02-01T10:01:00Z</ufdr:startTime>
+      <ufdr:endTime>2025-02-09T09:00:00Z</ufdr:endTime>
+      <ufdr:description>8-day complete silence gap — unusual for active suspect</ufdr:description>
+      <ufdr:expectedModel>temporal_anomaly_detector</ufdr:expectedModel>
+    </ufdr:anomaly>
+    <ufdr:anomaly>
+      <ufdr:id>EMB-006</ufdr:id>
+      <ufdr:type>isolation_score_anomaly</ufdr:type>
+      <ufdr:affectedNumber>+919111000050</ufdr:affectedNumber>
+      <ufdr:description>Only 1 unique contact across all communications — extreme isolation</ufdr:description>
+      <ufdr:expectedModel>network_anomaly_detector</ufdr:expectedModel>
+    </ufdr:anomaly>
+    <ufdr:anomaly>
+      <ufdr:id>EMB-007</ufdr:id>
+      <ufdr:type>bridge_node_anomaly</ufdr:type>
+      <ufdr:affectedNumber>+919111000060</ufdr:affectedNumber>
+      <ufdr:description>Connects two otherwise disconnected clusters — high betweenness centrality</ufdr:description>
+      <ufdr:expectedModel>network_anomaly_detector</ufdr:expectedModel>
+    </ufdr:anomaly>
+    <ufdr:anomaly>
+      <ufdr:id>EMB-008</ufdr:id>
+      <ufdr:type>isolation_forest_outlier</ufdr:type>
+      <ufdr:affectedNumber>+919111000070</ufdr:affectedNumber>
+      <ufdr:description>40+ unique contacts per day, 3-minute call cycles — extreme outlier across all features</ufdr:description>
+      <ufdr:expectedModel>isolation_forest + xgboost</ufdr:expectedModel>
+    </ufdr:anomaly>
+    <ufdr:anomaly>
+      <ufdr:id>EMB-009</ufdr:id>
+      <ufdr:type>day_of_week_anomaly + extreme_duration_outlier</ufdr:type>
+      <ufdr:affectedNumber>+919111000080</ufdr:affectedNumber>
+      <ufdr:description>Active ONLY on Sunday 2-4 AM. Call durations 2-3 hours each. Zero daytime communications.</ufdr:description>
+      <ufdr:expectedModel>temporal_anomaly_detector + isolation_forest</ufdr:expectedModel>
+    </ufdr:anomaly>
+    <ufdr:anomaly>
+      <ufdr:id>EMB-010</ufdr:id>
+      <ufdr:type>hub_degree_anomaly</ufdr:type>
+      <ufdr:affectedNumber>+919111000001</ufdr:affectedNumber>
+      <ufdr:description>21 unique contacts in one day vs population average of 3 — 7x normal degree</ufdr:description>
+      <ufdr:expectedModel>network_anomaly_detector</ufdr:expectedModel>
+    </ufdr:anomaly>
+  </ufdr:embeddedAnomalies>
+
+</ufdr:UFDR>

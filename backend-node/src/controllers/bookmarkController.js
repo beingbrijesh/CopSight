@@ -25,22 +25,17 @@ export const createBookmark = async (req, res) => {
       });
     }
 
-    // Get current max order for this case
-    const maxOrder = await EvidenceBookmark.max('bookmarkOrder', {
-      where: { caseId: parseInt(caseId), userId: req.user.id }
-    });
-
     const bookmark = await EvidenceBookmark.create({
       caseId: parseInt(caseId),
       userId: req.user.id,
       queryId: queryId || null,
       evidenceType,
       evidenceId,
-      evidenceSource,
-      evidenceContent,
+      source: evidenceSource,
+      content: evidenceContent.content || evidenceContent.value || '',
       notes,
       tags: tags || [],
-      bookmarkOrder: (maxOrder || 0) + 1
+      metadata: evidenceContent
     });
 
     // Log bookmark creation
@@ -117,7 +112,7 @@ export const getBookmarks = async (req, res) => {
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['bookmarkOrder', 'ASC']]
+      order: [['created_at', 'ASC']]
     });
 
     res.json({

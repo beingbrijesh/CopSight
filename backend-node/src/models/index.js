@@ -18,6 +18,10 @@ import AlertRule from './AlertRule.js';
 User.hasMany(User, { foreignKey: 'supervisorId', as: 'subordinates' });
 User.belongsTo(User, { foreignKey: 'supervisorId', as: 'supervisor' });
 
+// User self-referential association (creator)
+User.hasMany(User, { foreignKey: 'createdBy', as: 'createdUsers' });
+User.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+
 User.hasMany(Case, { foreignKey: 'assignedTo', as: 'assignedCases' });
 User.hasMany(Case, { foreignKey: 'supervisorId', as: 'supervisedCases' });
 User.hasMany(Case, { foreignKey: 'createdBy', as: 'createdCases' });
@@ -59,12 +63,12 @@ AuditLog.belongsTo(Case, { foreignKey: 'caseId', as: 'case' });
 User.hasMany(AuditLog, { foreignKey: 'userId', as: 'auditLogs' });
 
 // Cross-case relationships
-CrossCaseLink.belongsTo(Case, { foreignKey: 'sourceCaseId', as: 'sourceCase' });
-CrossCaseLink.belongsTo(Case, { foreignKey: 'targetCaseId', as: 'targetCase' });
-CrossCaseLink.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+CrossCaseLink.belongsTo(Case, { foreignKey: 'source_case_id', as: 'sourceCase' });
+CrossCaseLink.belongsTo(Case, { foreignKey: 'target_case_id', as: 'targetCase' });
+CrossCaseLink.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 
-Case.hasMany(CrossCaseLink, { foreignKey: 'sourceCaseId', as: 'outgoingLinks' });
-Case.hasMany(CrossCaseLink, { foreignKey: 'targetCaseId', as: 'incomingLinks' });
+Case.hasMany(CrossCaseLink, { foreignKey: 'source_case_id', as: 'outgoingLinks' });
+Case.hasMany(CrossCaseLink, { foreignKey: 'target_case_id', as: 'incomingLinks' });
 
 CaseSharedEntity.belongsTo(Case, { foreignKey: 'firstSeenCaseId', as: 'firstSeenCase' });
 CaseSharedEntity.belongsTo(Case, { foreignKey: 'lastSeenCaseId', as: 'lastSeenCase' });
