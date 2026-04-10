@@ -200,6 +200,20 @@ CREATE TABLE IF NOT EXISTS cross_case_links (
     CONSTRAINT no_self_link CHECK (source_case_id != target_case_id)
 );
 
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    recipient_id INTEGER REFERENCES users(id) NOT NULL,
+    sender_id INTEGER REFERENCES users(id),
+    case_id INTEGER REFERENCES cases(id),
+    type VARCHAR(50) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    data JSONB,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_supervisor ON users(supervisor_id);
@@ -246,6 +260,10 @@ CREATE INDEX IF NOT EXISTS idx_cross_case_links_target ON cross_case_links(targe
 CREATE INDEX IF NOT EXISTS idx_cross_case_links_type ON cross_case_links(link_type);
 CREATE INDEX IF NOT EXISTS idx_cross_case_links_entity ON cross_case_links(entity_type, entity_value);
 CREATE INDEX IF NOT EXISTS idx_cross_case_links_strength ON cross_case_links(strength);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_case ON notifications(case_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -268,3 +286,6 @@ CREATE TRIGGER update_data_sources_updated_at BEFORE UPDATE ON data_sources FOR 
 
 DROP TRIGGER IF EXISTS update_cross_case_links_updated_at ON cross_case_links;
 CREATE TRIGGER update_cross_case_links_updated_at BEFORE UPDATE ON cross_case_links FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_notifications_updated_at ON notifications;
+CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

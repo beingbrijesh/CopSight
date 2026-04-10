@@ -1,4 +1,4 @@
-import { Alert, AlertRule, User, Case } from '../models/index.js';
+import { Alert, AlertRule, User, Case, Notification } from '../models/index.js';
 import logger from '../config/logger.js';
 import { Op } from 'sequelize';
 
@@ -127,6 +127,20 @@ class AlertService {
           createdBy: null // System-generated
         });
         alerts.push(alert);
+
+        await Notification.create({
+          recipientId: userId,
+          senderId: null,
+          caseId: alertData.caseId || null,
+          type: 'alert',
+          title: alertData.title,
+          message: alertData.description,
+          data: {
+            severity: alertData.severity,
+            alertType: alertData.alertType,
+            caseId: alertData.caseId || null
+          }
+        });
       }
 
       logger.info(`Created ${alerts.length} alerts of type ${alertData.alertType}`);

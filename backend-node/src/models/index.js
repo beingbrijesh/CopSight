@@ -12,6 +12,7 @@ import CrossCaseLink from './CrossCaseLink.js';
 import CaseSharedEntity from './CaseSharedEntity.js';
 import Alert from './Alert.js';
 import AlertRule from './AlertRule.js';
+import Notification from './Notification.js';
 
 // Define associations
 // User self-referential association (supervisor)
@@ -87,6 +88,15 @@ User.hasMany(Alert, { foreignKey: 'createdBy', as: 'createdAlerts' });
 AlertRule.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
 User.hasMany(AlertRule, { foreignKey: 'createdBy', as: 'alertRules' });
 
+// Notification system associations
+Notification.belongsTo(User, { foreignKey: 'recipientId', as: 'recipient' });
+Notification.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
+Notification.belongsTo(Case, { foreignKey: 'caseId', as: 'case' });
+
+User.hasMany(Notification, { foreignKey: 'recipientId', as: 'receivedNotifications' });
+User.hasMany(Notification, { foreignKey: 'senderId', as: 'sentNotifications' });
+Case.hasMany(Notification, { foreignKey: 'caseId', as: 'notifications' });
+
 export {
   User,
   Case,
@@ -101,5 +111,6 @@ export {
   CrossCaseLink,
   CaseSharedEntity,
   Alert,
-  AlertRule
+  AlertRule,
+  Notification
 };

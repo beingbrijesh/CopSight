@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Activity, Search, Upload, Bookmark, FileText, Loader2, AlertCircle, CheckCircle2, RefreshCw, Network } from 'lucide-react';
 import { caseAPI, uploadAPI } from '../../lib/api';
-import { Navbar } from '../../components/Navbar';
+import { useAuthStore } from '../../store/authStore';
 import { CrossCaseConnections } from '../../components/CrossCaseConnections';
 import { AnomalyDetection } from '../../components/AnomalyDetection';
 import { PredictiveAnalytics } from '../../components/PredictiveAnalytics';
@@ -20,6 +20,9 @@ export const CaseDetail = () => {
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [showQueryPrompt, setShowQueryPrompt] = useState(false);
   const [fileJustProcessed, setFileJustProcessed] = useState(false);
+  const { user } = useAuthStore();
+  const rolePrefix = user?.role === 'supervisor' ? '/supervisor' : '/io';
+  const casesPath = user?.role === 'supervisor' ? '/supervisor/cases' : '/io';
   const pollingInterval = useRef<number | null>(null);
 
   useEffect(() => {
@@ -228,23 +231,17 @@ export const CaseDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-500">Loading case...</div>
-        </div>
+      <div className="mx-auto max-w-7xl py-8">
+        <div className="text-center text-gray-500">Loading case...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-7xl pb-8">
         <button
-          onClick={() => navigate('/io')}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+          onClick={() => navigate(casesPath)}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Cases
@@ -304,7 +301,7 @@ export const CaseDetail = () => {
                   <button
                     onClick={() => {
                       setFileJustProcessed(false); // Reset processing flag
-                      navigate(`/io/case/${caseId}/query`);
+                      navigate(`${rolePrefix}/case/${caseId}/query`);
                     }}
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2"
                   >
@@ -332,28 +329,28 @@ export const CaseDetail = () => {
             <div className="text-sm font-medium">Upload Data</div>
           </button>
           <button 
-            onClick={() => navigate(`/io/case/${caseId}/query`)}
+            onClick={() => navigate(`${rolePrefix}/case/${caseId}/query`)}
             className="bg-white p-4 rounded-lg shadow hover:shadow-md transition"
           >
             <Search className="w-6 h-6 text-purple-600 mb-2" />
             <div className="text-sm font-medium">Execute Query</div>
           </button>
           <button 
-            onClick={() => navigate(`/io/case/${caseId}/entities`)}
+            onClick={() => navigate(`${rolePrefix}/case/${caseId}/entities`)}
             className="bg-white p-4 rounded-lg shadow hover:shadow-md transition"
           >
             <Activity className="w-6 h-6 text-green-600 mb-2" />
             <div className="text-sm font-medium">View Entities</div>
           </button>
           <button 
-            onClick={() => navigate(`/io/case/${caseId}/bookmarks`)}
+            onClick={() => navigate(`${rolePrefix}/case/${caseId}/bookmarks`)}
             className="bg-white p-4 rounded-lg shadow hover:shadow-md transition"
           >
             <Bookmark className="w-6 h-6 text-orange-600 mb-2" />
             <div className="text-sm font-medium">Bookmarks</div>
           </button>
           <button 
-            onClick={() => navigate(`/io/case/${caseId}/report`)}
+            onClick={() => navigate(`${rolePrefix}/case/${caseId}/report`)}
             className="bg-white p-4 rounded-lg shadow hover:shadow-md transition"
           >
             <FileText className="w-6 h-6 text-red-600 mb-2" />
@@ -639,6 +636,5 @@ export const CaseDetail = () => {
         )}
 
       </div>
-    </div>
   );
 };

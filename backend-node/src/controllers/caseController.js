@@ -1,4 +1,4 @@
-import { Case, User, AuditLog, EntityTag, DataSource, Device } from '../models/index.js';
+import { Case, User, AuditLog, EntityTag, DataSource, Device, Notification } from '../models/index.js';
 import { Op } from 'sequelize';
 import logger, { auditLogger } from '../config/logger.js';
 import elasticsearchService from '../services/search/elasticsearchService.js';
@@ -105,6 +105,19 @@ export const createCase = async (req, res) => {
       createdBy: req.user.id,
       assignedTo: resolvedAssignedTo
     });
+
+    // Notify Supervisor
+    if (newCase.supervisorId) {
+      await Notification.create({
+        recipientId: newCase.supervisorId,
+        senderId: req.user.id,
+        caseId: newCase.id,
+        type: 'case_assignment',
+        title: 'New Case Assignment',
+        message: `Admin has assigned Case #${newCase.caseNumber}: ${newCase.title} for review.`,
+        data: { caseNumber: newCase.caseNumber }
+      });
+    }
 
     const responseCase = {
       ...newCase.toJSON(),
@@ -566,6 +579,65 @@ export const deleteCase = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete case'
+    });
+  }
+};
+
+/**
+ * Review case (Supervisor only)
+ */
+export const reviewCase = async (req, res) => {
+  try {
+    const { action, feedback } = req.body; // action: 'accept', 'reject', 'modify'
+    const caseData = req.case;
+    
+    // Ensure the user is the supervisor for this case
+    if (caseData.supervisorId !== req.user.id) {
+       return res.status(403).json({
+         success: false,
+         message: 'You are not authorized to review this case'
+       });
+    }
+
+    let nextStatus = caseData.status;
+    let notificationTitle = '';
+
+    if (action === 'accept') {
+       nextStatus = 'active'; // Or whatever status means accepted
+       notificationTitle = 'Case Accepted';
+    } else if (action === 'reject') {
+       nextStatus = 'closed'; // Or 'rejected' if added to ENUM
+       notificationTitle = 'Case Rejected';
+    } else if (action === 'modify') {
+       // Optional: add a 'revision_required' status or keep it in created
+       notificationTitle = 'Case Modification Requested';
+    } else {
+       return res.status(400).json({ success: false, message: 'Invalid action' });
+    }
+
+    // Update case status
+    await caseData.update({ status: nextStatus });
+
+    // Notify the admin/creator
+    await Notification.create({
+      recipientId: caseData.createdBy,
+      senderId: req.user.id,
+      caseId: caseData.id,
+      type: action === 'modify' ? 'case_revision' : 'case_review',
+      title: notificationTitle,
+      message: feedback || `The supervisor has chosen to ${action} the case.`,
+      data: { action, feedback, caseNumber: caseData.caseNumber }
+    });
+
+    res.json({
+      success: true,
+      message: `Case ${action}ed successfully.`
+    });
+  } catch (error) {
+    logger.error('Review case error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to review case'
     });
   }
 };

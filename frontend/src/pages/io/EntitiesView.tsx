@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Database, Filter, Search, Download, MessageCircle, Activity, Upload } from 'lucide-react';
 import { caseAPI } from '../../lib/api';
+import { useAuthStore } from '../../store/authStore';
 import { Navbar } from '../../components/Navbar';
 import { EvidenceChip } from '../../components/EvidenceChip';
 
@@ -51,6 +52,8 @@ export const EntitiesView = () => {
   const [chatPage, setChatPage] = useState(1);
   const [totalChats, setTotalChats] = useState(0);
   const [totalChatPages, setTotalChatPages] = useState(0);
+  const { user } = useAuthStore();
+  const rolePrefix = user?.role === 'supervisor' ? '/supervisor' : '/io';
 
   useEffect(() => {
     loadEntities();
@@ -168,11 +171,9 @@ export const EntitiesView = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mx-auto max-w-7xl py-8">
           <button
-            onClick={() => navigate(`/io/case/${caseId}`)}
+            onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -195,17 +196,13 @@ export const EntitiesView = () => {
             </div>
           </div>
         </div>
-      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-7xl py-8">
         <button
-          onClick={() => navigate(`/io/case/${caseId}`)}
+          onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -340,7 +337,7 @@ export const EntitiesView = () => {
                         No entities have been extracted yet. Upload and process a UFDR file to discover phone numbers, emails, crypto addresses, and chat conversations.
                       </p>
                       <button
-                        onClick={() => navigate(`/io/case/${caseId}`)}
+                        onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
                         className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
                       >
                         <Upload className="w-4 h-4 mr-2" />
@@ -494,7 +491,7 @@ export const EntitiesView = () => {
                       No chat conversations have been processed yet. Upload a UFDR file containing WhatsApp, SMS, or messaging data to view detailed chat histories with timestamps.
                     </p>
                     <button
-                      onClick={() => navigate(`/io/case/${caseId}`)}
+                      onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
                       className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
                     >
                       <Upload className="w-4 h-4 mr-2" />
@@ -593,6 +590,5 @@ export const EntitiesView = () => {
           )}
         </div>
       </div>
-    </div>
   );
 };

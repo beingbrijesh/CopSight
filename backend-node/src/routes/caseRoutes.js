@@ -7,7 +7,8 @@ import {
   getCaseStatistics,
   getCaseEntities,
   getCaseChats,
-  deleteCase
+  deleteCase,
+  reviewCase
 } from '../controllers/caseController.js';
 import { authenticate, authorize, requirePermission } from '../middleware/auth.js';
 import { checkCaseAccess } from '../middleware/caseAccess.js';
@@ -45,5 +46,8 @@ router.put('/:caseId', checkCaseAccess, updateCase);
 
 // Delete case (Admin only)
 router.delete('/:caseId', authorize('admin'), deleteCase);
+
+// Review case (Supervisor only)
+router.post('/:caseId/review', authorize('supervisor'), checkCaseAccess, reviewCase);
 
 export default router;

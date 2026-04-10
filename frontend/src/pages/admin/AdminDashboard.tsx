@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, FolderOpen, Activity, Plus, RefreshCw, ArrowRight } from 'lucide-react';
 import { caseAPI, userAPI } from '../../lib/api';
-import { Navbar } from '../../components/Navbar';
 import { CreateUser } from './CreateUser';
 import { CreateCase } from './CreateCase';
 
@@ -44,10 +43,7 @@ export const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
@@ -158,7 +154,6 @@ export const AdminDashboard = () => {
             </p>
           </div>
         </div>
-      </div>
 
       {showCreateUser && (
         <CreateUser

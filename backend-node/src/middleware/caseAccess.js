@@ -73,7 +73,8 @@ export const checkCaseAccess = async (req, res, next) => {
 
           // Block write operations for supervisors
           if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) &&
-            !req.path.includes('/view')) {
+            !req.path.includes('/view') &&
+            !req.path.includes('/review')) {
             return res.status(403).json({
               success: false,
               message: 'Supervisors have read-only access to cases'

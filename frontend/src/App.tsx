@@ -10,6 +10,8 @@ import { Bookmarks } from './pages/io/Bookmarks';
 import { ReportGenerator } from './pages/io/ReportGenerator';
 import { EntitiesView } from './pages/io/EntitiesView';
 import { NetworkGraph } from './pages/io/NetworkGraph';
+import { SupervisorDashboard } from './pages/supervisor/SupervisorDashboard';
+import { AppShell } from './components/AppShell';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { EvidenceDetailPanel } from './components/EvidenceDetailPanel';
 import { useAuthStore } from './store/authStore';
@@ -32,71 +34,44 @@ function App() {
           isAuthenticated ? <Navigate to={getDefaultRoute()} replace /> : <Login />
         } />
         
-        <Route path="/admin" element={
+        <Route element={
           <ProtectedRoute allowedRoles={['admin']}>
-            <AdminDashboard />
+            <AppShell />
           </ProtectedRoute>
-        } />
-        
-        <Route path="/admin/users" element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <UserList />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/admin/cases" element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <CaseList />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/io" element={
+        }>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<UserList />} />
+          <Route path="/admin/cases" element={<CaseList />} />
+        </Route>
+
+        <Route element={
           <ProtectedRoute allowedRoles={['investigating_officer']}>
-            <IODashboard />
+            <AppShell />
           </ProtectedRoute>
-        } />
-        
-        <Route path="/io/case/:caseId" element={
-          <ProtectedRoute allowedRoles={['investigating_officer']}>
-            <CaseDetail />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/io/case/:caseId/query" element={
-          <ProtectedRoute allowedRoles={['investigating_officer']}>
-            <QueryInterface />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/io/case/:caseId/bookmarks" element={
-          <ProtectedRoute allowedRoles={['investigating_officer']}>
-            <Bookmarks />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/io/case/:caseId/report" element={
-          <ProtectedRoute allowedRoles={['investigating_officer', 'admin']}>
-            <ReportGenerator />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/io/case/:caseId/entities" element={
-          <ProtectedRoute allowedRoles={['investigating_officer']}>
-            <EntitiesView />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/io/case/:caseId/network" element={
-          <ProtectedRoute allowedRoles={['investigating_officer', 'admin', 'supervisor']}>
-            <NetworkGraph />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/supervisor" element={
+        }>
+          <Route path="/io" element={<IODashboard />} />
+          <Route path="/io/case/:caseId" element={<CaseDetail />} />
+          <Route path="/io/case/:caseId/query" element={<QueryInterface />} />
+          <Route path="/io/case/:caseId/bookmarks" element={<Bookmarks />} />
+          <Route path="/io/case/:caseId/report" element={<ReportGenerator />} />
+          <Route path="/io/case/:caseId/entities" element={<EntitiesView />} />
+          <Route path="/io/case/:caseId/network" element={<NetworkGraph />} />
+        </Route>
+
+        <Route element={
           <ProtectedRoute allowedRoles={['supervisor']}>
-            <IODashboard />
+            <AppShell />
           </ProtectedRoute>
-        } />
+        }>
+          <Route path="/supervisor" element={<SupervisorDashboard />} />
+          <Route path="/supervisor/cases" element={<CaseList />} />
+          <Route path="/supervisor/case/:caseId" element={<CaseDetail />} />
+          <Route path="/supervisor/case/:caseId/query" element={<QueryInterface />} />
+          <Route path="/supervisor/case/:caseId/bookmarks" element={<Bookmarks />} />
+          <Route path="/supervisor/case/:caseId/report" element={<ReportGenerator />} />
+          <Route path="/supervisor/case/:caseId/entities" element={<EntitiesView />} />
+          <Route path="/supervisor/case/:caseId/network" element={<NetworkGraph />} />
+        </Route>
         
         <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
         

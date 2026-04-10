@@ -1,9 +1,20 @@
-import { LogOut, User } from 'lucide-react';
+import { LogOut, Menu, Shield, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { authAPI } from '../lib/api';
+import { NotificationBell } from './NotificationBell';
 
-export const Navbar = () => {
+interface NavbarProps {
+  onMenuToggle?: () => void;
+}
+
+const roleLabel: Record<string, string> = {
+  admin: 'Admin',
+  investigating_officer: 'Investigating Officer',
+  supervisor: 'Supervisor',
+};
+
+export const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
@@ -19,42 +30,46 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <h1 className="text-xl font-bold text-gray-900">UFDR System</h1>
+    <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onMenuToggle}
+            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 lg:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-900 text-white">
+            <Shield className="h-4 w-4" />
           </div>
+          <div>
+            <p className="text-base font-semibold text-gray-900">CopSight</p>
+            <p className="text-xs text-gray-500">Unified Forensic Data Repository</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <NotificationBell />
           
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <User className="w-4 h-4 text-gray-500" />
-              <div className="text-right">
-                <div className="font-medium text-gray-900">{user?.fullName}</div>
-                <div className="text-xs text-gray-500">
-                  {user?.badgeNumber || user?.role}
-                </div>
+          <div className="hidden items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 sm:flex">
+            <User className="h-4 w-4 text-gray-500" />
+            <div className="text-right">
+              <div className="text-sm font-medium text-gray-900">{user?.fullName}</div>
+              <div className="text-xs text-gray-500">
+                {user?.badgeNumber || roleLabel[user?.role || ''] || user?.role}
               </div>
             </div>
-            
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-              user?.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-              user?.role === 'investigating_officer' ? 'bg-blue-100 text-blue-800' :
-              'bg-green-100 text-green-800'
-            }`}>
-              {user?.role === 'admin' ? 'Admin' :
-               user?.role === 'investigating_officer' ? 'IO' :
-               'Supervisor'}
-            </span>
-            
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
           </div>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-100"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
         </div>
       </div>
     </nav>
