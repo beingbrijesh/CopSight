@@ -40,14 +40,14 @@ async function setup() {
         await User.create({
             username: 'admin',
             email: 'admin@ufdr.local',
-            passwordHash: 'Admin@123',
+            passwordHash: 'admin123',
             fullName: 'System Administrator',
             role: 'admin',
             badgeNumber: 'ADMIN-001',
             rank: 'System Admin',
             isActive: true
         });
-        console.log('✅ Admin user created (admin / Admin@123)');
+        console.log('✅ Admin user created (admin / admin123)');
 
         // Create IO user
         await User.create({

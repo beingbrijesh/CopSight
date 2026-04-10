@@ -65,6 +65,12 @@ class TrainingRequest(BaseModel):
 class AnalysisRequest(BaseModel):
     case_id: str
 
+class CrossCaseAnalysisRequest(BaseModel):
+    case_id: int
+    target_case_id: int
+    common_entity: str
+    entity_type: str
+
 @router.post("/anomalies")
 async def detect_anomalies(request: AnomalyDetectionRequest):
     """Enhanced anomaly detection with multiple algorithms"""
@@ -437,6 +443,31 @@ async def comprehensive_analysis(
         logger.error(f"Comprehensive analysis error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/cross-case")
+async def cross_case_analysis(request: CrossCaseAnalysisRequest):
+    """Detailed AI analysis of a cross-case connection"""
+    try:
+        # Fetch data for both cases
+        case_a_data = await get_case_data_for_analysis(request.case_id)
+        case_b_data = await get_case_data_for_analysis(request.target_case_id)
+        
+        # Generate detailed analysis using LLM
+        analysis_result = await llm_service.analyze_cross_case_link(
+            case_a_data,
+            case_b_data,
+            request.common_entity,
+            request.entity_type
+        )
+        
+        return {
+            "success": True,
+            "analysis": analysis_result
+        }
+        
+    except Exception as e:
+        logger.error(f"Cross-case analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 async def detect_suspicious_activity(case_id: int) -> Dict[str, Any]:
     """Detect suspicious patterns in communications"""
@@ -731,28 +762,40 @@ async def get_case_data_for_analysis(case_id: int) -> Dict[str, Any]:
         # Get communication data from Elasticsearch
         if db_manager.elasticsearch:
             try:
+                # Standardize case_id filter and fetch full metadata for context
+                # "metadata" contains the original record fields like contactName, duration, etc.
                 result = await db_manager.elasticsearch.search(
                     index="ufdr-*",
                     body={
                         "query": {"term": {"caseId": case_id}},
                         "size": 1000,
-                        "_source": ["phoneNumber", "timestamp", "duration", "sourceType"]
+                        "_source": ["phoneNumber", "timestamp", "sourceType", "content", "metadata"]
                     }
                 )
                 
                 for hit in result["hits"]["hits"]:
                     source = hit["_source"]
-                    case_data["communications"].append({
-                        "phone_number": source.get("phoneNumber", ""),
-                        "timestamp": source.get("timestamp", ""),
-                        "duration": source.get("duration", 0),
-                        "source_type": source.get("sourceType", ""),
-                        "frequency": 1  # Would be aggregated in real implementation
-                    })
+                    meta = source.get("metadata", {})
+                    
+                    # Extract rich context
+                    record = {
+                        "phone_number": source.get("phoneNumber") or meta.get("phoneNumber") or meta.get("phone") or "",
+                        "contact_name": meta.get("name") or meta.get("contactName") or meta.get("displayName") or "",
+                        "timestamp": source.get("timestamp") or meta.get("timestamp") or "",
+                        "duration": meta.get("duration") or 0,
+                        "source_type": source.get("sourceType") or "",
+                        "content": source.get("content") or meta.get("content") or meta.get("message") or "",
+                        "raw_record": meta # Keep for evidence
+                    }
+                    case_data["communications"].append(record)
                     
                     case_data["temporal_data"].append({
-                        "timestamp": source.get("timestamp", ""),
-                        "type": source.get("sourceType", "")
+                        "timestamp": record["timestamp"],
+                        "type": record["source_type"],
+                        "phone_number": record["phone_number"],
+                        "contact_name": record["contact_name"],
+                        "content": record["content"],
+                        "record": record # Full record for evidence display
                     })
                     
             except Exception as e:
@@ -772,7 +815,7 @@ async def get_case_data_for_analysis(case_id: int) -> Dict[str, Any]:
                         {"caseId": str(case_id)}
                     )
                     
-                    for record in result:
+                    async for record in result:
                         case_data["network_data"].append({
                             "phone_number": record["phone_number"],
                             "communication_frequency": record["communication_frequency"].toNumber(),

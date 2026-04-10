@@ -44,8 +44,9 @@ export const connectDatabase = async () => {
 
     // Sync models in development
     if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync();
-      logger.info('Database schema synced (development mode)');
+      // Temporarily disabled due to sync conflicts with self-referential foreign keys
+      // await sequelize.sync();
+      logger.info('Database schema sync skipped');
     }
   } catch (error) {
     logger.error('Unable to connect to database:', error);

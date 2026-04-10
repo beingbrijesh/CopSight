@@ -1,6 +1,7 @@
 import { Case, User, AuditLog, EntityTag, DataSource, Device, Notification } from '../models/index.js';
 import { Op } from 'sequelize';
 import logger, { auditLogger } from '../config/logger.js';
+import elasticsearchService from '../services/search/elasticsearchService.js';
 
 /**
  * Create new case (Admin only)
@@ -424,46 +425,67 @@ export const getCaseChats = async (req, res) => {
 
     const offset = (page - 1) * limit;
 
-    const { count, rows: dataSources } = await DataSource.findAndCountAll({
-      where: {
-        sourceType: 'chat'
-      },
-      include: [{
-        model: Device,
-        as: 'device',
-        where: { caseId: parseInt(caseId) },
-        attributes: []
-      }],
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['created_at', 'DESC']]
+    // Fetch all message records from Elasticsearch for this case
+    // We use a larger limit to ensure we get a good set of conversations,
+    // though ideally we'd have a more efficient way to group in ES.
+    const searchResult = await elasticsearchService.searchElasticsearch(parseInt(caseId), '', {
+      limit: 1000, // Fetch more to allow for conversation grouping
+      offset: 0
     });
 
-    // Extract all chat messages from data sources
     const allChats = [];
-    dataSources.forEach(dataSource => {
-      if (dataSource.data && Array.isArray(dataSource.data)) {
-        dataSource.data.forEach((chat, index) => {
-          allChats.push({
-            id: `${dataSource.id}_${index}`,
-            sender: chat.sender,
-            receiver: chat.receiver,
-            message: chat.message,
-            timestamp: chat.timestamp,
-            dataSourceId: dataSource.id,
-            appName: dataSource.appName
-          });
-        });
-      }
-    });
-
-    // Sort chats by timestamp (newest first)
-    allChats.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-    // Group chats by conversation (sender-receiver pairs)
     const conversations = {};
-    allChats.forEach(chat => {
-      const participants = [chat.sender, chat.receiver].sort();
+
+    searchResult.results.forEach(hit => {
+      const source = hit.source;
+      const meta = source.metadata || {};
+
+      // Skip non-message/non-chat types if they somehow got in
+      if (!['sms', 'chat', 'whatsapp', 'telegram', 'email', 'messages'].includes(source.sourceType.toLowerCase())) {
+        return;
+      }
+
+      // 1. Determine sender and receiver
+      let sender = 'Unknown';
+      let receiver = 'User';
+
+      if (source.sourceType === 'sms' || source.sourceType === 'messages') {
+        const direction = meta.direction || 'incoming';
+        const phone = source.phoneNumber || meta.address || 'Unknown';
+
+        if (direction === 'incoming') {
+          sender = phone;
+          receiver = 'User (Device)';
+        } else {
+          sender = 'User (Device)';
+          receiver = phone;
+        }
+      } else if (meta.sender || meta.from) {
+        sender = meta.sender || meta.from;
+        receiver = meta.receiver || meta.to || 'User';
+      } else if (source.phoneNumber) {
+        sender = source.phoneNumber;
+        receiver = 'User';
+      }
+
+      // 2. Extract message content
+      const message = source.content || meta.body || meta.text || '';
+
+      // 3. Create chat object
+      const chat = {
+        id: hit.id,
+        sender,
+        receiver,
+        message,
+        timestamp: source.timestamp || meta.timestamp || new Date(),
+        dataSourceId: meta.dataSourceId || 0,
+        appName: source.appName || meta.appName || 'Unknown'
+      };
+
+      allChats.push(chat);
+
+      // 4. Group into conversations
+      const participants = [sender, receiver].sort();
       const conversationKey = `${participants[0]} ↔ ${participants[1]}`;
 
       if (!conversations[conversationKey]) {
@@ -472,10 +494,21 @@ export const getCaseChats = async (req, res) => {
       conversations[conversationKey].push(chat);
     });
 
+    // Sort all chats by timestamp (newest first)
+    allChats.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Sort messages within each conversation
+    Object.keys(conversations).forEach(key => {
+      conversations[key].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    });
+
+    // Apply pagination to the flat list for the 'chats' property
+    const paginatedChats = allChats.slice(offset, offset + parseInt(limit));
+
     res.json({
       success: true,
       data: {
-        chats: allChats.slice(0, parseInt(limit)), // Apply pagination after sorting
+        chats: paginatedChats,
         conversations,
         summary: {
           total: allChats.length,
@@ -493,7 +526,7 @@ export const getCaseChats = async (req, res) => {
     logger.error('Get case chats error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve chats'
+      message: 'Failed to retrieve chats from forensic storage'
     });
   }
 };

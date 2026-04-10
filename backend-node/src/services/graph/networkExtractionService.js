@@ -65,7 +65,7 @@ class NetworkExtractionService {
         else if (n.properties.number) label = n.properties.number;
         else if (n.properties.value) label = n.properties.value;
         else if (n.properties.imei) label = `Device: ${n.properties.imei}`;
-        else if (primaryLabel === 'Case') label = `Case ${n.properties.id}`;
+        else if (primaryLabel === 'Case') label = `Case ${n.properties.id || n.properties.caseNumber}`;
 
         return {
           id: n.id.toNumber(),
@@ -76,14 +76,13 @@ class NetworkExtractionService {
         };
       });
 
-      // Filter out the Case anchor node itself
-      const nonCaseNodes = nodes.filter(n => n.type !== 'Case');
-      const nonCaseNodeIds = new Set(nonCaseNodes.map(n => n.id));
+      // Use all nodes, including Case nodes
+      const nodeIds = new Set(nodes.map(n => n.id));
 
       const filteredRawEdges = rawEdges.filter(e => {
         const sourceId = e.source.toNumber();
         const targetId = e.target.toNumber();
-        return nonCaseNodeIds.has(sourceId) && nonCaseNodeIds.has(targetId);
+        return nodeIds.has(sourceId) && nodeIds.has(targetId);
       });
 
       // Aggregate edges by source/target to compute weights
@@ -110,20 +109,21 @@ class NetworkExtractionService {
 
       const edges = Array.from(edgeMap.values());
 
-      // Filter by minInteractionThreshold
+      // Filter by minInteractionThreshold (entities only, allow all Case links)
       const min = filters.min_interaction_threshold ? parseInt(filters.min_interaction_threshold) : 1;
-      const filteredEdges = edges.filter(e => e.weight >= min);
+      const filteredEdges = edges.filter(e => e.type === 'CROSS_CASE_LINK' || e.weight >= min);
 
       // Update frequencies
       filteredEdges.forEach(e => {
-        const src = nonCaseNodes.find(n => n.id === e.source);
-        const tgt = nonCaseNodes.find(n => n.id === e.target);
+        const src = nodes.find(n => n.id === e.source);
+        const tgt = nodes.find(n => n.id === e.target);
         if (src) src.frequency += e.weight;
         if (tgt) tgt.frequency += e.weight;
       });
 
-      // Drop isolated nodes
-      const finalNodes = nonCaseNodes.filter(n => n.frequency > 1);
+      // Drop isolated nodes (frequency 1 means no connections in this view)
+      // Exception: Keep the requested Case node even if it has no visible links yet
+      const finalNodes = nodes.filter(n => n.frequency > 1 || (n.type === 'Case' && n.properties.id === parseInt(caseId)));
 
       // --- Cycle Detection via Neo4j Cypher (1-minute timeout) ---
       const anomalies = await this.detectCyclesViaCypher(finalNodes.map(n => n.id), session);

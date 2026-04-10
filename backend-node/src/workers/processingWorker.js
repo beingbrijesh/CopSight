@@ -216,14 +216,18 @@ try {
       logger.error(`Worker error: Job ${job.id} failed:`, error);
 
       // Mark job as failed
-      await ProcessingJob.update(
-        {
-          status: 'failed',
-          errorMessage: error.message,
-          completedAt: new Date()
-        },
-        { where: { id: job.data.jobId } }
-      );
+      if (job.data.jobId) {
+        await ProcessingJob.update(
+          {
+            status: 'failed',
+            errorMessage: error.message,
+            completedAt: new Date()
+          },
+          { where: { id: job.data.jobId } }
+        );
+      } else {
+        logger.error('Worker error: Could not update job status because jobId is missing in job data');
+      }
 
       throw error;
     }

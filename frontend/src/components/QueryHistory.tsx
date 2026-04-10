@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
-import { Clock, Search } from 'lucide-react';
-import { queryAPI } from '../lib/api';
+import { useState, useEffect } from 'react';
+import { Clock, Search, MessageSquare, ShieldCheck } from 'lucide-react';
+import { api } from '../lib/api';
 
 interface QueryHistoryProps {
   caseId: number;
-  onSelectQuery: (query: string) => void;
+  onSelectQuery: (item: any) => void;
+  refreshTrigger?: number;
 }
 
-export const QueryHistory = ({ caseId, onSelectQuery }: QueryHistoryProps) => {
+export const QueryHistory = ({ caseId, onSelectQuery, refreshTrigger }: QueryHistoryProps) => {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +27,7 @@ export const QueryHistory = ({ caseId, onSelectQuery }: QueryHistoryProps) => {
     };
 
     loadHistory();
-  }, [caseId]);
+  }, [caseId, refreshTrigger]);
 
   if (loading) {
     return (
@@ -82,8 +83,10 @@ export const QueryHistory = ({ caseId, onSelectQuery }: QueryHistoryProps) => {
             <p>No query history yet</p>
             <p className="mt-1 text-sm">Your previous queries will appear here.</p>
           </div>
-        )}
-      </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mb-1">No Query Logs Found</p>
+          <p className="text-[9px] text-gray-700">Submit a forensic query to begin.</p>
+        </div>
+      )}
     </div>
   );
 };

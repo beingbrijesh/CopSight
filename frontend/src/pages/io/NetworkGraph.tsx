@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
-import { ArrowLeft, Search, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, RefreshCw, AlertTriangle, ExternalLink, FolderOpen } from 'lucide-react';
 import { Navbar } from '../../components/Navbar';
 import { api } from '../../lib/api';
 // ──────────────────────────────────────────────
@@ -63,6 +63,7 @@ const NODE_PALETTE: Record<string, string> = {
   CryptoAddress: '#f59e0b', // amber
   Email:       '#06b6d4',   // cyan
   IPAddress:   '#ec4899',   // pink
+  Case:        '#facc15',   // gold/yellow
   Default:     '#9ca3af',   // light gray
 };
 
@@ -73,6 +74,7 @@ const SVG_MAP: Record<string, string> = {
   CryptoAddress: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L8 12"/><path d="m9 5 6 14"/><path d="m15 19-6-14"/></svg>`,
   Email: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`,
   IPAddress: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>`,
+  Case: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`,
   Default: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="currentColor" stroke="white"><circle cx="12" cy="12" r="6"/></svg>`
 };
 
@@ -120,10 +122,11 @@ function getSpriteMaterial(type: string, color: string) {
 const IntelligenceRenderer = ({ text }: { text: string }) => {
   if (!text) return null;
 
-  // Semantic Categories
-  const financeRegex = /(transaction|amount|crypto|transfer|payment|bitcoin|usdt|eth|wallet|money|funds|balance)/gi;
-  const crimeRegex = /(suspicious|illegal|fraud|hack|stolen|scam|history|crime|arrest|seize|laundering|illicit)/gi;
-  const commsRegex = /(whatsapp|ip address|phone number|call|message|contact|email)/gi;
+  // Semantic Categories — word-boundary (\b) prevents partial-word matches
+  // e.g. "call" no longer highlights inside "Locally", "contact" inside "contacted"
+  const financeRegex = /\b(transactions?|crypto|cryptocurrency|transfer|payments?|bitcoin|usdt|eth|wallet|funds|laundering)\b/gi;
+  const crimeRegex = /\b(suspicious|illegal|fraud|hack(?:ed|ing)?|stolen|scam|arrest(?:ed)?|seiz(?:ed|ure)|laundering|illicit|anomal(?:y|ies|ous))\b/gi;
+  const commsRegex = /\b(whatsapp|telegram|signal|ip\s?address|phone\s?number|imei|imsi)\b/gi;
 
   const renderFormattedText = (str: string, isBold: boolean) => {
     let components: any[] = [<span key="0">{str}</span>];
@@ -132,9 +135,15 @@ const IntelligenceRenderer = ({ text }: { text: string }) => {
       components = components.flatMap((comp, idx) => {
         if (typeof comp.props.children === 'string') {
           const content = comp.props.children;
-          return content.split(regex).map((part: string, i: number) => 
-            regex.test(part) ? <span key={`${idx}-${i}`} className={colorClass}>{part}</span> : <span key={`${idx}-${i}-txt`}>{part}</span>
-          );
+          // split() with a capturing group keeps delimiters in the array
+          return content.split(regex).map((part: string, i: number) => {
+            // Reset lastIndex before each test — global regexes advance it,
+            // which causes alternating matches to be silently missed
+            regex.lastIndex = 0;
+            return regex.test(part)
+              ? <span key={`${idx}-${i}`} className={colorClass}>{part}</span>
+              : <span key={`${idx}-${i}-txt`}>{part}</span>;
+          });
         }
         return comp;
       });
@@ -222,6 +231,7 @@ export const NetworkGraph = () => {
     nodeId: number; 
     label: string; 
     type: string; 
+    properties?: any;
     text: string; 
     status: 'thinking' | 'streaming' | 'done' | 'error';
     evidence: any[];
@@ -305,6 +315,7 @@ export const NetworkGraph = () => {
       nodeId: node.id,
       label: node.label,
       type: node.type,
+      properties: node.properties || {},
       text: '',
       status: 'thinking',
       evidence: []
@@ -329,7 +340,9 @@ export const NetworkGraph = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          queryText: `Generate a unified forensic profile for ${node.label} (${node.type}). You MUST strictly segment your response using these exact markdown headers: \n\n## 📱 Communications\n(summarize chat density and related contacts)\n## 💰 Transactions\n(explicitly list all linked crypto movements)\n## 🚨 Crime History\n(any suspicious patterns or anomalies found). Keep it highly actionable.`,
+          queryText: node.type === 'Case'
+            ? `Analyze the forensic significance of ${node.label}. Summarize its key entities, communication patterns, and how it connects to the current investigation (Case ${caseId}). List overlapping entities (shared phone numbers, contacts, crypto addresses) and assess the intelligence value of this cross-case connection. Use these headers:\n\n## 🔗 Cross-Case Connection\n(how it relates to current investigation)\n## 📊 Case Summary\n(key findings and entities)\n## 🚨 Shared Risk Indicators\n(overlapping suspicious patterns)`
+            : `Generate a unified forensic profile for ${node.label} (${node.type}). You MUST strictly segment your response using these exact markdown headers: \n\n## 📱 Communications\n(summarize chat density and related contacts)\n## 💰 Transactions\n(explicitly list all linked crypto movements)\n## 🚨 Crime History\n(any suspicious patterns or anomalies found). Keep it highly actionable.`,
           queryType: 'natural_language'
         })
       });
@@ -417,35 +430,44 @@ export const NetworkGraph = () => {
     await streamAiEvidence(gNode);
   }, [expandNode, streamAiEvidence, handleRightClick]);
 
-  // ── Link color — red glow for anomalous cycles
-  const getLinkColor = useCallback((link: any) => {
-    const srcId = getId(link.source);
-    const tgtId = getId(link.target);
-    return (anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`))
-      ? 'rgba(239, 68, 68, 0.9)'
-      : 'rgba(255, 255, 255, 0.6)'; // bright white/silver for non-anomalies
-  }, [anomalySet]);
-
   const getLinkWidth = useCallback((link: any) => {
     const srcId = getId(link.source);
     const tgtId = getId(link.target);
     const isAnomalous = anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`);
+    if (link.type === 'CROSS_CASE_LINK') return 2.5; 
     return isAnomalous ? 3 : Math.max(0.5, Math.sqrt(link.weight || 1));
   }, [anomalySet]);
 
+  const getLinkColor = useCallback((link: any) => {
+    const srcId = getId(link.source);
+    const tgtId = getId(link.target);
+    const isAnomalous = anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`);
+    
+    if (link.type === 'CROSS_CASE_LINK') return 'rgba(139, 92, 246, 0.8)'; // Purple for cross-case links
+    
+    return isAnomalous
+      ? 'rgba(239, 68, 68, 0.9)'
+      : 'rgba(255, 255, 255, 0.6)'; // bright white/silver for non-anomalies
+  }, [anomalySet]);
 
-  // ── 3D Object Renderer
+
   const getThreeObject = useCallback((node: any) => {
     const type = node.type || 'Default';
-    const color = getNodeColor(node);
+    const isCurrentCase = node.type === 'Case' && node.properties?.id === parseInt(caseId || '');
+    
+    // Determine color (highlight active case)
+    const color = isCurrentCase ? '#8b5cf6' : getNodeColor(node); 
     const material = getSpriteMaterial(type, color);
     const sprite = new THREE.Sprite(material);
     
-    // Scale slightly by frequency weight
-    const scale = 12 + Math.sqrt(node.frequency || 1) * 2;
+    // Scale: Cases are larger than entities. Active case is largest.
+    let baseScale = 12;
+    if (node.type === 'Case') baseScale = isCurrentCase ? 24 : 18;
+    
+    const scale = baseScale + Math.sqrt(node.frequency || 1) * 2;
     sprite.scale.set(scale, scale, 1);
     return sprite;
-  }, [getNodeColor]);
+  }, [caseId, getNodeColor]);
 
   // ── Render
   return (
@@ -565,15 +587,18 @@ export const NetworkGraph = () => {
                   linkDirectionalArrowLength={(l: any) => {
                     const srcId = getId(l.source);
                     const tgtId = getId(l.target);
+                    if (l.type === 'CROSS_CASE_LINK') return 4;
                     return (anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`)) ? 5 : 2;
                   }}
                   linkDirectionalArrowRelPos={1}
                   linkDirectionalParticles={(l: any) => {
+                    if (l.type === 'CROSS_CASE_LINK') return 2;
                     const srcId = getId(l.source);
                     const tgtId = getId(l.target);
                     return (anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`)) ? 4 : 0;
                   }}
                   linkDirectionalParticleColor={(l: any) => {
+                    if (l.type === 'CROSS_CASE_LINK') return '#a78bfa'; // light purple
                     const srcId = getId(l.source);
                     const tgtId = getId(l.target);
                     return (anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`)) ? '#ef4444' : '#6b7280';
@@ -608,13 +633,27 @@ export const NetworkGraph = () => {
                 ) : (
                   aiHistory.map((item, idx) => (
                     <div key={idx} className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-4 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      {/* View Case File button for Case nodes */}
+                      {item.type === 'Case' && item.status === 'done' && (
+                        <button
+                          onClick={() => {
+                            const linkedCaseId = item.properties?.id;
+                            if (linkedCaseId) navigate(`/io/case/${linkedCaseId}`);
+                          }}
+                          className="w-full mb-3 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-900/50 to-indigo-900/50 hover:from-purple-800/60 hover:to-indigo-800/60 border border-purple-500/30 rounded-lg text-purple-300 text-xs font-bold transition-all duration-200 group"
+                        >
+                          <FolderOpen className="w-3.5 h-3.5" />
+                          View Case File
+                          <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100 transition" />
+                        </button>
+                      )}
                       <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-700/50">
                         <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-blue-900/30 rounded-lg border border-blue-500/20">
-                            <Search className="w-3.5 h-3.5 text-blue-400" />
+                          <div className={`p-1.5 rounded-lg border ${item.type === 'Case' ? 'bg-yellow-900/30 border-yellow-500/20' : 'bg-blue-900/30 border-blue-500/20'}`}>
+                            {item.type === 'Case' ? <FolderOpen className="w-3.5 h-3.5 text-yellow-400" /> : <Search className="w-3.5 h-3.5 text-blue-400" />}
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Investigation Log</p>
+                            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{item.type === 'Case' ? 'Cross-Case Intelligence' : 'Investigation Log'}</p>
                             <p className="text-xs font-bold text-gray-200 truncate max-w-[140px]">{item.label}</p>
                           </div>
                         </div>

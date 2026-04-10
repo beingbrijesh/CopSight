@@ -24,7 +24,7 @@ const seedAdmin = async () => {
     const admin = await User.create({
       username: 'admin',
       email: 'admin@ufdr.local',
-      passwordHash: 'Admin@123', // Will be hashed by model hook
+      passwordHash: 'admin123', // Will be hashed by model hook
       fullName: 'System Administrator',
       role: 'admin',
       badgeNumber: 'ADMIN-001',

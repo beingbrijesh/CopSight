@@ -51,11 +51,7 @@ const User = sequelize.define('User', {
   },
   supervisorId: {
     type: DataTypes.INTEGER,
-    field: 'supervisor_id',
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+    field: 'supervisor_id'
   },
   isActive: {
     type: DataTypes.BOOLEAN,
@@ -73,11 +69,7 @@ const User = sequelize.define('User', {
   },
   createdBy: {
     type: DataTypes.INTEGER,
-    field: 'created_by',
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+    field: 'created_by'
   }
 }, {
   tableName: 'users',

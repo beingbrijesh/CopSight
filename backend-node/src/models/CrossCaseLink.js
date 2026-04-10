@@ -104,14 +104,25 @@ const CrossCaseLink = sequelize.define('CrossCaseLink', {
   ]
 });
 
-// Custom validation to ensure no self-links
+// Custom validation to prevent self-links (robust with type coercion)
 CrossCaseLink.addHook('beforeCreate', (link) => {
-  if (link.source_case_id === link.target_case_id) {
-    throw new Error('Cannot create self-links between the same case');
+  const src = parseInt(link.source_case_id, 10);
+  const tgt = parseInt(link.target_case_id, 10);
+  if (src === tgt) {
+    throw new Error(`Cannot create self-link: source_case_id and target_case_id are both ${src}`);
   }
   // Ensure consistent ordering (smaller case_id first)
-  if (link.source_case_id > link.target_case_id) {
-    [link.source_case_id, link.target_case_id] = [link.target_case_id, link.source_case_id];
+  if (src > tgt) {
+    link.source_case_id = tgt;
+    link.target_case_id = src;
+  }
+});
+
+CrossCaseLink.addHook('beforeUpdate', (link) => {
+  const src = parseInt(link.source_case_id, 10);
+  const tgt = parseInt(link.target_case_id, 10);
+  if (src === tgt) {
+    throw new Error(`Cannot update to self-link: source_case_id and target_case_id are both ${src}`);
   }
 });
 

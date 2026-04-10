@@ -13,6 +13,7 @@ import { NetworkGraph } from './pages/io/NetworkGraph';
 import { SupervisorDashboard } from './pages/supervisor/SupervisorDashboard';
 import { AppShell } from './components/AppShell';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { EvidenceDetailPanel } from './components/EvidenceDetailPanel';
 import { useAuthStore } from './store/authStore';
 
 function App() {
@@ -76,6 +77,7 @@ function App() {
         
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <EvidenceDetailPanel />
     </BrowserRouter>
   );
 }

@@ -199,7 +199,6 @@ export const queryAPI = {
   getQuery: (queryId: number) => api.get(`/query/${queryId}`),
 };
 
-// Bookmark API
 export const bookmarkAPI = {
   createBookmark: (caseId: number, data: any) =>
     api.post(`/bookmarks/case/${caseId}`, data),

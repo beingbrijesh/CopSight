@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Database, Filter, Search, Download, MessageCircle, Activity, Upload } from 'lucide-react';
 import { caseAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
+import { Navbar } from '../../components/Navbar';
+import { EvidenceChip } from '../../components/EvidenceChip';
 
 interface Entity {
   id: number;
@@ -374,7 +376,21 @@ export const EntitiesView = () => {
                             </span>
                           </div>
                           <div className="font-medium text-gray-900 mb-1">
-                            {entity.entityValue}
+                            <EvidenceChip
+                              evidence={{
+                                id: `entity_${entity.id}`,
+                                type: entity.entityType === 'phone_number' ? 'phone' : entity.entityType === 'email' ? 'email' : entity.entityType === 'crypto_address' ? 'crypto' : entity.entityType === 'url' ? 'url' : 'entity',
+                                value: entity.entityValue,
+                                summary: `${entity.entityType.replace('_', ' ')} extracted from ${entity.evidenceType} (confidence: ${(entity.confidenceScore * 100).toFixed(0)}%)`,
+                                source: {
+                                  view: 'Entities View',
+                                  caseId: caseId,
+                                  evidenceId: entity.evidenceId,
+                                  timestamp: entity.created_at,
+                                },
+                                metadata: entity.entityMetadata,
+                              }}
+                            />
                           </div>
                           {entity.entityMetadata && Object.keys(entity.entityMetadata).length > 0 && (
                             <div className="text-sm text-gray-600 mt-1">
@@ -498,9 +514,31 @@ export const EntitiesView = () => {
                         <div key={chat.id} className="bg-white rounded p-3 shadow-sm">
                           <div className="flex items-start justify-between mb-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900">{chat.sender}</span>
+                              <EvidenceChip
+                                evidence={{
+                                  id: `chat_sender_${chat.id}`,
+                                  type: 'contact',
+                                  value: chat.sender,
+                                  content: chat.message,
+                                  summary: `Sender in conversation with ${chat.receiver}`,
+                                  source: { view: 'Entities View (Chat)', caseId, evidenceId: chat.id, timestamp: chat.timestamp },
+                                  metadata: { receiver: chat.receiver, appName: chat.appName },
+                                }}
+                                compact
+                              />
                               <span className="text-gray-500">→</span>
-                              <span className="font-medium text-gray-900">{chat.receiver}</span>
+                              <EvidenceChip
+                                evidence={{
+                                  id: `chat_receiver_${chat.id}`,
+                                  type: 'contact',
+                                  value: chat.receiver,
+                                  content: chat.message,
+                                  summary: `Receiver in conversation with ${chat.sender}`,
+                                  source: { view: 'Entities View (Chat)', caseId, evidenceId: chat.id, timestamp: chat.timestamp },
+                                  metadata: { sender: chat.sender, appName: chat.appName },
+                                }}
+                                compact
+                              />
                             </div>
                             <span className="text-xs text-gray-500">
                               {new Date(chat.timestamp).toLocaleString('en-IN', {

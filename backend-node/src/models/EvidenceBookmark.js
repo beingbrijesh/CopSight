@@ -43,14 +43,8 @@ const EvidenceBookmark = sequelize.define('EvidenceBookmark', {
     allowNull: false,
     field: 'evidence_id'
   },
-  evidenceSource: {
-    type: DataTypes.STRING(100),
-    field: 'evidence_source'
-  },
-  evidenceContent: {
-    type: DataTypes.JSONB,
-    allowNull: false,
-    field: 'evidence_content'
+  content: {
+    type: DataTypes.TEXT,
   },
   notes: {
     type: DataTypes.TEXT
@@ -58,14 +52,24 @@ const EvidenceBookmark = sequelize.define('EvidenceBookmark', {
   tags: {
     type: DataTypes.ARRAY(DataTypes.TEXT)
   },
+  source: {
+    type: DataTypes.STRING(100),
+    field: 'evidence_source'
+  },
   bookmarkOrder: {
     type: DataTypes.INTEGER,
+    defaultValue: 0,
     field: 'bookmark_order'
+  },
+  metadata: {
+    type: DataTypes.JSONB,
+    field: 'evidence_content'
   }
 }, {
   tableName: 'evidence_bookmarks',
   timestamps: true,
-  updatedAt: false
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 export default EvidenceBookmark;

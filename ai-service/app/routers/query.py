@@ -9,6 +9,7 @@ from typing import Optional, Dict, Any, AsyncGenerator
 from loguru import logger
 import json
 import asyncio
+import re
 
 from app.services.rag import rag_pipeline
 
@@ -20,6 +21,7 @@ class QueryRequest(BaseModel):
     case_id: int
     query: str
     user_id: int
+    session_id: Optional[str] = None
 
 
 class QueryResponse(BaseModel):
@@ -51,7 +53,8 @@ async def execute_query(request: QueryRequest):
         result = await rag_pipeline.execute_query(
             case_id=request.case_id,
             query=request.query,
-            user_id=request.user_id
+            user_id=request.user_id,
+            session_id=request.session_id
         )
         
         return QueryResponse(**result)
@@ -67,6 +70,7 @@ class StreamQueryRequest(BaseModel):
     case_id: int
     query: str
     user_id: int
+    session_id: Optional[str] = None
 
 
 class RelationshipQueryRequest(BaseModel):
@@ -77,10 +81,136 @@ class RelationshipQueryRequest(BaseModel):
     node_label: Optional[str] = None
 
 
+def _is_forensic_query(query: str) -> bool:
+    """Detect if the query has forensic, case-related, or data-exploration intent.
+    
+    Strategy: "Block known bad, allow everything else."
+    We only reject queries that are CLEARLY non-forensic (chitchat, general
+    knowledge, prompt-injection attempts).  Anything ambiguous is allowed
+    through — the LLM + RAG pipeline will handle it gracefully with a
+    "no evidence found" response, which is far better than a hard block on
+    a legitimate investigative question.
+    """
+    query_lower = query.strip().lower()
+    words = query_lower.split()
+
+    # ── 0. Trivial / empty guard ──────────────────────────────────────
+    if not query_lower or len(query_lower) < 2:
+        return False
+
+    # ── 1. HARD BLOCK – exact greetings & micro-phrases ───────────────
+    chitchat_exact = {
+        'hello', 'hi', 'hey', 'yo', 'sup', 'hola',
+        'good morning', 'good evening', 'good night', 'good afternoon',
+        'thanks', 'thank you', 'thx', 'ok', 'okay', 'bye', 'goodbye',
+        'ping', 'test', 'testing',
+    }
+    if query_lower in chitchat_exact:
+        return False
+
+    # ── 2. HARD BLOCK – clearly irrelevant topics ─────────────────────
+    #       These are checked as substrings so "tell me a joke" is caught.
+    irrelevant_phrases = [
+        'tell me a joke', 'tell a joke', 'joke about',
+        'write a poem', 'write me a poem', 'poem about',
+        'write a song', 'sing a song', 'sing me',
+        'what is your name', 'who created you', 'who made you', 'who are you',
+        'ignore all previous', 'ignore previous instructions', 'disregard',
+        'recipe for', 'how to bake', 'how to cook',
+        'what is the weather', 'weather in', 'weather today',
+        'score of the', 'who won the match', 'sports news',
+        'recommend a movie', 'movie review', 'best movies',
+        'play a game', 'tic tac toe', 'rock paper',
+        'capital of', 'president of', 'prime minister of',
+        'how old is', 'when was .* born',  # general knowledge
+    ]
+    for phrase in irrelevant_phrases:
+        if phrase in query_lower:
+            return False
+
+    # ── 3. STRONG ALLOW – summary / case-level questions ──────────────
+    summary_keywords = [
+        'summar', 'overview', 'what is this case', 'about the case',
+        'tell me about this case', 'what happened', 'explain the case',
+        'brief me', 'case details', 'case info', 'highlights',
+    ]
+    if any(kw in query_lower for kw in summary_keywords):
+        return True
+
+    # ── 4. STRONG ALLOW – any forensic / data keyword present ─────────
+    forensic_keywords = [
+        # Communication
+        'call', 'message', 'chat', 'contact', 'sms', 'mms',
+        'whatsapp', 'telegram', 'signal', 'imessage', 'viber',
+        'communicate', 'conversation', 'talk', 'send', 'receive', 'sent', 'received',
+        # People / Entities
+        'suspect', 'victim', 'witness', 'person', 'user', 'owner', 'sender', 'receiver',
+        'who is', 'who did', 'who was', 'who has', 'who sent', 'who received', 'who called',
+        # Identifiers
+        'phone', 'number', 'email', 'account', 'username', 'handle', 'profile',
+        'ip address', 'mac address', 'imei', 'imsi', 'msisdn',
+        # Financial
+        'transact', 'crypto', 'bitcoin', 'btc', 'ethereum', 'wallet',
+        'payment', 'transfer', 'money', 'bank', 'upi', 'amount', 'fund',
+        # Location & Time
+        'location', 'gps', 'coord', 'latitude', 'longitude', 'tower', 'cell',
+        'time', 'date', 'when', 'timestamp', 'before', 'after', 'between', 'during',
+        # Analysis
+        'anomal', 'pattern', 'unusual', 'suspicious', 'frequen', 'trend',
+        'network', 'connection', 'relation', 'linked', 'associat',
+        # Digital Evidence
+        'file', 'metadata', 'document', 'evidence', 'device', 'app', 'application',
+        'browser', 'history', 'download', 'image', 'photo', 'video', 'media',
+        'pdf', 'log', 'record', 'data',
+        # Investigation
+        'fraud', 'crime', 'investigat', 'foren', 'case', 'incident',
+        'link', 'trace', 'track', 'identify', 'extract',
+        # Contextual question starters
+        'what did', 'when did', 'where did', 'how many', 'how often',
+        'how much', 'which', 'whose',
+        # Actions
+        'search', 'find', 'show', 'list', 'get', 'fetch', 'display',
+        'filter', 'sort', 'group', 'count', 'check', 'look up', 'lookup',
+        'analyze', 'analyse', 'compare', 'correlate', 'report',
+        'hidden', 'deleted', 'recent', 'top', 'most', 'least', 'all',
+        # Mentions
+        'mention', 'contain', 'include', 'about', 'related', 'regarding',
+    ]
+    if any(kw in query_lower for kw in forensic_keywords):
+        return True
+
+    # ── 5. STRONG ALLOW – entity patterns (phone, email, crypto) ──────
+    if re.search(r'\b\d{6,15}\b', query):
+        return True
+    if re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', query):
+        return True
+    if re.search(r'\b(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}\b', query):
+        return True
+
+    # ── 6. HEURISTIC ALLOW – longer queries are likely investigative ──
+    #       If a query has 4+ words and wasn't blocked above, it's
+    #       probably a real question and not chitchat.
+    if len(words) >= 4:
+        return True
+
+    # ── 7. ALLOW short non-conversational fragments (names, IDs) ──────
+    #       "John Doe", "Project X", "123 Main St" — treat as entity search.
+    pure_chitchat_words = {'how', 'why', 'tell', 'can', 'you', 'please', 'do', 'does', 'write', 'draw', 'create', 'make', 'sing', 'play'}
+    is_pure_chitchat = all(w in pure_chitchat_words for w in words)
+    if len(words) <= 3 and not is_pure_chitchat:
+        return True
+
+    # ── 8. Default: BLOCK only if nothing matched ─────────────────────
+    #       At this point the query is 1-3 words of pure conversational
+    #       filler with zero forensic signal.  Safe to reject.
+    return False
+
+
 async def _stream_rag_tokens(
     case_id: int,
     query: str,
-    user_id: int
+    user_id: int,
+    session_id: Optional[str] = None
 ) -> AsyncGenerator[str, None]:
     """Generator that yields SSE-formatted chunks from the RAG pipeline.
     
@@ -93,6 +223,32 @@ async def _stream_rag_tokens(
         return "data: " + json.dumps(data) + "\n\n"
 
     try:
+        # 0. Intent Filtering
+        if not _is_forensic_query(query):
+            yield _sse({'type': 'status', 'status': 'done', 'message': 'Query Out of Scope'})
+            await asyncio.sleep(0.1)
+            
+            out_of_scope_msg = "This query falls outside the scope of forensic case analysis. CopSight is designed to analyze digital evidence from seized devices — including communications, call records, financial transactions, contact networks, and device artifacts. Please rephrase your query to target specific case evidence, or use commands like 'summarize the case', 'show recent messages', or 'find suspicious transactions'."
+            words = out_of_scope_msg.split(' ')
+            yield _sse({'type': 'status', 'status': 'streaming', 'message': 'Generating response...'})
+            for i, word in enumerate(words):
+                chunk = word + (' ' if i < len(words) - 1 else '')
+                yield _sse({'type': 'token', 'token': chunk})
+                await asyncio.sleep(0.01)
+                
+            yield _sse({
+                'type': 'metadata',
+                'evidence': [],
+                'findings': [{"finding": "Query filtered due to non-forensic intent.", "type": "warning"}],
+                'confidence': 0.0,
+                'query_components': {},
+                'total_results': 0,
+                'query_id': 0,
+                'has_relationships': False
+            })
+            yield "data: [DONE]\n\n"
+            return
+
         # 1. Immediately signal thinking state
         yield _sse({'type': 'status', 'status': 'thinking', 'message': 'Searching & Analyzing Evidence...'})
         await asyncio.sleep(0)  # yield control to the event loop
@@ -103,7 +259,8 @@ async def _stream_rag_tokens(
                 rag_pipeline.execute_query(
                     case_id=case_id,
                     query=query,
-                    user_id=user_id
+                    user_id=user_id,
+                    session_id=session_id
                 ),
                 timeout=120.0  # 2-minute hard cap for local LLM
             )
@@ -169,7 +326,7 @@ async def stream_query(request: StreamQueryRequest):
     logger.info(f"SSE stream request for case {request.case_id}: {request.query[:60]}...")
 
     return StreamingResponse(
-        _stream_rag_tokens(request.case_id, request.query, request.user_id),
+        _stream_rag_tokens(request.case_id, request.query, request.user_id, request.session_id),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -212,12 +369,18 @@ async def get_query_relationships(request: RelationshipQueryRequest):
 
         for evidence in result.get('evidence', []):
             meta = evidence.get('metadata', {})
-            if meta.get('phoneNumber'):
-                phone = str(meta['phoneNumber'].get('number', meta['phoneNumber']))
-                src_id = get_or_create_node(phone, 'PhoneNumber')
-                if request.node_label:
-                    tgt_id = get_or_create_node(request.node_label, 'Contact')
-                    graph_edges.append({'source': src_id, 'target': tgt_id, 'weight': 1, 'type': 'COMMUNICATED_WITH'})
+            phone_meta = meta.get('phoneNumber')
+            if phone_meta:
+                if isinstance(phone_meta, dict):
+                    phone = str(phone_meta.get('number', phone_meta.get('value', '')))
+                else:
+                    phone = str(phone_meta)
+                
+                if phone:
+                    src_id = get_or_create_node(phone, 'PhoneNumber')
+                    if request.node_label:
+                        tgt_id = get_or_create_node(request.node_label, 'Contact')
+                        graph_edges.append({'source': src_id, 'target': tgt_id, 'weight': 1, 'type': 'COMMUNICATED_WITH'})
 
         return {
             'success': True,

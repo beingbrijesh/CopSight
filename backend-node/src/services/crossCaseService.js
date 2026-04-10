@@ -1,8 +1,10 @@
 import { Op } from 'sequelize';
+import sequelize from '../config/database.js';
 import { CrossCaseLink, CaseSharedEntity, Case } from '../models/index.js';
 import { createCrossCaseLinks, findCrossCaseConnections, getSharedEntities } from './graph/neo4jService.js';
 import alertService from './alertService.js';
 import logger from '../config/logger.js';
+import aiClient from './ai/aiClient.js';
 
 /**
  * Cross-case analysis service
@@ -71,31 +73,55 @@ class CrossCaseService {
       // Create links for matches
       const links = [];
       for (const match of crossCaseMatches) {
+        // Trigger AI-powered detailed analysis for this link
+        let aiAnalysis = null;
+        try {
+          logger.info(`Requesting AI analysis for link: ${match.entityValue} (${match.entityType})`);
+          const aiResult = await aiClient.getCrossCaseAnalysis(
+            caseId,
+            match.targetCaseId,
+            match.entityValue,
+            match.entityType
+          );
+          
+          if (aiResult && aiResult.success !== false) {
+            aiAnalysis = {
+              analysis: aiResult.analysis || aiResult.summary || 'AI analysis confirmed connection based on shared forensic artifacts.',
+              citations: aiResult.citations || aiResult.evidence || [],
+              confidence: aiResult.confidence || match.confidence || 0.8,
+              risk_level: aiResult.risk_level || this.calculateRiskLevel({ caseCount: 2 }, match.entityType)
+            };
+          }
+        } catch (aiError) {
+          logger.warn(`AI analysis failed for link ${caseId}<->${match.targetCaseId}: ${aiError.message}`);
+          // Fallback to basic metadata if AI fails
+        }
+
         const linkData = {
-          sourceCaseId: Math.min(caseId, match.targetCaseId),
-          targetCaseId: Math.max(caseId, match.targetCaseId),
-          linkType: match.linkType,
-          entityType: match.entityType,
-          entityValue: match.entityValue,
+          source_case_id: Math.min(caseId, match.targetCaseId),
+          target_case_id: Math.max(caseId, match.targetCaseId),
+          link_type: 'shared_entity',
+          entity_type: match.entityType,
+          entity_value: match.entityValue,
           strength: this.calculateLinkStrength(match),
-          confidenceScore: match.confidence || 0.8,
-          linkMetadata: {
+          confidence_score: aiAnalysis?.confidence || match.confidence || 0.8,
+          link_metadata: {
             matchType: match.matchType,
             frequency: match.frequency,
-            lastSeen: match.lastSeen
+            lastSeen: match.lastSeen,
+            aiAnalysis: aiAnalysis
           },
-          createdBy: userId
+          created_by: userId
         };
 
-        // Save to database
         await CrossCaseLink.create(linkData);
         links.push({
-          entityType: linkData.entityType,
-          entityValue: linkData.entityValue,
-          linkType: linkData.linkType,
+          entityType: linkData.entity_type,
+          entityValue: linkData.entity_value,
+          linkType: linkData.link_type,
           strength: linkData.strength,
-          confidenceScore: linkData.confidenceScore,
-          metadata: linkData.linkMetadata
+          confidenceScore: linkData.confidence_score,
+          metadata: linkData.link_metadata
         });
       }
 
@@ -139,18 +165,49 @@ class CrossCaseService {
   }
 
   /**
-   * Get entities for a specific case
+   * Get entities for a specific case from the entity_tags table
    */
   async getCaseEntities(caseId) {
     try {
-      // This would query the entity_tags table for the case
-      // For now, return mock data - in production, this would query actual data
-      return {
-        phones: ['+91-9876543210', '+1-555-0123'],
-        emails: ['suspect@example.com'],
-        cryptoAddresses: ['1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'],
-        contacts: ['John Doe', 'Jane Smith']
+      const { EntityTag } = await import('../models/index.js');
+      
+      const tags = await EntityTag.findAll({
+        where: { caseId },
+        attributes: ['entityType', 'entityValue', 'confidenceScore'],
+        group: ['entityType', 'entityValue', 'confidenceScore'],
+      });
+
+      // Group by entity type
+      const entities = {
+        phones: [],
+        emails: [],
+        cryptoAddresses: [],
+        contacts: []
       };
+
+      for (const tag of tags) {
+        const val = tag.entityValue;
+        const type = tag.entityType;
+
+        if (type === 'phone_number' || type === 'phone') {
+          entities.phones.push(val);
+        } else if (type === 'email') {
+          entities.emails.push(val);
+        } else if (type === 'crypto_address' || type === 'crypto') {
+          entities.cryptoAddresses.push(val);
+        } else if (type === 'contact' || type === 'person' || type === 'name') {
+          entities.contacts.push(val);
+        }
+      }
+
+      // Deduplicate each list
+      entities.phones = [...new Set(entities.phones)];
+      entities.emails = [...new Set(entities.emails)];
+      entities.cryptoAddresses = [...new Set(entities.cryptoAddresses)];
+      entities.contacts = [...new Set(entities.contacts)];
+
+      logger.info(`Case ${caseId} entities: ${entities.phones.length} phones, ${entities.emails.length} emails, ${entities.cryptoAddresses.length} crypto, ${entities.contacts.length} contacts`);
+      return entities;
     } catch (error) {
       logger.error(`Error getting entities for case ${caseId}:`, error);
       return { phones: [], emails: [], cryptoAddresses: [], contacts: [] };
@@ -158,61 +215,92 @@ class CrossCaseService {
   }
 
   /**
-   * Find cross-case matches for entities
+   * Find cross-case matches for entities — REAL implementation
+   * Only matches entities that genuinely exist in OTHER cases.
    */
   async findCrossCaseMatches(entities, sourceCaseId) {
     try {
+      const { EntityTag } = await import('../models/index.js');
       const matches = [];
 
-      // Check for existing cross-case links
+      // Collect ALL entity values from this case into a flat list with types
+      const entityPairs = [];
+      for (const [entityType, entityList] of Object.entries(entities)) {
+        for (const entityValue of entityList) {
+          entityPairs.push({ entityType, entityValue });
+        }
+      }
+
+      if (entityPairs.length === 0) {
+        logger.info(`No entities found for case ${sourceCaseId}, skipping cross-case matching`);
+        return [];
+      }
+
+      // Check for existing cross-case links to avoid duplicates
       const existingLinks = await CrossCaseLink.findAll({
         where: {
           [Op.or]: [
-            { sourceCaseId },
-            { targetCaseId: sourceCaseId }
+            { source_case_id: sourceCaseId },
+            { target_case_id: sourceCaseId }
           ]
         }
       });
 
-      const existingEntityValues = new Set(
-        existingLinks.map(link => link.entityValue)
+      const existingPairs = new Set(
+        existingLinks.map(link => 
+          `${Math.min(link.source_case_id, link.target_case_id)}_${Math.max(link.source_case_id, link.target_case_id)}_${link.entity_value}`
+        )
       );
 
-      // For each entity type, find matches in other cases
-      for (const [entityType, entityList] of Object.entries(entities)) {
-        for (const entityValue of entityList) {
-          if (existingEntityValues.has(entityValue)) continue;
+      // For each entity, find OTHER cases that also have this entity
+      for (const { entityType, entityValue } of entityPairs) {
+        const dbType = this.mapEntityType(entityType);
 
-          // Find other cases with this entity
-          // This is a simplified version - in production, you'd query entity_tags
-          const otherCases = await Case.findAll({
-            where: {
-              id: { [Op.ne]: sourceCaseId },
-              status: ['active', 'ready_for_analysis', 'under_review']
-            },
-            limit: 10 // Limit for performance
+        // Query entity_tags for this value in OTHER cases
+        const otherCaseTags = await EntityTag.findAll({
+          where: {
+            entityValue: entityValue,
+            caseId: { [Op.ne]: sourceCaseId }  // Exclude self!
+          },
+          attributes: ['caseId', 'entityType', 'entityValue', 'confidenceScore'],
+          group: ['caseId', 'entityType', 'entityValue', 'confidenceScore'],
+        });
+
+        // Group by target case
+        const targetCases = new Map();
+        for (const tag of otherCaseTags) {
+          const targetId = tag.caseId;
+          if (!targetCases.has(targetId)) {
+            targetCases.set(targetId, { count: 0, confidence: 0 });
+          }
+          const entry = targetCases.get(targetId);
+          entry.count += 1;
+          entry.confidence = Math.max(entry.confidence, Number(tag.confidenceScore) || 0.8);
+        }
+
+        // Create match objects for each target case
+        for (const [targetCaseId, info] of targetCases.entries()) {
+          // Skip if link already exists
+          const pairKey = `${Math.min(sourceCaseId, targetCaseId)}_${Math.max(sourceCaseId, targetCaseId)}_${entityValue}`;
+          if (existingPairs.has(pairKey)) continue;
+
+          matches.push({
+            targetCaseId,
+            entityType: dbType,
+            entityValue,
+            linkType: 'shared_entity',
+            matchType: 'exact_match',
+            frequency: info.count,
+            confidence: info.confidence,
+            lastSeen: new Date()
           });
 
-          for (const otherCase of otherCases) {
-            // Check if entity exists in other case (simplified check)
-            const existsInOtherCase = await this.checkEntityInCase(entityValue, entityType, otherCase.id);
-
-            if (existsInOtherCase) {
-              matches.push({
-                targetCaseId: otherCase.id,
-                entityType: this.mapEntityType(entityType),
-                entityValue,
-                linkType: 'shared_entity',
-                matchType: 'exact_match',
-                frequency: 1,
-                confidence: 0.9,
-                lastSeen: new Date()
-              });
-            }
-          }
+          // Mark as seen so we don't create duplicates within this run
+          existingPairs.add(pairKey);
         }
       }
 
+      logger.info(`Found ${matches.length} real cross-case matches for case ${sourceCaseId}`);
       return matches;
     } catch (error) {
       logger.error('Error finding cross-case matches:', error);
@@ -233,32 +321,35 @@ class CrossCaseService {
       // Create links between all pairs
       for (let i = 0; i < caseIds.length; i++) {
         for (let j = i + 1; j < caseIds.length; j++) {
+          // Skip self-links — both IDs must be different
+          if (caseIds[i] === caseIds[j]) continue;
+
           const sourceCaseId = Math.min(caseIds[i], caseIds[j]);
           const targetCaseId = Math.max(caseIds[i], caseIds[j]);
 
           // Check if link already exists
           const existing = await CrossCaseLink.findOne({
             where: {
-              sourceCaseId,
-              targetCaseId,
-              entityValue: entity.entityValue
+              source_case_id: sourceCaseId,
+              target_case_id: targetCaseId,
+              entity_value: entity.entityValue
             }
           });
 
           if (!existing) {
             await CrossCaseLink.create({
-              sourceCaseId,
-              targetCaseId,
-              linkType: 'shared_entity',
-              entityType,
-              entityValue: entity.entityValue,
+              source_case_id: sourceCaseId,
+              target_case_id: targetCaseId,
+              link_type: 'shared_entity',
+              entity_type: entityType,
+              entity_value: entity.entityValue,
               strength: entity.caseCount > 2 ? 'medium' : 'weak',
-              confidenceScore: 0.8,
-              linkMetadata: {
+              confidence_score: 0.8,
+              link_metadata: {
                 sharedAcross: entity.caseCount,
                 caseIds: entity.caseIds
               },
-              createdBy: userId
+              created_by: userId
             });
 
             linksCreated++;
@@ -291,12 +382,22 @@ class CrossCaseService {
   }
 
   /**
-   * Check if an entity exists in a specific case
+   * Check if an entity exists in a specific case (real DB query)
    */
   async checkEntityInCase(entityValue, entityType, caseId) {
-    // This is a placeholder - in production, this would query the entity_tags table
-    // For now, return random results to simulate the functionality
-    return Math.random() > 0.7; // 30% chance of match for demo
+    try {
+      const { EntityTag } = await import('../models/index.js');
+      const count = await EntityTag.count({
+        where: {
+          entityValue,
+          caseId
+        }
+      });
+      return count > 0;
+    } catch (error) {
+      logger.error(`Error checking entity in case ${caseId}:`, error);
+      return false;
+    }
   }
 
   /**
@@ -346,12 +447,22 @@ class CrossCaseService {
    */
   async getCaseConnections(caseId, maxDepth = 2) {
     try {
-      // Get database links
+      // Get database links — explicitly exclude self-links
       const dbLinks = await CrossCaseLink.findAll({
         where: {
-          [Op.or]: [
-            { sourceCaseId: caseId },
-            { targetCaseId: caseId }
+          [Op.and]: [
+            {
+              [Op.or]: [
+                { source_case_id: caseId },
+                { target_case_id: caseId }
+              ]
+            },
+            // Defense-in-depth: exclude any self-links that may be in DB
+            sequelize.where(
+              sequelize.col('source_case_id'),
+              Op.ne,
+              sequelize.col('target_case_id')
+            )
           ]
         },
         include: [
