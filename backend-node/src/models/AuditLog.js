@@ -50,10 +50,15 @@ const AuditLog = sequelize.define('AuditLog', {
   sessionId: {
     type: DataTypes.STRING(100),
     field: 'session_id'
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    field: 'created_at'
   }
 }, {
   tableName: 'audit_log',
   timestamps: true,
+  underscored: true,
   updatedAt: false
 });
 

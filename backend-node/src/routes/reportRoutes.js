@@ -4,7 +4,8 @@ import { checkCaseAccess } from '../middleware/caseAccess.js';
 import {
   generateReport,
   getReportHistory,
-  getReportTemplates
+  getReportTemplates,
+  downloadReport
 } from '../controllers/reportController.js';
 
 const router = express.Router();
@@ -13,9 +14,22 @@ const router = express.Router();
 router.use(authenticate);
 
 /**
+ * @route   GET /api/reports/templates
+ * @desc    Get available report templates
+ * @access  IO, Admin, Supervisor
+ * NOTE: Must be before /:reportId/* to avoid 'templates' being matched as reportId
+ */
+router.get(
+  '/templates',
+  authorize('investigating_officer', 'admin', 'supervisor'),
+  getReportTemplates
+);
+
+/**
  * @route   POST /api/reports/case/:caseId/generate
  * @desc    Generate case report
  * @access  IO, Admin
+ * NOTE: Must be before /:reportId/* to avoid 'case' being matched as reportId
  */
 router.post(
   '/case/:caseId/generate',
@@ -37,15 +51,15 @@ router.get(
 );
 
 /**
- * @route   GET /api/reports/templates
- * @desc    Get available report templates
- * @access  IO, Admin
+ * @route   GET /api/reports/:reportId/download
+ * @desc    Download a previously generated stored report PDF
+ * @access  IO, Admin, Supervisor
+ * NOTE: Generic param route — MUST come after all specific /case/* and /templates routes
  */
 router.get(
-  '/templates',
-  authorize('investigating_officer', 'admin'),
-  getReportTemplates
+  '/:reportId/download',
+  authorize('investigating_officer', 'admin', 'supervisor'),
+  downloadReport
 );
 
 export default router;
-

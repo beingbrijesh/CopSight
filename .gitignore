@@ -44,3 +44,22 @@ coverage/
 *.tmp
 *.temp
 .cache/
+.npm-cache/
+tmp/
+backend-node/tmp/
+backend-node/test_out.txt
+frontend/.npm-cache/
+backend-node/.npm-cache/
+backend-node/ensure_db.js
+
+# Exclude all test scripts in backend-node
+backend-node/test_*.js
+test_*.js
+
+# Explicitly exclude example env files
+.env.example
+env.example
+*.env.example
+
+# Exclude sqlite dbs
+*.sqlite3

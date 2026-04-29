@@ -50,6 +50,7 @@ function App() {
           </ProtectedRoute>
         }>
           <Route path="/io" element={<IODashboard />} />
+          <Route path="/io/cases" element={<IODashboard />} />
           <Route path="/io/case/:caseId" element={<CaseDetail />} />
           <Route path="/io/case/:caseId/query" element={<QueryInterface />} />
           <Route path="/io/case/:caseId/bookmarks" element={<Bookmarks />} />

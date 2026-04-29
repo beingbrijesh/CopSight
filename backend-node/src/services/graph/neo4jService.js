@@ -87,24 +87,48 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
     // Create communication relationships
     if (parsedData.dataSources) {
       for (const source of parsedData.dataSources) {
-        if (source.sourceType === 'sms' || source.sourceType === 'call_log') {
+        if (source.sourceType === 'sms' || source.sourceType === 'call_log' || source.sourceType === 'chat') {
           for (const record of source.data) {
-            if (record.phoneNumber) {
+            // Support multiple message/call log field names
+            const targetNumber = String(record.phoneNumber || record.number || record.receiver || record.recipient || record.address || '');
+            const sourceNumber = String(record.sender || record.caller || (parsedData.deviceInfo?.phoneNumber) || `device_${caseId}`);
+
+            if (targetNumber && targetNumber !== '') {
+              // Ensure we have a PhoneNumber node for the target
               await session.run(
-                `MATCH (d:Device {imei: $imei})
-                 MATCH (p:PhoneNumber {number: $number})
-                 MERGE (d)-[r:COMMUNICATED_WITH {
+                `MERGE (p:PhoneNumber {number: $number})`,
+                { number: targetNumber }
+              );
+
+              // Ensure we have a PhoneNumber/Device node for the source
+              await session.run(
+                `MERGE (s:PhoneNumber {number: $number})`,
+                { number: sourceNumber }
+              );
+
+              await session.run(
+                `MATCH (s:PhoneNumber {number: $sourceNumber})
+                 MATCH (p:PhoneNumber {number: $targetNumber})
+                 MERGE (s)-[r:COMMUNICATED_WITH {
                    type: $type,
                    direction: $direction,
                    timestamp: datetime($timestamp)
                  }]->(p)`,
                 {
-                  imei: parsedData.deviceInfo?.imei || `device_${caseId}`,
-                  number: record.phoneNumber,
+                  sourceNumber,
+                  targetNumber,
                   type: source.sourceType,
                   direction: record.direction || 'unknown',
-                  timestamp: new Date(record.timestamp).toISOString()
+                  timestamp: record.timestamp ? new Date(record.timestamp).toISOString() : new Date().toISOString()
                 }
+              );
+
+              // Also link to the main case node if it's a primary relationship
+              await session.run(
+                `MATCH (c:Case {id: $caseId})
+                 MATCH (p:PhoneNumber {number: $targetNumber})
+                 MERGE (c)-[:HAS_ENTITY]->(p)`,
+                { caseId, targetNumber }
               );
             }
           }

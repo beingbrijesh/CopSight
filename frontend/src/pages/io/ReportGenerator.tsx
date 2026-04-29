@@ -15,9 +15,9 @@ export const ReportGenerator = () => {
   const [options, setOptions] = useState({
     includeTimeline: true,
     includeEvidence: true,
-    includeQueries: true,
     includeBookmarks: true,
-    includeGraph: false
+    includeGraph: false,
+    includeMedia: false
   });
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export const ReportGenerator = () => {
     try {
       const response = await api.post(
         `/reports/case/${caseId}/generate`,
-        options,
+        { ...options, templateId: selectedTemplate },
         { responseType: 'blob' }
       );
 
@@ -73,15 +73,35 @@ export const ReportGenerator = () => {
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplate(templateId);
     const template = templates.find(t => t.id === templateId);
-    
     if (template) {
-      setOptions({
-        includeTimeline: template.sections.includes('timeline'),
-        includeEvidence: template.sections.includes('evidence'),
-        includeQueries: template.sections.includes('queries'),
-        includeBookmarks: template.sections.includes('bookmarks'),
-        includeGraph: template.sections.includes('graph')
-      });
+      if (template.options) {
+        setOptions(template.options);
+      } else {
+        // Fallback backward compatibility
+        setOptions({
+          includeTimeline: template.sections.includes('timeline') || template.sections.includes('executive_summary'),
+          includeEvidence: template.sections.includes('evidence') || template.sections.includes('executive_summary'),
+          includeBookmarks: template.sections.includes('bookmarks'),
+          includeGraph: template.sections.includes('graph'),
+          includeMedia: template.sections.includes('media') || false
+        });
+      }
+    }
+  };
+
+  const handleDownloadHistory = async (report: any) => {
+    try {
+      const response = await api.get(`/reports/${report.id}/download`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', report.pdfPath || `report-${report.id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Failed to download report:', error);
+      alert('Failed to retrieve the forensic file.');
     }
   };
 
@@ -124,9 +144,9 @@ export const ReportGenerator = () => {
                       {template.sections.map((section: string) => (
                         <span
                           key={section}
-                          className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded"
+                          className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-medium rounded capitalize"
                         >
-                          {section}
+                          {section.replace('_', ' ')}
                         </span>
                       ))}
                     </div>
@@ -138,7 +158,7 @@ export const ReportGenerator = () => {
             {/* Custom Options */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Report Sections
+                Report Sections (Custom Selection)
               </h2>
               
               <div className="space-y-3">
@@ -168,18 +188,7 @@ export const ReportGenerator = () => {
                   </div>
                 </label>
 
-                <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={options.includeQueries}
-                    onChange={(e) => setOptions({ ...options, includeQueries: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-900">Analysis Queries</div>
-                    <div className="text-sm text-gray-600">Include executed queries and results</div>
-                  </div>
-                </label>
+
 
                 <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                   <input
@@ -202,14 +211,37 @@ export const ReportGenerator = () => {
                     className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">Network Graph</div>
-                    <div className="text-sm text-gray-600">Include communication network visualization</div>
+                    <div className="font-medium text-gray-900">Network Graph Summary</div>
+                    <div className="text-sm text-gray-600">Include communication network topology overview</div>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={options.includeMedia}
+                    onChange={(e) => setOptions({ ...options, includeMedia: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div>
+                    <div className="font-medium text-gray-900">Media Previews</div>
+                    <div className="text-sm text-gray-600">Attempt to preview image assets in evidence</div>
                   </div>
                 </label>
               </div>
             </div>
 
             {/* Generate Button */}
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <p className="text-sm text-yellow-700">
+                    <strong>Note:</strong> Full Reports with a large data volume may take 10-20 seconds to generate. Please be patient.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             <button
               onClick={handleGenerateReport}
               disabled={generating}
@@ -218,12 +250,12 @@ export const ReportGenerator = () => {
               {generating ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Generating Report...
+                  Generating Forensic PDF...
                 </>
               ) : (
                 <>
                   <Download className="w-5 h-5" />
-                  Generate PDF Report
+                  Generate Case PDF Report
                 </>
               )}
             </button>
@@ -238,28 +270,40 @@ export const ReportGenerator = () => {
               </h2>
 
               {reportHistory.length > 0 ? (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
+                <div className="space-y-3 max-h-[600px] overflow-y-auto">
                   {reportHistory.map((report, idx) => (
                     <div key={idx} className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                       <div className="flex items-start justify-between mb-2">
-                        <CheckCircle className="w-4 h-4 text-green-600 mt-0.5" />
-                        <span className="text-xs text-gray-500">
-                          {new Date(report.createdAt || report.created_at).toLocaleDateString()}
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded uppercase">
+                          {report.reportType}
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(report.createdAt).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-700 mb-1">
-                        Generated by {report.User?.name || 'Unknown'}
+                      <p className="text-sm font-medium text-gray-900 mb-1 truncate">
+                        {report.title}
                       </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(report.createdAt || report.created_at).toLocaleTimeString()}
+                      <p className="text-[11px] text-gray-600 mb-3">
+                        By {report.generator?.fullName || 'CopSight'}
                       </p>
+                      <div className="flex items-center justify-between border-t pt-2">
+                        <button 
+                          onClick={() => handleDownloadHistory(report)}
+                          className="text-xs text-blue-600 font-medium hover:text-blue-800 flex items-center gap-1"
+                        >
+                          <Download className="w-3 h-3" />
+                          Download PDF
+                        </button>
+                        <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm">No reports generated yet</p>
+                  <p className="text-sm">No forensic reports archived</p>
                 </div>
               )}
             </div>

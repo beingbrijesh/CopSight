@@ -231,12 +231,12 @@ class AIClient {
       });
 
     } catch (error) {
-      logger.error('[AIClient] Failed to open upstream SSE stream:', error.message);
+      logger.error(`[AIClient] Failed to open upstream SSE stream to ${this.baseURL}/api/query/stream:`, error.message);
       if (!res.writableEnded) {
         const isUnavailable = error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND';
         const msg = isUnavailable
-          ? '🔌 AI Service is not running. Please start the ai-service and try again.'
-          : '⏱️ AI Service took too long. The local LLM may be under heavy load. Please try again.';
+          ? `🔌 AI Service is not running at ${this.baseURL}. Please start the ai-service and try again.`
+          : `⏱️ AI Service at ${this.baseURL} took too long. The local LLM may be under heavy load. Please try again.`;
         res.write(`data: ${JSON.stringify({ type: 'error', message: msg })}\n\n`);
         res.write('data: [DONE]\n\n');
         res.end();

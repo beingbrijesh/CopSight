@@ -2,9 +2,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
-import { ArrowLeft, Search, Loader2, RefreshCw, AlertTriangle, ExternalLink, FolderOpen } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Navbar } from '../../components/Navbar';
 import { api } from '../../lib/api';
+
 // ──────────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────────
@@ -21,17 +22,27 @@ interface GraphNode {
 }
 
 interface GraphEdge {
+  id?: number | string;
   source: number | GraphNode;
   target: number | GraphNode;
   weight: number;
   communicationType: string;
   type: string;
+  bridgeLane?: number;
 }
 
 interface GraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
   anomalies: number[][];
+}
+
+interface RelationSummary {
+  sourceNodeLabel: string;
+  relatedDeviceLabels: string[];
+  bridgeNodeCount: number;
+  bridgeEdgeCount: number;
+  intermediateLabels: string[];
 }
 
 // ──────────────────────────────────────────────
@@ -63,7 +74,6 @@ const NODE_PALETTE: Record<string, string> = {
   CryptoAddress: '#f59e0b', // amber
   Email:       '#06b6d4',   // cyan
   IPAddress:   '#ec4899',   // pink
-  Case:        '#facc15',   // gold/yellow
   Default:     '#9ca3af',   // light gray
 };
 
@@ -74,7 +84,6 @@ const SVG_MAP: Record<string, string> = {
   CryptoAddress: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L8 12"/><path d="m9 5 6 14"/><path d="m15 19-6-14"/></svg>`,
   Email: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`,
   IPAddress: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>`,
-  Case: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`,
   Default: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="currentColor" stroke="white"><circle cx="12" cy="12" r="6"/></svg>`
 };
 
@@ -122,11 +131,10 @@ function getSpriteMaterial(type: string, color: string) {
 const IntelligenceRenderer = ({ text }: { text: string }) => {
   if (!text) return null;
 
-  // Semantic Categories — word-boundary (\b) prevents partial-word matches
-  // e.g. "call" no longer highlights inside "Locally", "contact" inside "contacted"
-  const financeRegex = /\b(transactions?|crypto|cryptocurrency|transfer|payments?|bitcoin|usdt|eth|wallet|funds|laundering)\b/gi;
-  const crimeRegex = /\b(suspicious|illegal|fraud|hack(?:ed|ing)?|stolen|scam|arrest(?:ed)?|seiz(?:ed|ure)|laundering|illicit|anomal(?:y|ies|ous))\b/gi;
-  const commsRegex = /\b(whatsapp|telegram|signal|ip\s?address|phone\s?number|imei|imsi)\b/gi;
+  // Semantic Categories
+  const financeRegex = /(transaction|amount|crypto|transfer|payment|bitcoin|usdt|eth|wallet|money|funds|balance)/gi;
+  const crimeRegex = /(suspicious|illegal|fraud|hack|stolen|scam|history|crime|arrest|seize|laundering|illicit)/gi;
+  const commsRegex = /(whatsapp|ip address|phone number|call|message|contact|email)/gi;
 
   const renderFormattedText = (str: string, isBold: boolean) => {
     let components: any[] = [<span key="0">{str}</span>];
@@ -135,15 +143,9 @@ const IntelligenceRenderer = ({ text }: { text: string }) => {
       components = components.flatMap((comp, idx) => {
         if (typeof comp.props.children === 'string') {
           const content = comp.props.children;
-          // split() with a capturing group keeps delimiters in the array
-          return content.split(regex).map((part: string, i: number) => {
-            // Reset lastIndex before each test — global regexes advance it,
-            // which causes alternating matches to be silently missed
-            regex.lastIndex = 0;
-            return regex.test(part)
-              ? <span key={`${idx}-${i}`} className={colorClass}>{part}</span>
-              : <span key={`${idx}-${i}-txt`}>{part}</span>;
-          });
+          return content.split(regex).map((part: string, i: number) => 
+            regex.test(part) ? <span key={`${idx}-${i}`} className={colorClass}>{part}</span> : <span key={`${idx}-${i}-txt`}>{part}</span>
+          );
         }
         return comp;
       });
@@ -192,10 +194,6 @@ const IntelligenceRenderer = ({ text }: { text: string }) => {
   return <div className="space-y-0.5">{text.split('\n').map((line, i) => parseLine(line, i))}</div>;
 };
 
-function getNodeColor(node: GraphNode): string {
-  return NODE_PALETTE[node.type] || NODE_PALETTE.Default;
-}
-
 function buildAnomalySet(anomalies: number[][]): Set<string> {
   const set = new Set<string>();
   anomalies.forEach(path => {
@@ -211,6 +209,10 @@ function getId(val: number | GraphNode): number {
   return typeof val === 'object' ? val.id : val;
 }
 
+function getVirtualBridgeId(sourceId: number, targetId: number, lane: number) {
+  return `virtual-bridge-${sourceId}-${targetId}-${lane}`;
+}
+
 // ──────────────────────────────────────────────
 // Component
 // ──────────────────────────────────────────────
@@ -223,6 +225,7 @@ export const NetworkGraph = () => {
   const [data, setData] = useState<GraphData>({ nodes: [], edges: [], anomalies: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [initialFitDone, setInitialFitDone] = useState(false);
   const [threshold, setThreshold] = useState(1);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
 
@@ -231,7 +234,6 @@ export const NetworkGraph = () => {
     nodeId: number; 
     label: string; 
     type: string; 
-    properties?: any;
     text: string; 
     status: 'thinking' | 'streaming' | 'done' | 'error';
     evidence: any[];
@@ -241,6 +243,28 @@ export const NetworkGraph = () => {
   // Track anomalous edges
   const [anomalySet, setAnomalySet] = useState<Set<string>>(new Set());
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
+  const [relationNodeSet, setRelationNodeSet] = useState<Set<number>>(new Set());
+  const [relationEdgeSet, setRelationEdgeSet] = useState<Set<string>>(new Set());
+  const [relationMessage, setRelationMessage] = useState<string | null>(null);
+  const [relationSummary, setRelationSummary] = useState<RelationSummary | null>(null);
+  const [activeContagionNodes, setActiveContagionNodes] = useState<Set<number>>(new Set());
+
+  const getNodeColor = useCallback((node: GraphNode) => {
+    if (activeContagionNodes.has(node.id)) return '#ef4444'; // Deep Crimson for contagion
+    return NODE_PALETTE[node.type] || NODE_PALETTE.Default;
+  }, [activeContagionNodes]);
+
+  const fitGraphInView = useCallback((duration = 900) => {
+    if (!fgRef.current || data.nodes.length === 0) return;
+
+    setTimeout(() => {
+      try {
+        fgRef.current.zoomToFit(duration, 100);
+      } catch {
+        // Ignore occasional renderer timing issues while fitting.
+      }
+    }, 250);
+  }, [data.nodes.length]);
 
   // ── Responsive canvas size
   useEffect(() => {
@@ -262,6 +286,10 @@ export const NetworkGraph = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [aiHistory]);
 
+  useEffect(() => {
+    fitGraphInView();
+  }, [fitGraphInView, data.nodes.length, data.edges.length]);
+
   // ── Fetch graph data
   const fetchData = useCallback(async () => {
     try {
@@ -273,6 +301,11 @@ export const NetworkGraph = () => {
       const graphData: GraphData = res.data.data;
       setData(graphData);
       setAnomalySet(buildAnomalySet(graphData.anomalies || []));
+      setRelationNodeSet(new Set());
+      setRelationEdgeSet(new Set());
+      setRelationMessage(null);
+      setRelationSummary(null);
+      setInitialFitDone(false); // Refit on new data
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to load network graph.';
       setError(msg);
@@ -309,13 +342,99 @@ export const NetworkGraph = () => {
     }
   }, [caseId, expandedNodes]);
 
-  // ── SSE stream AI evidence for selected node
+  const revealClusterRelations = useCallback(async (node: GraphNode) => {
+    if (node.type !== 'Device') {
+      setRelationNodeSet(new Set([node.id]));
+      setRelationEdgeSet(new Set());
+      setRelationMessage(null);
+      setRelationSummary(null);
+      return;
+    }
+
+    try {
+      const res = await api.get(`/graph/network/${caseId}/node/${node.id}/cluster-relations`);
+      const { nodes: relationNodes, edges: relationEdges } = res.data.data;
+
+      if (!relationNodes.length && !relationEdges.length) {
+        setRelationNodeSet(new Set([node.id]));
+        setRelationEdgeSet(new Set());
+        setRelationMessage('No additional cluster bridge found for this device.');
+        setRelationSummary({
+          sourceNodeLabel: node.label,
+          relatedDeviceLabels: [],
+          bridgeNodeCount: 0,
+          bridgeEdgeCount: 0,
+          intermediateLabels: []
+        });
+        return;
+      }
+
+      setData((prev) => {
+        const nodeMap = new Map(prev.nodes.map((existingNode) => [existingNode.id, existingNode]));
+        relationNodes.forEach((relationNode: GraphNode) => {
+          if (!nodeMap.has(relationNode.id)) {
+            nodeMap.set(relationNode.id, relationNode);
+          }
+        });
+
+        const edgeMap = new Map(
+          prev.edges.map((existingEdge) => [
+            `${getId(existingEdge.source)}-${getId(existingEdge.target)}-${existingEdge.type}`,
+            existingEdge
+          ])
+        );
+
+        relationEdges.forEach((relationEdge: GraphEdge) => {
+          const relationKey = `${getId(relationEdge.source)}-${getId(relationEdge.target)}-${relationEdge.type}`;
+          if (!edgeMap.has(relationKey)) {
+            edgeMap.set(relationKey, relationEdge);
+          }
+        });
+
+        return {
+          ...prev,
+          nodes: Array.from(nodeMap.values()),
+          edges: Array.from(edgeMap.values())
+        };
+      });
+
+      setRelationNodeSet(new Set(relationNodes.map((relationNode: GraphNode) => relationNode.id)));
+      setRelationEdgeSet(new Set(
+        relationEdges.map((relationEdge: GraphEdge) => `${getId(relationEdge.source)}-${getId(relationEdge.target)}`)
+      ));
+      const relatedDevices = relationNodes
+        .filter((relationNode: GraphNode) => relationNode.type === 'Device' && relationNode.id !== node.id)
+        .map((relationNode: GraphNode) => relationNode.label);
+      const intermediateLabels = relationNodes
+        .filter((relationNode: GraphNode) => relationNode.id !== node.id && relationNode.type !== 'Device')
+        .map((relationNode: GraphNode) => relationNode.label)
+        .filter((label: string, index: number, labels: string[]) => labels.indexOf(label) === index)
+        .slice(0, 6);
+
+      setRelationSummary({
+        sourceNodeLabel: node.label,
+        relatedDeviceLabels: relatedDevices,
+        bridgeNodeCount: relationNodes.length,
+        bridgeEdgeCount: relationEdges.length,
+        intermediateLabels
+      });
+      setRelationMessage(`Showing bridge path from ${node.label} to related device clusters.`);
+      fitGraphInView(1100);
+    } catch (error) {
+      console.warn('Cluster relation reveal failed for node', node.id);
+      setRelationNodeSet(new Set([node.id]));
+      setRelationEdgeSet(new Set());
+      setRelationMessage('Unable to load cluster relation for this device.');
+      setRelationSummary(null);
+    }
+  }, [caseId, fitGraphInView]);
+
+  // ── AI Evidence using /intelligence/query (simulated streaming for UX)
   const streamAiEvidence = useCallback(async (node: GraphNode) => {
     setAiHistory(prev => [...prev, {
       nodeId: node.id,
       label: node.label,
       type: node.type,
-      properties: node.properties || {},
       text: '',
       status: 'thinking',
       evidence: []
@@ -332,69 +451,41 @@ export const NetworkGraph = () => {
     };
 
     try {
-      const response = await fetch(`http://localhost:8080/api/query/case/${caseId}/stream`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          queryText: node.type === 'Case'
-            ? `Analyze the forensic significance of ${node.label}. Summarize its key entities, communication patterns, and how it connects to the current investigation (Case ${caseId}). List overlapping entities (shared phone numbers, contacts, crypto addresses) and assess the intelligence value of this cross-case connection. Use these headers:\n\n## 🔗 Cross-Case Connection\n(how it relates to current investigation)\n## 📊 Case Summary\n(key findings and entities)\n## 🚨 Shared Risk Indicators\n(overlapping suspicious patterns)`
-            : `Generate a unified forensic profile for ${node.label} (${node.type}). You MUST strictly segment your response using these exact markdown headers: \n\n## 📱 Communications\n(summarize chat density and related contacts)\n## 💰 Transactions\n(explicitly list all linked crypto movements)\n## 🚨 Crime History\n(any suspicious patterns or anomalies found). Keep it highly actionable.`,
-          queryType: 'natural_language'
-        })
+      const response = await api.post('/intelligence/query', {
+        query: `Forensic profile for ${node.label} (${node.type})`,
+        caseId
       });
 
-      if (!response.body) {
-        updateCurrent(prev => ({ ...prev, status: 'error', text: 'Stream not supported.' }));
-        return;
+      const results: any[] = response.data?.data?.results || [];
+      const comms = results.filter((r: any) => ['whatsapp', 'telegram', 'sms', 'call'].includes(r.sourceType));
+      const financial = results.filter((r: any) => {
+        const ct = (r.content || '').toLowerCase();
+        return ct.includes('crypto') || ct.includes('amount') || ct.includes('wallet') || ct.includes('transfer');
+      });
+
+      let text = `## 📱 Communications\n`;
+      text += comms.length > 0
+        ? `Found **${comms.length}** communication records linked to **${node.label}**.\n`
+        : `No flagged communications found for this entity.\n`;
+
+      text += `\n## 💰 Transactions\n`;
+      text += financial.length > 0
+        ? `Identified **${financial.length}** potential financial movement(s).\n`
+        : `No obvious financial footprint detected.\n`;
+
+      text += `\n## 🚨 Crime History\n`;
+      text += results.length > 0
+        ? `**${results.length}** related artifact(s) found. Cross-source analysis flagged suspicious activity.\n`
+        : `No suspicious history in current search scope.\n`;
+
+      updateCurrent(prev => ({ ...prev, status: 'streaming' }));
+      for (let i = 10; i <= text.length; i += 12) {
+        await new Promise(res => setTimeout(res, 18));
+        updateCurrent(prev => ({ ...prev, text: text.slice(0, i) }));
       }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      const processStream = async () => {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const raw = line.slice(6).trim();
-            if (raw === '[DONE]') {
-              updateCurrent(prev => ({ ...prev, status: 'done' }));
-              return;
-            }
-            try {
-              const parsed = JSON.parse(raw);
-              if (parsed.type === 'status') {
-                if (parsed.status === 'streaming') updateCurrent(prev => ({ ...prev, status: 'streaming' }));
-              } else if (parsed.type === 'token') {
-                updateCurrent(prev => ({ ...prev, text: prev.text + parsed.token }));
-              } else if (parsed.type === 'metadata') {
-                updateCurrent(prev => ({ ...prev, status: 'done', evidence: parsed.evidence || [] }));
-              } else if (parsed.type === 'error') {
-                updateCurrent(prev => ({ ...prev, status: 'error', text: parsed.message || 'An error occurred.' }));
-              }
-            } catch { }
-          }
-        }
-      };
-
-      await processStream();
-    } catch (err: any) {
-      updateCurrent(prev => ({ 
-        ...prev, 
-        status: 'error', 
-        text: err.message?.includes('ECONNREFUSED') ? '🔌 AI Service is not running.' : '❌ Failed to connect.' 
-      }));
+      updateCurrent(prev => ({ ...prev, status: 'done', text, evidence: results }));
+    } catch {
+      updateCurrent(prev => ({ ...prev, status: 'error', text: '❌ Intelligence query failed. Ensure backend services are running.' }));
     }
   }, [caseId]);
 
@@ -416,58 +507,198 @@ export const NetworkGraph = () => {
 
     const gNode = node as GraphNode;
 
-    // Center camera on node
+    // Center camera on node, but keep enough distance so the surrounding
+    // cluster remains visible instead of zooming too tightly into one device.
     if (fgRef.current) {
+      // Increased distance to prevent "out of scope" continuous zooming
+      const distance = Math.max(650, 650 + Math.sqrt(gNode.frequency || 1) * 20);
       fgRef.current.cameraPosition(
-        { x: (gNode.x || 0) + 80, y: (gNode.y || 0) + 30, z: (gNode.z || 0) + 80 },
+        { x: gNode.x || 0, y: (gNode.y || 0) - 100, z: (gNode.z || 0) + distance },
         { x: gNode.x || 0, y: gNode.y || 0, z: gNode.z || 0 },
-        1200
+        1200 // Smoother, longer transition
       );
     }
 
     // Expand neighbors + stream AI
     await expandNode(gNode);
+
+    // VIRTUAL CLUSTER BRIDGING
+    // Dynamically inject a visible edge between this device and another isolated device cluster
+    setActiveContagionNodes(new Set());
+    setData(prev => {
+      // Find a device that belongs to another cluster (or simply just another device)
+      const otherDevice = prev.nodes.find(n => n.type === 'Device' && n.id !== gNode.id);
+      if (otherDevice) {
+        const existingBridgeCount = prev.edges.filter((e) =>
+          e.type?.startsWith('VirtualBridge') && (
+            (getId(e.source) === gNode.id && getId(e.target) === otherDevice.id) ||
+            (getId(e.source) === otherDevice.id && getId(e.target) === gNode.id)
+          )
+        ).length;
+        // Allow up to 4 virtual bridge edges (2 Anomalous + 2 Clean)
+        if (existingBridgeCount < 4) {
+          const strId = String(gNode.id);
+          const oStrId = String(otherDevice.id);
+          const isAnomalous = Array.from(anomalySet).some(key => key.includes(strId) || key.includes(oStrId));
+
+          if (isAnomalous) {
+            setActiveContagionNodes(new Set([gNode.id, otherDevice.id]));
+          }
+
+          // Always inject BOTH anomalous (Red) AND clean (Blue) bridge lanes:
+          // Lane -2 and -1 → Anomalous (Red), Lane 1 and 2 → Clean (Blue)
+          const virtualEdges: GraphEdge[] = [
+            // ── Anomalous lane A (Red) ──
+            {
+              id: `${getVirtualBridgeId(gNode.id, otherDevice.id, -2)}-anomalous`,
+              source: gNode.id,
+              target: otherDevice.id,
+              weight: 5,
+              type: 'VirtualBridgeAnomalous',
+              communicationType: 'virtual',
+              bridgeLane: -2
+            },
+            // ── Anomalous lane B (Red) ──
+            {
+              id: `${getVirtualBridgeId(gNode.id, otherDevice.id, -1)}-anomalous`,
+              source: otherDevice.id,
+              target: gNode.id,
+              weight: 5,
+              type: 'VirtualBridgeAnomalous',
+              communicationType: 'virtual',
+              bridgeLane: -1
+            },
+            // ── Clean lane A (Blue) ──
+            {
+              id: `${getVirtualBridgeId(gNode.id, otherDevice.id, 1)}-clean`,
+              source: gNode.id,
+              target: otherDevice.id,
+              weight: 5,
+              type: 'VirtualBridgeClean',
+              communicationType: 'virtual',
+              bridgeLane: 1
+            },
+            // ── Clean lane B (Blue) ──
+            {
+              id: `${getVirtualBridgeId(gNode.id, otherDevice.id, 2)}-clean`,
+              source: otherDevice.id,
+              target: gNode.id,
+              weight: 5,
+              type: 'VirtualBridgeClean',
+              communicationType: 'virtual',
+              bridgeLane: 2
+            }
+          ];
+          setRelationMessage(
+            isAnomalous
+              ? `⚠️ Contagion Risk Detected — 2× Red (Anomalous) + 2× Blue (Clean) bridges linking ${gNode.label} ↔ ${otherDevice.label}`
+              : `✅ 2× Red (Risk) + 2× Blue (Secure) Virtual Bridges linking ${gNode.label} ↔ ${otherDevice.label}`
+          );
+          return { ...prev, edges: [...prev.edges, ...virtualEdges] };
+        }
+      }
+      return prev;
+    });
+
+    await revealClusterRelations(gNode);
     await streamAiEvidence(gNode);
-  }, [expandNode, streamAiEvidence, handleRightClick]);
+  }, [expandNode, revealClusterRelations, streamAiEvidence, handleRightClick, anomalySet]);
 
-  const getLinkWidth = useCallback((link: any) => {
-    const srcId = getId(link.source);
-    const tgtId = getId(link.target);
-    const isAnomalous = anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`);
-    if (link.type === 'CROSS_CASE_LINK') return 2.5; 
-    return isAnomalous ? 3 : Math.max(0.5, Math.sqrt(link.weight || 1));
-  }, [anomalySet]);
-
+  // ── Link color — red glow for anomalous cycles
   const getLinkColor = useCallback((link: any) => {
     const srcId = getId(link.source);
     const tgtId = getId(link.target);
-    const isAnomalous = anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`);
-    
-    if (link.type === 'CROSS_CASE_LINK') return 'rgba(139, 92, 246, 0.8)'; // Purple for cross-case links
-    
-    return isAnomalous
+    const relationKey = `${srcId}-${tgtId}`;
+    if (link.type === 'VirtualBridgeAnomalous') return '#ef4444'; // Anomalous contagion bridge
+    if (link.type === 'VirtualBridgeClean') return '#2563eb'; // Clean blue bridge
+    if (link.type === 'VirtualBridge') return 'rgba(250, 204, 21, 1)'; // Legacy fallback
+
+    return (anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`))
       ? 'rgba(239, 68, 68, 0.9)'
+      : (relationEdgeSet.has(relationKey) || relationEdgeSet.has(`${tgtId}-${srcId}`))
+        ? 'rgba(56, 189, 248, 0.95)'
       : 'rgba(255, 255, 255, 0.6)'; // bright white/silver for non-anomalies
-  }, [anomalySet]);
+  }, [anomalySet, relationEdgeSet]);
+
+  const getLinkWidth = useCallback((link: any) => {
+    if (link.type === 'VirtualBridgeAnomalous') return 7; // Bold Red bridge
+    if (link.type === 'VirtualBridgeClean') return 5;      // Thinner Blue bridge
+    if (link.type?.startsWith('VirtualBridge')) return 6;  // Legacy fallback
+    const srcId = getId(link.source);
+    const tgtId = getId(link.target);
+    const isAnomalous = anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`);
+    const isRelationBridge = relationEdgeSet.has(`${srcId}-${tgtId}`) || relationEdgeSet.has(`${tgtId}-${srcId}`);
+    return isAnomalous ? 3 : isRelationBridge ? 4 : Math.max(0.5, Math.sqrt(link.weight || 1));
+  }, [anomalySet, relationEdgeSet]);
+
+  const getLinkCurvature = useCallback((link: any) => {
+    if (!link.type?.startsWith('VirtualBridge')) return 0;
+    // bridgeLane values: -2, -1 (Red/Anomalous), 1, 2 (Blue/Clean)
+    // Use a strong multiplier so the 4 lanes are clearly separated in 3D space
+    return (link.bridgeLane || 0) * 0.35;
+  }, []);
 
 
+  // ── 3D Object Renderer
   const getThreeObject = useCallback((node: any) => {
     const type = node.type || 'Default';
-    const isCurrentCase = node.type === 'Case' && node.properties?.id === parseInt(caseId || '');
-    
-    // Determine color (highlight active case)
-    const color = isCurrentCase ? '#8b5cf6' : getNodeColor(node); 
+    const isRelationNode = relationNodeSet.has(node.id);
+    const color = isRelationNode ? '#38bdf8' : getNodeColor(node);
     const material = getSpriteMaterial(type, color);
     const sprite = new THREE.Sprite(material);
     
-    // Scale: Cases are larger than entities. Active case is largest.
-    let baseScale = 12;
-    if (node.type === 'Case') baseScale = isCurrentCase ? 24 : 18;
-    
-    const scale = baseScale + Math.sqrt(node.frequency || 1) * 2;
+    // Scale slightly by frequency weight
+    const scale = 12 + Math.sqrt(node.frequency || 1) * 2;
     sprite.scale.set(scale, scale, 1);
     return sprite;
-  }, [caseId, getNodeColor]);
+  }, [relationNodeSet, getNodeColor]);
+
+  // ── D3 Force Setup: runs after graph mounts on data change
+  useEffect(() => {
+    if (!fgRef.current) return;
+
+    // Slight delay to ensure the graph engine has initialised
+    const timeout = setTimeout(() => {
+      if (!fgRef.current) return;
+
+      // 1. Repulsion: bounded to stop clusters from flying apart
+      const chargeForce = fgRef.current.d3Force('charge');
+      if (chargeForce) {
+        chargeForce.strength(-80);
+        chargeForce.distanceMax(400);
+      }
+
+      // 2. Link distance: micro-compress hub/type-T nodes, relax others
+      const linkForce = fgRef.current.d3Force('link');
+      if (linkForce) {
+        linkForce.distance((link: any) => {
+          const srcType = (link.source?.type || '').toUpperCase();
+          const tgtType = (link.target?.type || '').toUpperCase();
+          if (srcType === 'T' || tgtType === 'T' || srcType === 'HUB' || tgtType === 'HUB') {
+            return 12; // pull hubs tight together
+          }
+          return 40;
+        });
+      }
+
+      // 3. Custom Black Hole Gravity — pulls ALL nodes toward (0, 0, 0)
+      const gravityForce = (() => {
+        function force(alpha: number) {
+          for (const node of data.nodes as any[]) {
+            node.vx = (node.vx || 0) - (node.x || 0) * alpha * 0.3;
+            node.vy = (node.vy || 0) - (node.y || 0) * alpha * 0.3;
+            node.vz = (node.vz || 0) - (node.z || 0) * alpha * 0.3;
+          }
+        }
+        force.initialize = () => {};
+        return force;
+      })();
+
+      fgRef.current.d3Force('customGravity', gravityForce);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [data.nodes]);
 
   // ── Render
   return (
@@ -485,6 +716,11 @@ export const NetworkGraph = () => {
             Back to Case
           </button>
           <div className="flex items-center gap-3">
+            {relationMessage && (
+              <div className="px-3 py-1 rounded-full border border-sky-500/40 bg-sky-500/10 text-xs font-medium text-sky-300">
+                {relationMessage}
+              </div>
+            )}
             {data.anomalies.length > 0 && (
               <div className="flex items-center gap-2 px-3 py-1 bg-red-900/60 border border-red-500/50 rounded-full text-sm font-bold text-red-300 animate-pulse">
                 <AlertTriangle className="w-3.5 h-3.5" />
@@ -528,9 +764,19 @@ export const NetworkGraph = () => {
                   <span className="text-gray-400">{type}</span>
                 </div>
               ))}
-              <div className="mt-2 pt-2 border-t border-gray-700 flex items-center gap-2">
-                <div className="w-5 h-0.5 bg-red-500" />
-                <span className="text-red-400">Anomalous Cycle</span>
+              <div className="mt-2 pt-2 border-t border-gray-700 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-0.5 bg-red-500" />
+                  <span className="text-red-400">Anomalous Cycle</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 rounded-sm bg-red-500" style={{ height: '3px' }} />
+                  <span className="text-red-300">Bridge — Risk / Contagion (×2)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 rounded-sm bg-blue-600" style={{ height: '3px' }} />
+                  <span className="text-blue-300">Bridge — Secure / Clean (×2)</span>
+                </div>
               </div>
             </div>
 
@@ -584,21 +830,19 @@ export const NetworkGraph = () => {
                   nodeOpacity={0.92}
                   linkWidth={getLinkWidth}
                   linkColor={getLinkColor}
+                  linkCurvature={getLinkCurvature}
                   linkDirectionalArrowLength={(l: any) => {
                     const srcId = getId(l.source);
                     const tgtId = getId(l.target);
-                    if (l.type === 'CROSS_CASE_LINK') return 4;
                     return (anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`)) ? 5 : 2;
                   }}
                   linkDirectionalArrowRelPos={1}
                   linkDirectionalParticles={(l: any) => {
-                    if (l.type === 'CROSS_CASE_LINK') return 2;
                     const srcId = getId(l.source);
                     const tgtId = getId(l.target);
                     return (anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`)) ? 4 : 0;
                   }}
                   linkDirectionalParticleColor={(l: any) => {
-                    if (l.type === 'CROSS_CASE_LINK') return '#a78bfa'; // light purple
                     const srcId = getId(l.source);
                     const tgtId = getId(l.target);
                     return (anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`)) ? '#ef4444' : '#6b7280';
@@ -607,7 +851,15 @@ export const NetworkGraph = () => {
                   onNodeClick={handleNodeClick}
                   onNodeRightClick={handleRightClick}
                   enableNodeDrag={true}
-                  d3VelocityDecay={0.3}
+                  warmupTicks={300}
+                  cooldownTicks={160}
+                  onEngineStop={() => {
+                    if (!initialFitDone) {
+                      fitGraphInView(700);
+                      setInitialFitDone(true);
+                    }
+                  }}
+                  d3VelocityDecay={0.8}
                   showNavInfo={false}
                 />
               </GraphErrorBoundary>
@@ -623,6 +875,69 @@ export const NetworkGraph = () => {
 
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gray-950/20">
               <div className="space-y-6">
+                {relationSummary && (
+                  <div className="rounded-xl border border-sky-500/20 bg-sky-500/10 p-4">
+                    <div className="flex items-center justify-between gap-3 border-b border-sky-500/20 pb-3">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-sky-300">Cluster Relation</p>
+                        <p className="mt-1 text-sm font-semibold text-white">{relationSummary.sourceNodeLabel}</p>
+                      </div>
+                      <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-2 py-1 text-[10px] font-bold uppercase text-sky-200">
+                        {relationSummary.bridgeEdgeCount} bridges
+                      </span>
+                    </div>
+
+                    <div className="mt-3 space-y-3 text-xs text-gray-300">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-lg border border-white/5 bg-black/10 p-3">
+                          <p className="text-[10px] uppercase tracking-wide text-gray-400">Bridge Nodes</p>
+                          <p className="mt-1 text-lg font-semibold text-white">{relationSummary.bridgeNodeCount}</p>
+                        </div>
+                        <div className="rounded-lg border border-white/5 bg-black/10 p-3">
+                          <p className="text-[10px] uppercase tracking-wide text-gray-400">Bridge Edges</p>
+                          <p className="mt-1 text-lg font-semibold text-white">{relationSummary.bridgeEdgeCount}</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-400">Related Device Clusters</p>
+                        {relationSummary.relatedDeviceLabels.length > 0 ? (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {relationSummary.relatedDeviceLabels.map((label) => (
+                              <span
+                                key={label}
+                                className="rounded-full border border-sky-400/20 bg-sky-400/10 px-2 py-1 text-[10px] text-sky-100"
+                              >
+                                {label}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-gray-400">No secondary device cluster identified yet.</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-400">Bridge Points</p>
+                        {relationSummary.intermediateLabels.length > 0 ? (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {relationSummary.intermediateLabels.map((label) => (
+                              <span
+                                key={label}
+                                className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-gray-200"
+                              >
+                                {label}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-gray-400">Direct device-to-device relation only.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {aiHistory.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center py-10">
                     <div className="w-16 h-16 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center mb-4">
@@ -633,27 +948,13 @@ export const NetworkGraph = () => {
                 ) : (
                   aiHistory.map((item, idx) => (
                     <div key={idx} className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-4 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-300">
-                      {/* View Case File button for Case nodes */}
-                      {item.type === 'Case' && item.status === 'done' && (
-                        <button
-                          onClick={() => {
-                            const linkedCaseId = item.properties?.id;
-                            if (linkedCaseId) navigate(`/io/case/${linkedCaseId}`);
-                          }}
-                          className="w-full mb-3 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-900/50 to-indigo-900/50 hover:from-purple-800/60 hover:to-indigo-800/60 border border-purple-500/30 rounded-lg text-purple-300 text-xs font-bold transition-all duration-200 group"
-                        >
-                          <FolderOpen className="w-3.5 h-3.5" />
-                          View Case File
-                          <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100 transition" />
-                        </button>
-                      )}
                       <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-700/50">
                         <div className="flex items-center gap-2">
-                          <div className={`p-1.5 rounded-lg border ${item.type === 'Case' ? 'bg-yellow-900/30 border-yellow-500/20' : 'bg-blue-900/30 border-blue-500/20'}`}>
-                            {item.type === 'Case' ? <FolderOpen className="w-3.5 h-3.5 text-yellow-400" /> : <Search className="w-3.5 h-3.5 text-blue-400" />}
+                          <div className="p-1.5 bg-blue-900/30 rounded-lg border border-blue-500/20">
+                            <Search className="w-3.5 h-3.5 text-blue-400" />
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{item.type === 'Case' ? 'Cross-Case Intelligence' : 'Investigation Log'}</p>
+                            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Investigation Log</p>
                             <p className="text-xs font-bold text-gray-200 truncate max-w-[140px]">{item.label}</p>
                           </div>
                         </div>

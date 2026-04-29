@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Database, Filter, Search, Download, MessageCircle, Activity, Upload } from 'lucide-react';
+import { ArrowLeft, Database, Filter, Search, Download, MessageCircle, Activity, Upload, X, Shield } from 'lucide-react';
 import { caseAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { Navbar } from '../../components/Navbar';
@@ -46,14 +46,28 @@ export const EntitiesView = () => {
   const [activeTab, setActiveTab] = useState<'entities' | 'chats'>('entities');
   const [selectedType, setSelectedType] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [chatSearchTerm, setChatSearchTerm] = useState('');
+  const [senderSearch, setSenderSearch] = useState('');
+  const [receiverSearch, setReceiverSearch] = useState('');
+  const [isSenderFocused, setIsSenderFocused] = useState(false);
+  const [isReceiverFocused, setIsReceiverFocused] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<Chat | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalEntities, setTotalEntities] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [chatPage, setChatPage] = useState(1);
   const [totalChats, setTotalChats] = useState(0);
   const [totalChatPages, setTotalChatPages] = useState(0);
+  const [summaryEntityTotal, setSummaryEntityTotal] = useState(0);
+  const [summaryChatTotal, setSummaryChatTotal] = useState(0);
+  const [summaryConversationTotal, setSummaryConversationTotal] = useState(0);
+  const [summaryLoaded, setSummaryLoaded] = useState(false);
   const { user } = useAuthStore();
   const rolePrefix = user?.role === 'supervisor' ? '/supervisor' : '/io';
+
+  useEffect(() => {
+    loadSummary();
+  }, [caseId]);
 
   useEffect(() => {
     loadEntities();
@@ -64,6 +78,67 @@ export const EntitiesView = () => {
       loadChats();
     }
   }, [caseId, activeTab, chatPage]);
+
+  const loadSummaryFallback = async () => {
+    const parsedCaseId = parseInt(caseId!);
+
+    const [entitiesResponse, chatsResponse] = await Promise.allSettled([
+      caseAPI.getCaseEntities(parsedCaseId, { page: 1, limit: 1 }),
+      caseAPI.getCaseChats(parsedCaseId, { page: 1, limit: 1 })
+    ]);
+
+    if (entitiesResponse.status === 'fulfilled') {
+      const entitiesData = entitiesResponse.value.data.data;
+      setSummaryEntityTotal(entitiesData.pagination.total || 0);
+      setEntityTypes(entitiesData.summary?.types || []);
+    } else {
+      setSummaryEntityTotal(0);
+      setEntityTypes([]);
+    }
+
+    if (chatsResponse.status === 'fulfilled') {
+      const chatsData = chatsResponse.value.data.data;
+      setSummaryChatTotal(chatsData.pagination.total || 0);
+      setSummaryConversationTotal(chatsData.summary?.conversations || 0);
+    } else {
+      setSummaryChatTotal(0);
+      setSummaryConversationTotal(0);
+    }
+
+    setSummaryLoaded(true);
+  };
+
+  const loadSummary = async () => {
+    try {
+      setSummaryLoaded(false);
+      const response = await caseAPI.getCaseExtractedDataSummary(parseInt(caseId!));
+      const data = response.data.data;
+
+      setSummaryEntityTotal(data.entities.total);
+      setSummaryChatTotal(data.chats.total);
+      setSummaryConversationTotal(data.chats.conversations);
+      setEntityTypes(data.entities.types);
+      setSummaryLoaded(true);
+    } catch (error: any) {
+      console.error('Failed to load extracted data summary:', error);
+
+      const message = error.response?.data?.message || '';
+      const isMissingSummaryRoute =
+        error.response?.status === 404 && message.includes('Route not found');
+
+      if (isMissingSummaryRoute) {
+        await loadSummaryFallback();
+      } else if (error.response?.status === 404 && message.includes('not found')) {
+        setSummaryEntityTotal(0);
+        setSummaryChatTotal(0);
+        setSummaryConversationTotal(0);
+        setEntityTypes([]);
+        setSummaryLoaded(true);
+      } else {
+        setError(error.response?.data?.message || error.message || 'Failed to load extracted data summary');
+      }
+    }
+  };
 
   const loadEntities = async () => {
     try {
@@ -80,7 +155,6 @@ export const EntitiesView = () => {
       const data = response.data.data;
 
       setEntities(data.entities);
-      setEntityTypes(data.summary.types);
       setTotalEntities(data.pagination.total);
       setTotalPages(data.pagination.pages);
     } catch (error: any) {
@@ -134,6 +208,61 @@ export const EntitiesView = () => {
     entity.entityValue && entity.entityValue.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredConversations = Object.entries(conversations).filter(([conversationKey, messages]) => {
+    const globalTerm = chatSearchTerm.toLowerCase();
+    const senderTerm = senderSearch.toLowerCase();
+    const receiverTerm = receiverSearch.toLowerCase();
+
+    // Cumulative filtering
+    const matchesGlobal = !chatSearchTerm || 
+                         conversationKey.toLowerCase().includes(globalTerm) ||
+                         messages.some(m => m.message && m.message.toLowerCase().includes(globalTerm));
+    
+    const matchesSender = !senderSearch || 
+                         messages.some(m => m.sender.toLowerCase().includes(senderTerm));
+                         
+    const matchesReceiver = !receiverSearch || 
+                           messages.some(m => m.receiver.toLowerCase().includes(receiverTerm));
+
+    return matchesGlobal && matchesSender && matchesReceiver;
+  });
+
+  const senderSuggestions = useMemo(() => {
+    const senderCounts: Record<string, number> = {};
+    Object.values(conversations).forEach(messages => {
+      messages.forEach(msg => {
+        if (msg.sender) {
+          senderCounts[msg.sender] = (senderCounts[msg.sender] || 0) + 1;
+        }
+      });
+    });
+
+    return Object.entries(senderCounts)
+      .sort((a, b) => b[1] - a[1]) // Sort by count descending
+      .map(([sender, count]) => ({ sender, count }));
+  }, [conversations]);
+
+  const receiverSuggestions = useMemo(() => {
+    const receiverCounts: Record<string, number> = {};
+    const senderLower = senderSearch.toLowerCase();
+    
+    Object.values(conversations).forEach(messages => {
+      messages.forEach(msg => {
+        // If a sender filter is active, only find people they SENT messages to
+        const isFromSelectedSender = !senderSearch || msg.sender.toLowerCase().includes(senderLower);
+        
+        if (isFromSelectedSender && msg.receiver) {
+          receiverCounts[msg.receiver] = (receiverCounts[msg.receiver] || 0) + 1;
+        }
+      });
+    });
+
+    return Object.entries(receiverCounts)
+      .sort((a, b) => b[1] - a[1]) // Sort by count descending
+      .map(([receiver, count]) => ({ receiver, count }));
+  }, [conversations, senderSearch]);
+
+  // Keep topSenders for the quick-access badges but derived from the more robust logic
   const exportEntities = () => {
     const getFriendlyType = (type: string) => {
       switch (type) {
@@ -169,6 +298,23 @@ export const EntitiesView = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const totalExtractedItems = summaryEntityTotal + summaryChatTotal;
+  const headerTitle = summaryLoaded
+    ? totalExtractedItems > 0
+      ? 'Extracted Data'
+      : 'Forensic Analysis Ready'
+    : 'Loading Extracted Data';
+
+  const headerDescription = !summaryLoaded
+    ? `Loading extracted entities and conversations for case #${caseId}`
+    : totalExtractedItems === 0
+      ? `Case #${caseId} is ready for forensic data extraction`
+      : summaryEntityTotal > 0 && summaryChatTotal > 0
+        ? `Entities and chat messages extracted from case #${caseId}`
+        : summaryEntityTotal > 0
+          ? `Entities extracted from case #${caseId}`
+          : `Chat messages extracted from case #${caseId}`;
+
   if (error) {
     return (
         <div className="mx-auto max-w-7xl py-8">
@@ -200,45 +346,45 @@ export const EntitiesView = () => {
   }
 
   return (
-      <div className="mx-auto max-w-7xl py-8">
-        <button
-          onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Case
-        </button>
-
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Database className="w-6 h-6 text-blue-600" />
+      <div className="mx-auto max-w-7xl py-6">
+        {/* Header Card */}
+        <div className="bg-gradient-to-r from-white to-gray-50 rounded-lg shadow border-l-4 border-blue-500 p-6 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start md:items-center gap-4">
+              <button
+                onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
+                className="p-2 text-gray-500 hover:text-blue-600 bg-gray-100 hover:bg-blue-50 rounded-full transition flex-shrink-0 mt-1 md:mt-0"
+                title="Back to Case"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {totalEntities + totalChats > 0 ? 'Extracted Data' : 'Forensic Analysis Ready'}
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <Database className="w-6 h-6 text-blue-600" />
+                  {headerTitle}
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  {totalEntities + totalChats > 0
-                    ? `All entities and chat messages extracted from case #${caseId}`
-                    : `Case #${caseId} is ready for forensic data extraction`}
+                  {headerDescription}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">
-                Total: {totalEntities + totalChats} items
+            
+            <div className="flex items-center gap-3 self-start md:self-auto">
+              <span className="text-sm font-medium bg-blue-100 text-blue-800 px-3 py-1 rounded-full border border-blue-200">
+                {summaryLoaded ? `${totalExtractedItems} Total Items` : 'Loading totals...'}
               </span>
-              {totalEntities + totalChats > 0 && (
+              {summaryLoaded && totalExtractedItems > 0 && (
                 <button
                   onClick={exportEntities}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+                  className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition flex items-center gap-2 shadow-sm"
                 >
                   <Download className="w-4 h-4" />
                   Export CSV
                 </button>
               )}
             </div>
-          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
 
           {/* Tabs */}
           <div className="border-b border-gray-200 mb-6">
@@ -252,7 +398,7 @@ export const EntitiesView = () => {
                 }`}
               >
                 <Activity className="w-4 h-4 inline mr-2" />
-                Entities ({totalEntities})
+                Entities ({summaryEntityTotal})
               </button>
               <button
                 onClick={() => setActiveTab('chats')}
@@ -263,7 +409,7 @@ export const EntitiesView = () => {
                 }`}
               >
                 <MessageCircle className="w-4 h-4 inline mr-2" />
-                Chat Messages ({totalChats})
+                Chat Messages ({summaryLoaded ? summaryChatTotal : 0})
               </button>
             </nav>
           </div>
@@ -481,7 +627,130 @@ export const EntitiesView = () => {
             </>
           ) : (
             /* Chats View */
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {summaryLoaded && summaryConversationTotal > 0 && (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                  {summaryChatTotal} messages across {summaryConversationTotal} conversations
+                </div>
+              )}
+              {/* Chat Filters */}
+              {Object.keys(conversations).length > 0 && (
+                <div className="space-y-4 mb-6">
+                  {/* Global Search */}
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1 relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search by keywords in any message..."
+                        value={chatSearchTerm}
+                        onChange={(e) => setChatSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    {(chatSearchTerm || senderSearch || receiverSearch) && (
+                      <button
+                        onClick={() => {
+                          setChatSearchTerm('');
+                          setSenderSearch('');
+                          setReceiverSearch('');
+                        }}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center gap-2 hover:text-gray-900 border border-gray-200"
+                      >
+                        <X className="w-4 h-4" />
+                        Clear All Filters
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Specific Filters Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* FROM Filter */}
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 text-xs font-bold z-10">FROM</div>
+                      <input
+                        type="text"
+                        placeholder="Sender name or number..."
+                        value={senderSearch}
+                        onFocus={() => setIsSenderFocused(true)}
+                        onBlur={() => setTimeout(() => setIsSenderFocused(false), 200)}
+                        onChange={(e) => {
+                          setSenderSearch(e.target.value);
+                          setChatPage(1);
+                        }}
+                        className="w-full pl-14 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      />
+                      {isSenderFocused && senderSuggestions.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                          {senderSuggestions
+                            .filter(s => !senderSearch || s.sender.toLowerCase().includes(senderSearch.toLowerCase()))
+                            .map(({ sender, count }) => (
+                              <button
+                                key={sender}
+                                onMouseDown={() => {
+                                  setSenderSearch(sender);
+                                  setChatPage(1);
+                                  // Auto-focus receiver if it's currently empty
+                                  if (!receiverSearch) {
+                                    const nextInput = document.getElementById('receiver-input');
+                                    nextInput?.focus();
+                                  }
+                                }}
+                                className="w-full text-left px-4 py-2 hover:bg-blue-50 transition flex items-center justify-between group"
+                              >
+                                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700">{sender}</span>
+                                <span className="text-[10px] text-gray-400 font-bold bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 group-hover:bg-blue-100 group-hover:border-blue-200 group-hover:text-blue-600">
+                                  {count} MSGS
+                                </span>
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* TO Filter */}
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 text-xs font-bold z-10">TO</div>
+                      <input
+                        id="receiver-input"
+                        type="text"
+                        placeholder={senderSearch ? `Communitated with ${senderSearch}...` : "Receiver name or number..."}
+                        value={receiverSearch}
+                        onFocus={() => setIsReceiverFocused(true)}
+                        onBlur={() => setTimeout(() => setIsReceiverFocused(false), 200)}
+                        onChange={(e) => {
+                          setReceiverSearch(e.target.value);
+                          setChatPage(1);
+                        }}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      />
+                      {isReceiverFocused && receiverSuggestions.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                          {receiverSuggestions
+                            .filter(r => !receiverSearch || r.receiver.toLowerCase().includes(receiverSearch.toLowerCase()))
+                            .map(({ receiver, count }) => (
+                              <button
+                                key={receiver}
+                                onMouseDown={() => {
+                                  setReceiverSearch(receiver);
+                                  setChatPage(1);
+                                }}
+                                className="w-full text-left px-4 py-2 hover:bg-blue-50 transition flex items-center justify-between group"
+                              >
+                                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700">{receiver}</span>
+                                <span className="text-[10px] text-gray-400 font-bold bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 group-hover:bg-blue-100 group-hover:border-blue-200 group-hover:text-blue-600">
+                                  {count} MSGS
+                                </span>
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                </div>
+              )}
+
               {Object.keys(conversations).length === 0 ? (
                 <div className="text-center py-12">
                   <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-8 border border-green-200">
@@ -492,15 +761,21 @@ export const EntitiesView = () => {
                     </p>
                     <button
                       onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
-                      className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                      className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-sm"
                     >
                       <Upload className="w-4 h-4 mr-2" />
                       Upload UFDR File
                     </button>
                   </div>
                 </div>
+              ) : filteredConversations.length === 0 ? (
+                <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-gray-900">No conversations match</p>
+                  <p className="text-sm mt-1">Try adjusting your filters.</p>
+                </div>
               ) : (
-                Object.entries(conversations).map(([conversationKey, messages]) => (
+                filteredConversations.map(([conversationKey, messages]) => (
                   <div key={conversationKey} className="bg-gray-50 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <MessageCircle className="w-5 h-5 text-blue-600" />
@@ -510,8 +785,21 @@ export const EntitiesView = () => {
                       </span>
                     </div>
                     <div className="space-y-2">
-                      {messages.slice().reverse().map((chat) => (
-                        <div key={chat.id} className="bg-white rounded p-3 shadow-sm">
+                      {messages
+                        .slice()
+                        .reverse()
+                        .filter(chat => {
+                          const globalMatch = !chatSearchTerm || (chat.message && chat.message.toLowerCase().includes(chatSearchTerm.toLowerCase()));
+                          const senderMatch = !senderSearch || chat.sender.toLowerCase().includes(senderSearch.toLowerCase());
+                          const receiverMatch = !receiverSearch || chat.receiver.toLowerCase().includes(receiverSearch.toLowerCase());
+                          return globalMatch && senderMatch && receiverMatch;
+                        })
+                        .map((chat) => (
+                        <div 
+                          key={chat.id} 
+                          onClick={() => setSelectedMessage(chat)}
+                          className="bg-white rounded p-3 shadow-sm border border-transparent hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group"
+                        >
                           <div className="flex items-start justify-between mb-1">
                             <div className="flex items-center gap-2">
                               <EvidenceChip
@@ -540,18 +828,19 @@ export const EntitiesView = () => {
                                 compact
                               />
                             </div>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 group-hover:text-blue-600 transition-colors">
                               {new Date(chat.timestamp).toLocaleString('en-IN', {
                                 timeZone: 'Asia/Kolkata',
                                 year: 'numeric',
                                 month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
-                                minute: '2-digit'
+                                minute: '2-digit',
+                                hour12: true
                               })}
                             </span>
                           </div>
-                          <p className="text-gray-700">{chat.message}</p>
+                          <p className="text-gray-700 line-clamp-3">{chat.message}</p>
                         </div>
                       ))}
                     </div>
@@ -589,6 +878,89 @@ export const EntitiesView = () => {
             </div>
           )}
         </div>
+        
+        {/* Message Detail Modal */}
+        {selectedMessage && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" onClick={() => setSelectedMessage(null)}>
+            <div 
+              className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col border border-gray-200"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="bg-gray-900 px-6 py-4 flex items-center justify-between text-white border-b border-gray-800">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-blue-400" />
+                  Evidence Details
+                </h3>
+                <button 
+                  onClick={() => setSelectedMessage(null)}
+                  className="p-1 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[70vh]">
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                    <span className="text-xs text-gray-500 uppercase tracking-wider font-bold block mb-1">Sender</span>
+                    <span className="font-semibold text-gray-900 text-lg">{selectedMessage.sender}</span>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                    <span className="text-xs text-gray-500 uppercase tracking-wider font-bold block mb-1">Receiver</span>
+                    <span className="font-semibold text-gray-900 text-lg">{selectedMessage.receiver}</span>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <span className="text-xs text-gray-500 uppercase tracking-wider font-bold block mb-2">Message Body</span>
+                  <div className="bg-white p-5 rounded-lg border-2 border-blue-50 text-gray-800 whitespace-pre-wrap shadow-sm">
+                    {selectedMessage.message}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6 text-sm border-t border-gray-100 pt-6">
+                  <div>
+                    <span className="text-gray-500 font-medium block mb-1 flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5" />
+                      Timestamp
+                    </span>
+                    <span className="font-semibold text-gray-900">
+                      {new Date(selectedMessage.timestamp).toLocaleString('en-IN', {
+                        timeZone: 'Asia/Kolkata',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: true
+                      })}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 font-medium block mb-1 flex items-center gap-1.5">
+                      <Database className="w-3.5 h-3.5" />
+                      App Source
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600 text-white font-bold text-[10px] uppercase tracking-wide">
+                      {selectedMessage.appName || 'Unknown'}
+                    </span>
+                  </div>
+                  <div className="col-span-2 mt-2">
+                    <span className="text-gray-400 text-[10px] uppercase tracking-widest block mb-2 font-bold">Forensic Metadata Reference</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded border border-gray-200 flex-1">
+                        RECORD_UUID: {selectedMessage.id}
+                      </span>
+                      <span className="font-mono text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded border border-gray-200">
+                        SOURCE_ID: {selectedMessage.dataSourceId}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
   );
 };

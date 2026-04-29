@@ -42,11 +42,23 @@ export const connectDatabase = async () => {
     await sequelize.authenticate();
     logger.info('Database connection established successfully');
 
-    // Sync models in development
+    // This project already owns its schema via SQL init scripts. Automatic
+    // Sequelize sync is opt-in so local startup does not try to rewrite
+    // enum-backed columns in an existing database.
     if (process.env.NODE_ENV === 'development') {
-      // Temporarily disabled due to sync conflicts with self-referential foreign keys
-      // await sequelize.sync();
-      logger.info('Database schema sync skipped');
+      const shouldSyncSchema = process.env.DB_SYNC_SCHEMA === 'true';
+      const shouldAlterSchema = process.env.DB_SYNC_ALTER === 'true';
+
+      if (shouldSyncSchema || shouldAlterSchema) {
+        await sequelize.sync(shouldAlterSchema ? { alter: true } : undefined);
+        logger.info(
+          shouldAlterSchema
+            ? 'Database schema synced with { alter: true } (development mode)'
+            : 'Database schema synced without alter (development mode)'
+        );
+      } else {
+        logger.info('Database schema sync skipped (set DB_SYNC_SCHEMA=true to enable)');
+      }
     }
   } catch (error) {
     logger.error('Unable to connect to database:', error);

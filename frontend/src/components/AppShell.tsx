@@ -17,6 +17,7 @@ type NavItem = {
   icon: typeof LayoutDashboard;
   to?: string;
   disabled?: boolean;
+  isActive?: (pathname: string) => boolean;
 };
 
 const buildCaseRoute = (
@@ -36,35 +37,69 @@ export const AppShell = () => {
   const hasCaseContext = Boolean(caseId);
 
   const adminItems: NavItem[] = [
-    { label: 'Dashboard', icon: LayoutDashboard, to: '/admin' },
-    { label: 'Users', icon: Users, to: '/admin/users' },
-    { label: 'Cases', icon: FolderOpen, to: '/admin/cases' },
+    {
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      to: '/admin',
+      isActive: (pathname) => pathname === '/admin',
+    },
+    {
+      label: 'Users',
+      icon: Users,
+      to: '/admin/users',
+      isActive: (pathname) => pathname === '/admin/users' || pathname.startsWith('/admin/users/'),
+    },
+    {
+      label: 'Cases',
+      icon: FolderOpen,
+      to: '/admin/cases',
+      isActive: (pathname) => pathname === '/admin/cases' || pathname.startsWith('/admin/cases/'),
+    },
   ];
 
   const rolePrefix = user?.role === 'supervisor' ? '/supervisor' : '/io';
   const dashboardPath = user?.role === 'supervisor' ? '/supervisor' : '/io';
-  const casesPath = user?.role === 'supervisor' ? '/supervisor/cases' : '/io';
+  const casesPath = user?.role === 'supervisor' ? '/supervisor/cases' : '/io/cases';
+  const caseDetailPrefix = `${rolePrefix}/case/`;
 
   const officerItems: NavItem[] = [
-    { label: 'Dashboard', icon: LayoutDashboard, to: dashboardPath },
-    { label: 'Cases', icon: FolderOpen, to: casesPath },
+    {
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      to: dashboardPath,
+      isActive: (pathname) => pathname === dashboardPath,
+    },
+    {
+      label: 'Cases',
+      icon: FolderOpen,
+      to: casesPath,
+      isActive: (pathname) =>
+        pathname === casesPath ||
+        (pathname.startsWith(caseDetailPrefix) &&
+          !pathname.includes('/query') &&
+          !pathname.includes('/bookmarks') &&
+          !pathname.includes('/report')),
+    },
     {
       label: 'Queries',
       icon: MessageSquareText,
       to: buildCaseRoute(rolePrefix, caseId, 'query'),
       disabled: !hasCaseContext,
+      isActive: (pathname) => pathname.includes('/query'),
     },
     {
       label: 'Bookmarks',
       icon: BookMarked,
       to: buildCaseRoute(rolePrefix, caseId, 'bookmarks'),
       disabled: !hasCaseContext,
+      isActive: (pathname) => pathname.includes('/bookmarks'),
     },
     {
       label: 'Reports',
       icon: FileText,
       to: buildCaseRoute(rolePrefix, caseId, 'report'),
       disabled: !hasCaseContext,
+      isActive: (pathname) => pathname.includes('/report'),
     },
   ];
 
@@ -72,9 +107,11 @@ export const AppShell = () => {
 
   const renderNavItem = (item: NavItem) => {
     const Icon = item.icon;
-    const isActive = item.to
-      ? location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
-      : false;
+    const isActive = item.isActive
+      ? item.isActive(location.pathname)
+      : item.to
+        ? location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
+        : false;
 
     if (!item.to || item.disabled) {
       return (

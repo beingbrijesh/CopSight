@@ -287,5 +287,28 @@ CREATE TRIGGER update_data_sources_updated_at BEFORE UPDATE ON data_sources FOR 
 DROP TRIGGER IF EXISTS update_cross_case_links_updated_at ON cross_case_links;
 CREATE TRIGGER update_cross_case_links_updated_at BEFORE UPDATE ON cross_case_links FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_notifications_updated_at ON notifications;
-CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Create DataSourceRecords table for the high-throughput streaming pipeline
+CREATE TABLE IF NOT EXISTS "DataSourceRecords" (
+    id SERIAL PRIMARY KEY,
+    "caseId" INTEGER REFERENCES cases(id) NOT NULL,
+    "traceId" UUID NOT NULL,
+    "sourceType" VARCHAR(50),
+    "content" TEXT,
+    "sender" VARCHAR(50),
+    "receiver" VARCHAR(50),
+    "timestamp" TIMESTAMP,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_dsr_case_id ON "DataSourceRecords"("caseId");
+CREATE INDEX IF NOT EXISTS idx_dsr_trace_id ON "DataSourceRecords"("traceId");
+CREATE INDEX IF NOT EXISTS idx_dsr_timestamp ON "DataSourceRecords"("timestamp");
+CREATE INDEX IF NOT EXISTS idx_dsr_sender ON "DataSourceRecords"("sender");
+CREATE INDEX IF NOT EXISTS idx_dsr_receiver ON "DataSourceRecords"("receiver");
+
+-- Create trigger for updated_at on DataSourceRecords
+DROP TRIGGER IF EXISTS update_dsr_updated_at ON "DataSourceRecords";
+CREATE TRIGGER update_dsr_updated_at BEFORE UPDATE ON "DataSourceRecords" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+

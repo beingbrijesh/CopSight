@@ -22,7 +22,7 @@ export const CaseDetail = () => {
   const [fileJustProcessed, setFileJustProcessed] = useState(false);
   const { user } = useAuthStore();
   const rolePrefix = user?.role === 'supervisor' ? '/supervisor' : '/io';
-  const casesPath = user?.role === 'supervisor' ? '/supervisor/cases' : '/io';
+  const casesPath = user?.role === 'supervisor' ? '/supervisor/cases' : '/io/cases';
   const pollingInterval = useRef<number | null>(null);
 
   useEffect(() => {
@@ -533,9 +533,9 @@ export const CaseDetail = () => {
                   <div className="text-sm text-red-700 bg-red-100 p-3 rounded mt-2">
                     <p className="font-medium mb-1">Common issues:</p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li>File must be a valid UFDR/Cellebrite XML export</li>
+                      <li>File must be a valid UFDR, Cellebrite XML, or JSON export</li>
                       <li>Ensure the file is not corrupted</li>
-                      <li>Check that you're uploading the correct file format (.xml, .ufdr)</li>
+                      <li>Check that you're uploading a supported format (.xml, .ufdr, .json)</li>
                     </ul>
                   </div>
                 </div>

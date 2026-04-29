@@ -17,6 +17,10 @@ class UFDRParser {
     });
   }
 
+  logRawMessage(message) {
+    console.log('[RAW MESSAGE]', message);
+  }
+
   /**
    * More lenient XML sanitation to fix forensic tool export bugs
    * (e.g. redundant </ufdr:http> tags identified in Job 7)
@@ -218,16 +222,22 @@ class UFDRParser {
 
       // Chats/Messages
       if (data.chats && Array.isArray(data.chats)) {
-        dataSources.push({
-          sourceType: 'chat',
-          appName: 'Chat',
-          data: data.chats.map((chat, index) => ({
+        const chatData = data.chats.map((chat, index) => {
+          const message = {
             id: `chat_${index}`,
             sender: chat.sender,
             receiver: chat.receiver,
             message: chat.message, // Use 'message' as content field
             timestamp: chat.timestamp
-          })),
+          };
+          this.logRawMessage(message);
+          return message;
+        });
+
+        dataSources.push({
+          sourceType: 'chat',
+          appName: 'Chat',
+          data: chatData,
           totalRecords: data.chats.length
         });
       }
@@ -556,16 +566,20 @@ class UFDRParser {
    */
   parseMessages(messages) {
     const messageArray = this.normalizeArray(messages);
-    return messageArray.map((msg, index) => ({
-      id: msg.id || `msg_${index}`,
-      type: msg.type || 'sms',
-      direction: msg.direction || (msg.type === 'sent' ? 'outgoing' : 'incoming'),
-      phoneNumber: msg.address || msg.phoneNumber || msg.number,
-      content: msg.body || msg.text || msg.content,
-      timestamp: msg.date || msg.timestamp || new Date(),
-      read: msg.read === 'true' || msg.read === true,
-      threadId: msg.threadId || null
-    }));
+    return messageArray.map((msg, index) => {
+      const message = {
+        id: msg.id || `msg_${index}`,
+        type: msg.type || 'sms',
+        direction: msg.direction || (msg.type === 'sent' ? 'outgoing' : 'incoming'),
+        phoneNumber: msg.address || msg.phoneNumber || msg.number,
+        content: msg.body || msg.text || msg.content,
+        timestamp: msg.date || msg.timestamp || new Date(),
+        read: msg.read === 'true' || msg.read === true,
+        threadId: msg.threadId || null
+      };
+      this.logRawMessage(message);
+      return message;
+    });
   }
 
   /**
@@ -604,16 +618,20 @@ class UFDRParser {
    */
   parseWhatsApp(whatsapp) {
     const msgArray = this.normalizeArray(whatsapp);
-    return msgArray.map((msg, index) => ({
-      id: msg.id || `wa_${index}`,
-      chatId: msg.chatId || msg.jid,
-      sender: msg.sender || msg.from,
-      content: msg.message || msg.text || msg.content,
-      timestamp: msg.timestamp || msg.date || new Date(),
-      mediaType: msg.mediaType || msg.type || 'text',
-      mediaPath: msg.mediaPath || msg.media || null,
-      isGroup: msg.isGroup === 'true' || msg.isGroup === true
-    }));
+    return msgArray.map((msg, index) => {
+      const message = {
+        id: msg.id || `wa_${index}`,
+        chatId: msg.chatId || msg.jid,
+        sender: msg.sender || msg.from,
+        content: msg.message || msg.text || msg.content,
+        timestamp: msg.timestamp || msg.date || new Date(),
+        mediaType: msg.mediaType || msg.type || 'text',
+        mediaPath: msg.mediaPath || msg.media || null,
+        isGroup: msg.isGroup === 'true' || msg.isGroup === true
+      };
+      this.logRawMessage(message);
+      return message;
+    });
   }
 
   /**
@@ -621,15 +639,19 @@ class UFDRParser {
    */
   parseTelegram(telegram) {
     const msgArray = this.normalizeArray(telegram);
-    return msgArray.map((msg, index) => ({
-      id: msg.id || `tg_${index}`,
-      chatId: msg.chatId,
-      sender: msg.sender || msg.from,
-      content: msg.message || msg.text || msg.content,
-      timestamp: msg.timestamp || msg.date || new Date(),
-      mediaType: msg.mediaType || msg.type || 'text',
-      mediaPath: msg.mediaPath || msg.media || null
-    }));
+    return msgArray.map((msg, index) => {
+      const message = {
+        id: msg.id || `tg_${index}`,
+        chatId: msg.chatId,
+        sender: msg.sender || msg.from,
+        content: msg.message || msg.text || msg.content,
+        timestamp: msg.timestamp || msg.date || new Date(),
+        mediaType: msg.mediaType || msg.type || 'text',
+        mediaPath: msg.mediaPath || msg.media || null
+      };
+      this.logRawMessage(message);
+      return message;
+    });
   }
 
   /**
@@ -645,7 +667,7 @@ class UFDRParser {
       for (let i = 0; i < messageArray.length; i++) {
         const msg = messageArray[i];
 
-        messages.push({
+        const message = {
           id: msg['ufdr:id'] || msg.id || `sms_${i}`,
           type: 'sms',
           direction: msg['ufdr:direction'] || msg.direction || 'incoming',
@@ -653,7 +675,9 @@ class UFDRParser {
           content: msg['ufdr:body'] || msg.body || msg.content || msg.text,
           timestamp: msg['ufdr:timestamp'] || msg.timestamp || new Date(),
           read: (msg['ufdr:status'] || msg.status) === 'read' || false
-        });
+        };
+        this.logRawMessage(message);
+        messages.push(message);
       }
 
       logger.info(`Extracted ${messages.length} SMS messages from UFDR XML`);

@@ -155,6 +155,8 @@ export const caseAPI = {
   getCase: (caseId: number) => api.get(`/cases/${caseId}`),
   
   updateCase: (caseId: number, data: any) => api.put(`/cases/${caseId}`, data),
+
+  getCaseExtractedDataSummary: (caseId: number) => api.get(`/cases/${caseId}/extracted-data-summary`),
   
   getCaseEntities: (caseId: number, params?: any) => api.get(`/cases/${caseId}/entities`, { params }),
   

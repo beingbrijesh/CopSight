@@ -65,7 +65,8 @@ try {
           appName: source.appName,
           totalRecords: source.totalRecords,
           processedRecords: 0,
-          status: 'processing'
+          status: 'processing',
+          data: source.data
         });
 
         logger.info(`Processing ${source.sourceType}: ${source.totalRecords} records`);

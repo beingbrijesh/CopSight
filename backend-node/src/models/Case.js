@@ -21,12 +21,15 @@ const Case = sequelize.define('Case', {
     type: DataTypes.TEXT
   },
   status: {
-    type: DataTypes.ENUM(
-      'created', 'active', 'processing', 'ready_for_analysis',
-      'under_review', 'closed', 'archived'
-    ),
+    type: DataTypes.STRING(32),
     allowNull: false,
-    defaultValue: 'created'
+    defaultValue: 'created',
+    validate: {
+      isIn: [[
+        'created', 'active', 'processing', 'ready_for_analysis',
+        'under_review', 'closed', 'archived'
+      ]]
+    }
   },
   assignedTo: {
     type: DataTypes.INTEGER,
@@ -46,7 +49,10 @@ const Case = sequelize.define('Case', {
     type: DataTypes.STRING(100)
   },
   priority: {
-    type: DataTypes.ENUM('low', 'medium', 'high', 'critical'),
+    type: DataTypes.STRING(20),
+    validate: {
+      isIn: [['low', 'medium', 'high', 'critical']]
+    },
     defaultValue: 'medium'
   },
   caseType: {

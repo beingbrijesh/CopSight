@@ -27,7 +27,8 @@ import { connectDatabase } from './config/database.js';
 import { testDatabaseConnections, closeDatabaseConnections } from './config/databases.js';
 import { initializeIndices } from './services/search/elasticsearchService.js';
 import logger from './config/logger.js';
-import './workers/processingWorker.js'; // Start background worker
+import './workers/processingWorker.js'; // Start legacy background worker
+import './workers/pipelineWorker.js';   // Start NEW streaming ingestion worker
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
@@ -43,7 +44,8 @@ import integrationRoutes from './routes/integrationRoutes.js';
 import performanceRoutes from './routes/performanceRoutes.js';
 import graphRoutes from './routes/graphRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
-import analysisRoutes from './routes/analysisRoutes.js';
+import pipelineRoutes from './routes/pipelineRoutes.js';
+import intelligenceQueryRoutes from './routes/queryRoutes.js'; // The multi-db query system
 
 // Import middleware
 import { apiRateLimit, authRateLimit, searchRateLimit, uploadRateLimit, aiRateLimit } from './middleware/rateLimit.js';
@@ -56,7 +58,7 @@ const PORT = process.env.PORT || 8080;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(','),
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -101,7 +103,27 @@ app.use('/api/integration', apiRateLimit, performanceMiddleware, integrationRout
 app.use('/api/performance', apiRateLimit, performanceMiddleware, performanceRoutes);
 app.use('/api/graph', apiRateLimit, performanceMiddleware, graphRoutes);
 app.use('/api/notifications', apiRateLimit, performanceMiddleware, notificationRoutes);
-app.use('/api/analysis', aiRateLimit, performanceMiddleware, analysisRoutes);
+app.use('/api/pipeline', uploadRateLimit, performanceMiddleware, pipelineRoutes);
+app.use('/api/intelligence', searchRateLimit, performanceMiddleware, intelligenceQueryRoutes);
+logger.info('✓ Notification and Pipeline routes registered');
+
+app.get('/api/debug-routes', (req, res) => {
+  const routes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      routes.push(`${Object.keys(middleware.route.methods).join(',').toUpperCase()} ${middleware.route.path}`);
+    } else if (middleware.name === 'router') {
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          const path = handler.route.path;
+          routes.push(`${Object.keys(handler.route.methods).join(',').toUpperCase()} ${middleware.regexp} ${path}`);
+        }
+      });
+    }
+  });
+  res.json({ success: true, routes });
+});
+
 
 // 404 handler
 app.use((req, res) => {

@@ -35,9 +35,12 @@ const User = sequelize.define('User', {
     field: 'full_name'
   },
   role: {
-    type: DataTypes.ENUM('admin', 'investigating_officer', 'supervisor'),
+    type: DataTypes.STRING(32),
     allowNull: false,
-    defaultValue: 'investigating_officer'
+    defaultValue: 'investigating_officer',
+    validate: {
+      isIn: [['admin', 'investigating_officer', 'supervisor']]
+    }
   },
   badgeNumber: {
     type: DataTypes.STRING(50),

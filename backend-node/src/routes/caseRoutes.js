@@ -6,6 +6,7 @@ import {
   updateCase,
   getCaseStatistics,
   getCaseEntities,
+  getCaseExtractedDataSummary,
   getCaseChats,
   deleteCase,
   reviewCase
@@ -34,6 +35,9 @@ router.get('/statistics', getCaseStatistics);
 
 // Get specific case (with access check)
 router.get('/:caseId', checkCaseAccess, getCaseById);
+
+// Get extracted-data summary for a case (with access check)
+router.get('/:caseId/extracted-data-summary', checkCaseAccess, getCaseExtractedDataSummary);
 
 // Get entities for a case (with access check)
 router.get('/:caseId/entities', checkCaseAccess, getCaseEntities);

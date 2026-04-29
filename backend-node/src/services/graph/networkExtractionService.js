@@ -1,10 +1,187 @@
 import { neo4jDriver } from '../../config/databases.js';
+import { QueryTypes } from 'sequelize';
+import sequelize from '../../config/database.js';
 import logger from '../../config/logger.js';
 
 // 1-minute Cypher-level timeout for cycle detection and large graph queries
 const NEO4J_TIMEOUT_MS = 60000;
 
 class NetworkExtractionService {
+  isNeo4jUnavailableError(error) {
+    const message = error?.message || '';
+    const code = error?.code || '';
+
+    return [
+      'ECONNREFUSED',
+      'ServiceUnavailable',
+      'SessionExpired',
+      'Neo.ClientError.Security.Unauthorized',
+      "Couldn't connect",
+      'Failed to connect to server',
+      'Connection was closed',
+      'No routing servers available',
+      'Pool is closed'
+    ].some((token) => message.includes(token) || code.includes(token));
+  }
+
+  createStableId(value) {
+    const input = String(value || '');
+    let hash = 0;
+
+    for (let i = 0; i < input.length; i += 1) {
+      hash = ((hash << 5) - hash) + input.charCodeAt(i);
+      hash |= 0;
+    }
+
+    return Math.abs(hash) || 1;
+  }
+
+  inferNodeType(value) {
+    const text = String(value || '').trim();
+
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) return 'Email';
+    if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(text)) return 'IPAddress';
+    if (/^(0x[a-fA-F0-9]{8,}|[13][a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-zA-HJ-NP-Z0-9]{10,})$/.test(text)) {
+      return 'CryptoAddress';
+    }
+    if (/^\+?\d[\d\s()-]{6,}$/.test(text)) return 'PhoneNumber';
+    return 'Contact';
+  }
+
+  buildFallbackNode(value, frequency, sourceTypes = []) {
+    const safeValue = String(value || 'Unknown').trim() || 'Unknown';
+    return {
+      id: this.createStableId(`node:${safeValue}`),
+      type: this.inferNodeType(safeValue),
+      label: safeValue,
+      properties: {
+        value: safeValue,
+        sourceTypes
+      },
+      frequency: Math.max(1, frequency)
+    };
+  }
+
+  buildFallbackEdge(sender, receiver, weight, sourceTypes = [], timestamp = null) {
+    const source = this.createStableId(`node:${sender}`);
+    const target = this.createStableId(`node:${receiver}`);
+
+    return {
+      id: this.createStableId(`edge:${sender}:${receiver}:${sourceTypes.join(',')}`),
+      source,
+      target,
+      type: sourceTypes.length > 1 ? 'MULTI_CHANNEL' : 'COMMUNICATED_WITH',
+      communicationType: sourceTypes[0] || 'unknown',
+      weight,
+      timestamp
+    };
+  }
+
+  async getPostgresFallbackGraph(caseId, filters = {}) {
+    const rows = await sequelize.query(
+      `
+        SELECT
+          "sender",
+          "receiver",
+          COUNT(*)::int AS weight,
+          ARRAY_REMOVE(ARRAY_AGG(DISTINCT COALESCE("sourceType", 'unknown')), NULL) AS "sourceTypes",
+          MIN("timestamp") AS "firstTimestamp"
+        FROM "DataSourceRecords"
+        WHERE "caseId" = :caseId
+          AND NULLIF(TRIM(COALESCE("sender", '')), '') IS NOT NULL
+          AND NULLIF(TRIM(COALESCE("receiver", '')), '') IS NOT NULL
+          AND TRIM("sender") <> TRIM("receiver")
+        GROUP BY "sender", "receiver"
+      `,
+      {
+        replacements: { caseId: parseInt(caseId, 10) },
+        type: QueryTypes.SELECT
+      }
+    );
+
+    const min = filters.min_interaction_threshold ? parseInt(filters.min_interaction_threshold, 10) : 1;
+    const filteredRows = rows.filter((row) => row.weight >= min);
+    const nodeMap = new Map();
+    const edges = [];
+
+    filteredRows.forEach((row) => {
+      const sender = String(row.sender).trim();
+      const receiver = String(row.receiver).trim();
+      const sourceTypes = Array.isArray(row.sourceTypes) ? row.sourceTypes.filter(Boolean) : [];
+
+      nodeMap.set(
+        sender,
+        this.buildFallbackNode(
+          sender,
+          (nodeMap.get(sender)?.frequency || 1) + row.weight,
+          sourceTypes
+        )
+      );
+      nodeMap.set(
+        receiver,
+        this.buildFallbackNode(
+          receiver,
+          (nodeMap.get(receiver)?.frequency || 1) + row.weight,
+          sourceTypes
+        )
+      );
+
+      edges.push(
+        this.buildFallbackEdge(
+          sender,
+          receiver,
+          row.weight,
+          sourceTypes,
+          row.firstTimestamp || null
+        )
+      );
+    });
+
+    const nodes = Array.from(nodeMap.values());
+    logger.info(
+      `PostgreSQL fallback graph for case ${caseId}: ${nodes.length} nodes, ${edges.length} edges`
+    );
+
+    return {
+      nodes,
+      edges,
+      anomalies: [],
+      unavailable: true,
+      source: 'postgres_fallback'
+    };
+  }
+
+  mapGraphNode(rawNode) {
+    const primaryLabel = rawNode.labels[0] || 'Unknown';
+
+    let label = 'Unknown';
+    if (rawNode.properties.name) label = rawNode.properties.name;
+    else if (rawNode.properties.number) label = rawNode.properties.number;
+    else if (rawNode.properties.value) label = rawNode.properties.value;
+    else if (rawNode.properties.imei) label = `Device: ${rawNode.properties.imei}`;
+    else if (primaryLabel === 'Case') label = `Case ${rawNode.properties.id}`;
+
+    return {
+      id: rawNode.id.toNumber(),
+      type: primaryLabel,
+      label,
+      properties: rawNode.properties,
+      frequency: 1,
+    };
+  }
+
+  mapGraphEdge(rawEdge) {
+    return {
+      id: rawEdge.id.toNumber(),
+      source: rawEdge.source.toNumber(),
+      target: rawEdge.target.toNumber(),
+      type: rawEdge.type,
+      communicationType: rawEdge.properties.type || 'unknown',
+      weight: 1,
+      timestamp: rawEdge.properties.timestamp || null
+    };
+  }
+
   /**
    * Retrieves nodes and edges for the network graph visualization.
    * No depth limit on initial traversal (prototype phase).
@@ -57,32 +234,16 @@ class NetworkExtractionService {
       const rawEdges = result.records[0].get('rawEdges');
 
       // Transform Nodes into standardized format
-      const nodes = rawNodes.map((n) => {
-        const primaryLabel = n.labels[0] || 'Unknown';
+      const nodes = rawNodes.map((n) => this.mapGraphNode(n));
 
-        let label = 'Unknown';
-        if (n.properties.name) label = n.properties.name;
-        else if (n.properties.number) label = n.properties.number;
-        else if (n.properties.value) label = n.properties.value;
-        else if (n.properties.imei) label = `Device: ${n.properties.imei}`;
-        else if (primaryLabel === 'Case') label = `Case ${n.properties.id || n.properties.caseNumber}`;
-
-        return {
-          id: n.id.toNumber(),
-          type: primaryLabel,
-          label,
-          properties: n.properties,
-          frequency: 1,
-        };
-      });
-
-      // Use all nodes, including Case nodes
-      const nodeIds = new Set(nodes.map(n => n.id));
+      // Filter out the Case anchor node itself
+      const nonCaseNodes = nodes.filter(n => n.type !== 'Case');
+      const nonCaseNodeIds = new Set(nonCaseNodes.map(n => n.id));
 
       const filteredRawEdges = rawEdges.filter(e => {
         const sourceId = e.source.toNumber();
         const targetId = e.target.toNumber();
-        return nodeIds.has(sourceId) && nodeIds.has(targetId);
+        return nonCaseNodeIds.has(sourceId) && nonCaseNodeIds.has(targetId);
       });
 
       // Aggregate edges by source/target to compute weights
@@ -109,21 +270,20 @@ class NetworkExtractionService {
 
       const edges = Array.from(edgeMap.values());
 
-      // Filter by minInteractionThreshold (entities only, allow all Case links)
+      // Filter by minInteractionThreshold
       const min = filters.min_interaction_threshold ? parseInt(filters.min_interaction_threshold) : 1;
-      const filteredEdges = edges.filter(e => e.type === 'CROSS_CASE_LINK' || e.weight >= min);
+      const filteredEdges = edges.filter(e => e.weight >= min);
 
       // Update frequencies
       filteredEdges.forEach(e => {
-        const src = nodes.find(n => n.id === e.source);
-        const tgt = nodes.find(n => n.id === e.target);
+        const src = nonCaseNodes.find(n => n.id === e.source);
+        const tgt = nonCaseNodes.find(n => n.id === e.target);
         if (src) src.frequency += e.weight;
         if (tgt) tgt.frequency += e.weight;
       });
 
-      // Drop isolated nodes (frequency 1 means no connections in this view)
-      // Exception: Keep the requested Case node even if it has no visible links yet
-      const finalNodes = nodes.filter(n => n.frequency > 1 || (n.type === 'Case' && n.properties.id === parseInt(caseId)));
+      // Drop isolated nodes
+      const finalNodes = nonCaseNodes.filter(n => n.frequency > 1);
 
       // --- Cycle Detection via Neo4j Cypher (1-minute timeout) ---
       const anomalies = await this.detectCyclesViaCypher(finalNodes.map(n => n.id), session);
@@ -133,6 +293,13 @@ class NetworkExtractionService {
       return { nodes: finalNodes, edges: filteredEdges, anomalies };
 
     } catch (error) {
+      if (this.isNeo4jUnavailableError(error)) {
+        logger.warn(
+          `Neo4j unavailable while extracting graph for case ${caseId}; using PostgreSQL fallback: ${error.message}`
+        );
+        return this.getPostgresFallbackGraph(caseId, filters);
+      }
+
       logger.error('Error extracting network graph:', error);
       throw error;
     } finally {
@@ -228,38 +395,89 @@ class NetworkExtractionService {
       const rawNeighborNodes = result.records[0].get('neighborNodes');
       const rawNeighborEdges = result.records[0].get('neighborEdges');
 
-      const neighborNodes = rawNeighborNodes.map(n => {
-        const primaryLabel = n.labels[0] || 'Unknown';
-        let label = 'Unknown';
-        if (n.properties.name) label = n.properties.name;
-        else if (n.properties.number) label = n.properties.number;
-        else if (n.properties.value) label = n.properties.value;
-        else if (n.properties.imei) label = `Device: ${n.properties.imei}`;
-
-        return {
-          id: n.id.toNumber(),
-          type: primaryLabel,
-          label,
-          properties: n.properties,
-          frequency: 1
-        };
-      });
-
-      const neighborEdges = rawNeighborEdges.map(e => ({
-        id: e.id.toNumber(),
-        source: e.source.toNumber(),
-        target: e.target.toNumber(),
-        type: e.type,
-        communicationType: e.properties.type || 'unknown',
-        weight: 1,
-        timestamp: e.properties.timestamp || null
-      }));
+      const neighborNodes = rawNeighborNodes.map((n) => this.mapGraphNode(n));
+      const neighborEdges = rawNeighborEdges.map((e) => this.mapGraphEdge(e));
 
       logger.info(`getNeighbors(${nodeId}): ${neighborNodes.length} neighbors`);
       return { nodes: neighborNodes, edges: neighborEdges };
 
     } catch (error) {
+      if (this.isNeo4jUnavailableError(error)) {
+        logger.warn(`Neo4j unavailable while fetching neighbors for case ${caseId}; using PostgreSQL fallback`);
+        const fallbackGraph = await this.getPostgresFallbackGraph(caseId, { min_interaction_threshold: 1 });
+        const relatedEdges = fallbackGraph.edges.filter(
+          (edge) => edge.source === parseInt(nodeId, 10) || edge.target === parseInt(nodeId, 10)
+        );
+        const relatedNodeIds = new Set(
+          relatedEdges.flatMap((edge) => [edge.source, edge.target]).filter((id) => id !== parseInt(nodeId, 10))
+        );
+
+        return {
+          nodes: fallbackGraph.nodes.filter((node) => relatedNodeIds.has(node.id)),
+          edges: relatedEdges
+        };
+      }
+
       logger.error('getNeighbors error:', error);
+      return { nodes: [], edges: [] };
+    } finally {
+      await session.close();
+    }
+  }
+
+  /**
+   * Reveal bridge paths from a clicked device node to other devices in the same case.
+   * This helps visually connect clusters that look disconnected after the Case anchor is hidden.
+   */
+  async getClusterRelations(nodeId, caseId) {
+    const session = neo4jDriver.session();
+
+    try {
+      const cypher = `
+        MATCH (start)
+        WHERE id(start) = $nodeId
+        MATCH (c:Case {id: $caseId})-[:HAS_DEVICE]->(device:Device)
+        WHERE id(device) <> $nodeId
+        MATCH p = shortestPath((start)-[*..6]-(device))
+        WITH collect(DISTINCT p) AS paths
+        UNWIND paths AS path
+        UNWIND nodes(path) AS n
+        WITH paths, collect(DISTINCT {
+          id: id(n),
+          labels: labels(n),
+          properties: properties(n)
+        }) AS rawNodes
+        UNWIND paths AS path2
+        UNWIND relationships(path2) AS rel
+        RETURN
+          rawNodes,
+          collect(DISTINCT {
+            id: id(rel),
+            type: type(rel),
+            source: id(startNode(rel)),
+            target: id(endNode(rel)),
+            properties: properties(rel)
+          }) AS rawEdges
+      `;
+
+      const result = await session.run(cypher, {
+        nodeId: parseInt(nodeId),
+        caseId: parseInt(caseId)
+      });
+
+      if (result.records.length === 0) {
+        return { nodes: [], edges: [] };
+      }
+
+      const rawNodes = result.records[0].get('rawNodes') || [];
+      const rawEdges = result.records[0].get('rawEdges') || [];
+
+      return {
+        nodes: rawNodes.map((node) => this.mapGraphNode(node)),
+        edges: rawEdges.map((edge) => this.mapGraphEdge(edge))
+      };
+    } catch (error) {
+      logger.error('getClusterRelations error:', error);
       return { nodes: [], edges: [] };
     } finally {
       await session.close();

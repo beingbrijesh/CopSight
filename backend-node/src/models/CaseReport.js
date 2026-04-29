@@ -62,10 +62,15 @@ const CaseReport = sequelize.define('CaseReport', {
   metadata: {
     type: DataTypes.JSONB,
     defaultValue: {}
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    field: 'created_at'
   }
 }, {
   tableName: 'case_reports',
   timestamps: true,
+  underscored: true,
   updatedAt: false
 });
 

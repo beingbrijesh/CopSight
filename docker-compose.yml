@@ -73,7 +73,46 @@ services:
     volumes:
       - chroma_data:/chroma/chroma
     networks:
-      - ufdr-network  
+      - ufdr-network
+
+  # Core Backend Services
+  backend:
+    build: 
+      context: ./backend-node
+      dockerfile: Dockerfile
+    container_name: ufdr-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgresql
+      - DB_PORT=5432
+      - ES_HOST=http://elasticsearch:9200
+      - NEO4J_URI=bolt://neo4j:7687
+      - REDIS_HOST=redis
+    depends_on:
+      - postgresql
+      - elasticsearch
+      - neo4j
+      - redis
+    networks:
+      - ufdr-network
+
+  worker:
+    build: 
+      context: ./backend-node
+      dockerfile: Dockerfile
+    command: node src/workers/pipelineWorker.js
+    container_name: ufdr-pipeline-worker
+    environment:
+      - REDIS_HOST=redis
+      - ES_HOST=http://elasticsearch:9200
+      - DB_HOST=postgresql
+    depends_on:
+      - redis
+      - elasticsearch
+    networks:
+      - ufdr-network
 
 
 volumes:

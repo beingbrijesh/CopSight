@@ -1,5 +1,5 @@
 import express from 'express';
-import { getNetworkGraph, getNodeNeighbors } from '../controllers/graphController.js';
+import { getNetworkGraph, getNodeNeighbors, getClusterRelations } from '../controllers/graphController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -28,6 +28,13 @@ router.get(
   authenticate,
   authorize(...GRAPH_ROLES),
   getNodeNeighbors
+);
+
+router.get(
+  '/network/:caseId/node/:nodeId/cluster-relations',
+  authenticate,
+  authorize(...GRAPH_ROLES),
+  getClusterRelations
 );
 
 export default router;

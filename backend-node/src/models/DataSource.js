@@ -37,10 +37,23 @@ const DataSource = sequelize.define('DataSource', {
   status: {
     type: DataTypes.STRING(20),
     defaultValue: 'pending'
+  },
+  data: {
+    type: DataTypes.JSONB,
+    allowNull: true
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    field: 'created_at'
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    field: 'updated_at'
   }
 }, {
   tableName: 'data_sources',
-  timestamps: true
+  timestamps: true,
+  underscored: true
 });
 
 export default DataSource;

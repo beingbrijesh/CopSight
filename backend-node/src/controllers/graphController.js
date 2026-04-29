@@ -73,3 +73,34 @@ export const getNodeNeighbors = async (req, res) => {
     });
   }
 };
+
+/**
+ * Get bridge paths that explain how a clicked device relates to other visible clusters.
+ */
+export const getClusterRelations = async (req, res) => {
+  try {
+    const { caseId, nodeId } = req.params;
+
+    const caseRecord = await Case.findByPk(caseId);
+    if (!caseRecord) {
+      return res.status(404).json({
+        success: false,
+        message: 'Case not found'
+      });
+    }
+
+    const relationData = await networkExtractionService.getClusterRelations(nodeId, caseId);
+
+    res.json({
+      success: true,
+      message: 'Cluster relations fetched successfully',
+      data: relationData
+    });
+  } catch (error) {
+    logger.error('Error fetching cluster relations:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch cluster relations'
+    });
+  }
+};

@@ -174,7 +174,7 @@ export const searchElasticsearch = async (caseId, query, filters = {}) => {
  * Get index name based on source type
  */
 const getIndexName = (sourceType) => {
-  if (sourceType === 'sms' || sourceType === 'whatsapp' || sourceType === 'telegram') {
+  if (sourceType === 'sms' || sourceType === 'chat' || sourceType === 'whatsapp' || sourceType === 'telegram') {
     return 'ufdr-messages';
   } else if (sourceType === 'call_log') {
     return 'ufdr-calls';
