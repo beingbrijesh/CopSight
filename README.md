@@ -1,4 +1,4 @@
-# UFDR System - Universal Forensic Data Reader
+# CopSight AI - A Universal Forensic Data Analysis Platform
 
 A comprehensive digital forensics platform for law enforcement agencies to analyze mobile device data extracted from UFDR (Universal Forensic Data Reader) files. The system provides natural language query capabilities, multi-database search, network visualization, and professional report generation.
 
