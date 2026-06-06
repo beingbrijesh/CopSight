@@ -156,7 +156,7 @@ export const streamQuery = async (req, res) => {
   logger.info(`Starting SSE stream for case ${caseId}: "${queryText_.slice(0, 60)}..."`);
 
   // Hand off to aiClient — it handles all SSE headers, piping, caching, and errors
-  await aiClient.streamQuery(parseInt(caseId), queryText_, req.user.id, res, sessionId);
+  await aiClient.streamQuery(parseInt(caseId), queryText_, req.user.id, res, sessionId, queryType);
 };
 
 
@@ -177,7 +177,7 @@ export const getQueryHistory = async (req, res) => {
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['created_at', 'DESC']]
+      order: [['createdAt', 'DESC']]
     });
 
     logger.info(`[getQueryHistory] Found ${count} queries for case ${caseId}`);

@@ -104,9 +104,9 @@ class DatabaseManager:
             self.chroma_collection = None
         else:
             try:
-                self.chroma_client = chromadb.PersistentClient(
+                self.chroma_client = chromadb.PersistentClient(  # type: ignore[union-attr]
                     path=settings.CHROMA_PERSIST_DIR,
-                    settings=ChromaSettings(anonymized_telemetry=False),
+                    settings=ChromaSettings(anonymized_telemetry=False),  # type: ignore[misc]
                 )
                 self.chroma_collection = self.chroma_client.get_or_create_collection(
                     name="ufdr_embeddings",

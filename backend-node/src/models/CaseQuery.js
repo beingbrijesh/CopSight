@@ -67,6 +67,7 @@ const CaseQuery = sequelize.define('CaseQuery', {
 }, {
   tableName: 'case_queries',
   timestamps: true,
+  createdAt: 'created_at',
   updatedAt: false
 });
 

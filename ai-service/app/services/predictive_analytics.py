@@ -5,7 +5,7 @@ Generates investigation leads and risk predictions using ML models
 
 import pandas as pd
 import numpy as np
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
@@ -169,7 +169,7 @@ class PredictiveAnalyticsService:
 
             return {
                 "risk_score": float(risk_score),
-                "confidence": float(confidence),
+                "confidence": confidence,
                 "prediction": prediction,
                 "message": f"Case predicted as {prediction} risk"
             }
@@ -426,7 +426,7 @@ class PredictiveAnalyticsService:
         except:
             return 0.0
 
-    def _analyze_communication_patterns(self, case_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_communication_patterns(self, case_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Analyze communication patterns for leads"""
         try:
             foreign_ratio = case_data.get('foreign_numbers_ratio', 0)
@@ -449,7 +449,7 @@ class PredictiveAnalyticsService:
             logger.error(f"Error analyzing communication patterns: {e}")
             return None
 
-    def _analyze_timeline_gaps(self, case_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_timeline_gaps(self, case_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Analyze timeline for investigation gaps"""
         try:
             # This would analyze communication gaps
@@ -468,7 +468,7 @@ class PredictiveAnalyticsService:
             logger.error(f"Error analyzing timeline gaps: {e}")
             return None
 
-    def _analyze_network_connections(self, case_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_network_connections(self, case_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Analyze network connections for leads"""
         try:
             cross_links = case_data.get('cross_case_links', 0)

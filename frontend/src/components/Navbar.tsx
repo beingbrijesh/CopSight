@@ -1,5 +1,5 @@
-import { LogOut, Menu, Shield, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { LogOut, Menu, Shield, User, Sparkles } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { authAPI } from '../lib/api';
 import { NotificationBell } from './NotificationBell';
@@ -17,6 +17,7 @@ const roleLabel: Record<string, string> = {
 export const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -29,10 +30,26 @@ export const Navbar = ({ onMenuToggle }: NavbarProps) => {
     }
   };
 
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === '/admin' || path === '/io' || path === '/supervisor') return 'Dashboard';
+    if (path.includes('/users')) return 'User Management';
+    if (path.includes('/cases')) return 'Case Management';
+    if (path.includes('/query')) return 'Query Interface';
+    if (path.includes('/bookmarks')) return 'Bookmarks';
+    if (path.includes('/report')) return 'Report Generator';
+    if (path.includes('/entities')) return 'Entities View';
+    if (path.includes('/network')) return 'Network Graph';
+    if (path.includes('/case/')) return 'Case Detail';
+    return 'CopSight AI';
+  };
+
   return (
     <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
+        
+        {/* Left section */}
+        <div className="flex items-center gap-3 lg:w-1/3">
           <button
             type="button"
             onClick={onMenuToggle}
@@ -41,16 +58,25 @@ export const Navbar = ({ onMenuToggle }: NavbarProps) => {
             <Menu className="h-5 w-5" />
           </button>
 
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-900 text-white">
+          <div className="hidden lg:flex items-center gap-2 h-10 w-10 justify-center rounded-lg bg-gray-900 text-white ml-2">
             <Shield className="h-4 w-4" />
           </div>
-          <div>
+          <div className="hidden lg:block">
             <p className="text-base font-semibold text-gray-900">CopSight</p>
-            <p className="text-xs text-gray-500">Unified Forensic Data Repository</p>
+            <p className="text-xs text-gray-500">Unified Forensic Data</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        {/* Center section */}
+        <div className="hidden lg:flex lg:w-1/3 items-center justify-center">
+          <div className="flex items-center gap-2 rounded-full bg-gray-50 px-5 py-2 border border-gray-200 shadow-sm">
+            <Sparkles className="h-4 w-4 text-green-600" />
+            <span className="text-sm font-semibold text-gray-900">{getPageTitle()}</span>
+          </div>
+        </div>
+
+        {/* Right section */}
+        <div className="flex items-center justify-end gap-4 lg:w-1/3">
           <NotificationBell />
           
           <div className="hidden items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 sm:flex">

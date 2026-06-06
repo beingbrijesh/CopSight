@@ -1,0 +1,6 @@
+ufdr_project:
+  path: "/path/to/your/ufdr/project"
+  case_db: "cases.db"
+  cases_dir: "cases/"
+  index_file: "index.json"
+  version: "2.1"

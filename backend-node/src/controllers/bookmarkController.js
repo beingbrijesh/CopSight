@@ -32,7 +32,6 @@ export const createBookmark = async (req, res) => {
       evidenceType,
       evidenceId,
       source: evidenceSource,
-      content: evidenceContent.content || evidenceContent.value || '',
       notes,
       tags: tags || [],
       metadata: evidenceContent

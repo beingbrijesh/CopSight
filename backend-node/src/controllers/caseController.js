@@ -441,7 +441,7 @@ export const getCaseChats = async (req, res) => {
       const meta = source.metadata || {};
 
       // Skip non-message/non-chat types if they somehow got in
-      if (!['sms', 'chat', 'whatsapp', 'telegram', 'email', 'messages'].includes(source.sourceType.toLowerCase())) {
+      if (!source.sourceType || !['sms', 'chat', 'whatsapp', 'telegram', 'email', 'messages'].includes(source.sourceType.toLowerCase())) {
         return;
       }
 

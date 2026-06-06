@@ -58,6 +58,18 @@ export const getNotifications = async (req, res) => {
       }
     });
   } catch (error) {
+    // If the notifications table doesn't exist yet, return empty results gracefully
+    if (error.name === 'SequelizeDatabaseError' && error.parent?.code === '42P01') {
+      logger.warn('Notifications table does not exist yet. Run schema.sql to create it.');
+      return res.json({
+        success: true,
+        data: {
+          notifications: [],
+          unreadCount: 0,
+          pagination: { total: 0, page: 1, limit: parseInt(req.query.limit || 20), pages: 0 }
+        }
+      });
+    }
     logger.error('Get notifications error:', error);
     res.status(500).json({
       success: false,

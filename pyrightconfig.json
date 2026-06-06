@@ -1,0 +1,11 @@
+{
+  "venvPath": "ai-service",
+  "venv": "venv",
+  "extraPaths": [
+    "ai-service"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__"
+  ]
+}

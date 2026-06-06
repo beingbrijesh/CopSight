@@ -36,6 +36,8 @@ interface NotificationState {
 }
 
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
+let consecutiveErrors = 0;
+const MAX_BACKOFF_MS = 5 * 60 * 1000; // 5 minutes max
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
   notifications: [],
@@ -49,13 +51,18 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       const response = await notificationAPI.getNotifications({ limit: 50 });
       const { notifications, unreadCount } = response.data.data;
       
+      consecutiveErrors = 0; // Reset on success
       set({ 
         notifications, 
         unreadCount,
         loading: false 
       });
     } catch (error: any) {
-      console.error('Failed to fetch notifications:', error);
+      consecutiveErrors++;
+      // Only log the first error, suppress repeated identical failures
+      if (consecutiveErrors <= 1) {
+        console.error('Failed to fetch notifications:', error);
+      }
       set({ 
         error: error.message || 'Failed to fetch notifications',
         loading: false 
@@ -67,7 +74,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     try {
       await notificationAPI.markAsRead(id);
       
-      // Optimiztic update
+      // Optimistic update
       set((state) => ({
         notifications: state.notifications.map((n) => 
           n.id === id ? { ...n, isRead: true } : n
@@ -100,15 +107,24 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     // Initial fetch
     get().fetchNotifications();
     
-    // Setup polling
-    pollingInterval = setInterval(() => {
-      get().fetchNotifications();
-    }, intervalMs);
+    // Setup polling with backoff on errors
+    const schedulePoll = () => {
+      const backoffMs = consecutiveErrors > 0
+        ? Math.min(intervalMs * Math.pow(2, consecutiveErrors), MAX_BACKOFF_MS)
+        : intervalMs;
+      
+      pollingInterval = setTimeout(() => {
+        get().fetchNotifications();
+        schedulePoll();
+      }, backoffMs);
+    };
+    
+    schedulePoll();
   },
 
   stopPolling: () => {
     if (pollingInterval) {
-      clearInterval(pollingInterval);
+      clearTimeout(pollingInterval);
       pollingInterval = null;
     }
   }

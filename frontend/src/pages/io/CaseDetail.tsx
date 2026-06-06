@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Activity, Search, Upload, Bookmark, FileText, Loader2, AlertCircle, CheckCircle2, RefreshCw, Network } from 'lucide-react';
+import { Activity, Search, Upload, Bookmark, FileText, Loader2, AlertCircle, CheckCircle2, RefreshCw, Network } from 'lucide-react';
 import { caseAPI, uploadAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { CrossCaseConnections } from '../../components/CrossCaseConnections';
@@ -22,7 +22,7 @@ export const CaseDetail = () => {
   const [fileJustProcessed, setFileJustProcessed] = useState(false);
   const { user } = useAuthStore();
   const rolePrefix = user?.role === 'supervisor' ? '/supervisor' : '/io';
-  const casesPath = user?.role === 'supervisor' ? '/supervisor/cases' : '/io';
+
   const pollingInterval = useRef<number | null>(null);
 
   useEffect(() => {
@@ -239,14 +239,6 @@ export const CaseDetail = () => {
 
   return (
       <div className="mx-auto max-w-7xl pb-8">
-        <button
-          onClick={() => navigate(casesPath)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Cases
-        </button>
-
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-start justify-between mb-4">
             <div>

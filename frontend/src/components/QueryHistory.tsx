@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Clock, Search, MessageSquare, ShieldCheck } from 'lucide-react';
-import { api } from '../lib/api';
+import { ChevronDown, ChevronUp, Clock, Search } from 'lucide-react';
+import { queryAPI } from '../lib/api';
 
 interface QueryHistoryProps {
   caseId: number;
@@ -11,6 +11,7 @@ interface QueryHistoryProps {
 export const QueryHistory = ({ caseId, onSelectQuery, refreshTrigger }: QueryHistoryProps) => {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -31,7 +32,7 @@ export const QueryHistory = ({ caseId, onSelectQuery, refreshTrigger }: QueryHis
 
   if (loading) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-4 w-3/4 rounded bg-gray-200" />
           <div className="h-4 w-1/2 rounded bg-gray-200" />
@@ -41,52 +42,48 @@ export const QueryHistory = ({ caseId, onSelectQuery, refreshTrigger }: QueryHis
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-      <div className="border-b border-gray-200 px-6 py-4">
-        <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-          <Clock className="h-5 w-5" />
-          Query History
-        </h3>
-      </div>
-
-      <div className="max-h-96 divide-y overflow-y-auto">
+    <div className="h-full flex flex-col">
+      <div className="flex-1 divide-y divide-gray-100">
         {history.length > 0 ? (
           history.map((item) => (
             <button
               type="button"
               key={item.id}
               onClick={() => onSelectQuery(item.queryText || item.query_text)}
-              className="flex w-full items-start justify-between px-6 py-4 text-left transition hover:bg-gray-50"
+              className="flex w-full items-start justify-between px-2 py-4 text-left transition hover:bg-gray-50 rounded-lg"
             >
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-gray-900">{item.queryText || item.query_text}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                <p className="truncate text-sm font-medium text-gray-900">
+                  {item.queryText || item.query_text}
+                </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                   <span>{new Date(item.createdAt || item.created_at).toLocaleString()}</span>
-                  <span>•</span>
-                  <span>{item.resultsCount || item.results_count || 0} results</span>
+                  <span className="text-gray-300">•</span>
+                  <span>{item.resultsCount ?? item.results_count ?? 0} results</span>
                   {(item.confidenceScore || item.confidence_score) && (
                     <>
-                      <span>•</span>
+                      <span className="text-gray-300">•</span>
                       <span>
-                        Confidence {Math.round(((item.confidenceScore || item.confidence_score) ?? 0) * 100)}%
+                        {Math.round(
+                          ((item.confidenceScore || item.confidence_score) ?? 0) * 100,
+                        )}
+                        % conf
                       </span>
                     </>
                   )}
                 </div>
               </div>
-              <Search className="ml-4 h-4 w-4 flex-shrink-0 text-gray-400" />
+              <Search className="ml-3 mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
             </button>
           ))
         ) : (
-          <div className="px-6 py-8 text-center text-gray-500">
-            <Clock className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-            <p>No query history yet</p>
-            <p className="mt-1 text-sm">Your previous queries will appear here.</p>
+          <div className="px-6 py-8 text-center text-gray-500 h-full flex flex-col justify-center items-center">
+            <Clock className="mb-3 h-10 w-10 text-gray-300" />
+            <p className="text-sm font-medium text-gray-600">No query history yet</p>
+            <p className="mt-1 text-xs text-gray-400">Your previous queries will appear here.</p>
           </div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mb-1">No Query Logs Found</p>
-          <p className="text-[9px] text-gray-700">Submit a forensic query to begin.</p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

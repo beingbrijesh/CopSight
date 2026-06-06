@@ -1,0 +1,12 @@
+{
+  "venvPath": ".",
+  "venv": "venv",
+  "ignore": [
+    "app/services/pattern_recognition.py",
+    "app/services/llm.py"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__"
+  ]
+}

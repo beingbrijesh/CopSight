@@ -7,12 +7,12 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans, DBSCAN
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras.models import Sequential, Model
-from tensorflow.keras.layers import Dense, LSTM, Conv1D, MaxPooling1D, Flatten, Embedding, Dropout
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+import tensorflow as tf  # type: ignore[import]
+from tensorflow import keras  # type: ignore[import]
+from tensorflow.keras.models import Sequential, Model  # type: ignore[import]
+from tensorflow.keras.layers import Dense, LSTM, Conv1D, MaxPooling1D, Flatten, Embedding, Dropout  # type: ignore[import]
+from tensorflow.keras.preprocessing.text import Tokenizer  # type: ignore[import]
+from tensorflow.keras.preprocessing.sequence import pad_sequences  # type: ignore[import]
 import logging
 import asyncio
 from typing import Dict, List, Any, Optional, Tuple
@@ -60,7 +60,7 @@ class DeepLearningEvidenceAnalyzer:
     def _build_evidence_classifier(self) -> Sequential:
         """Build evidence type classification model"""
         model = Sequential([
-            Dense(256, activation='relu', input_shape=(100,)),
+            Dense(256, activation='relu', input_shape=(100,)),  # type: ignore[call-arg]
             Dropout(0.3),
             Dense(128, activation='relu'),
             Dropout(0.2),
@@ -331,7 +331,7 @@ class DeepLearningEvidenceAnalyzer:
             # Train autoencoder if not trained
             if 'anomaly_detector' not in self.models:
                 self.anomaly_detector.fit(
-                    features_array, features_array,
+                    features_array.tolist(), features_array.tolist(),
                     epochs=100,
                     batch_size=32,
                     verbose=0,
@@ -347,7 +347,7 @@ class DeepLearningEvidenceAnalyzer:
                 self.models['anomaly_detector'] = True
 
             # Get reconstruction errors
-            reconstructions = self.anomaly_detector.predict(features_array, verbose=0)
+            reconstructions = self.anomaly_detector.predict(features_array.tolist(), verbose=0)
             mse_errors = np.mean(np.power(features_array - reconstructions, 2), axis=1)
 
             # Calculate threshold (95th percentile)
@@ -360,7 +360,7 @@ class DeepLearningEvidenceAnalyzer:
 
                     anomalies.append({
                         'anomaly_type': 'deep_learning_anomaly',
-                        'confidence': float(confidence),
+                        'confidence': confidence,
                         'description': f'Deep learning detected anomaly with reconstruction error {error:.4f}',
                         'reconstruction_error': float(error),
                         'threshold': float(threshold),
@@ -433,7 +433,7 @@ class DeepLearningEvidenceAnalyzer:
                 pattern_type = 'unknown'
                 if encoder:
                     try:
-                        pattern_type = encoder.inverse_transform([predicted_idx])[0]
+                        pattern_type = encoder.inverse_transform([int(predicted_idx)])[0]  # type: ignore[arg-type]
                     except:
                         pass
 
@@ -536,7 +536,7 @@ class DeepLearningEvidenceAnalyzer:
                 pattern_type = 'unknown'
                 if encoder:
                     try:
-                        pattern_type = encoder.inverse_transform([predicted_idx])[0]
+                        pattern_type = encoder.inverse_transform([int(predicted_idx)])[0]  # type: ignore[arg-type]
                     except:
                         pass
 

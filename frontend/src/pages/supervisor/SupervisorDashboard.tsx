@@ -126,8 +126,7 @@ export const SupervisorDashboard = () => {
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Supervisor Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-500">Oversight for active investigations, officer workload, and flagged activity.</p>
+        <p className="text-sm font-medium text-gray-500">Oversight for active investigations, officer workload, and flagged activity.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

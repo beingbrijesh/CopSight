@@ -43,9 +43,7 @@ const EvidenceBookmark = sequelize.define('EvidenceBookmark', {
     allowNull: false,
     field: 'evidence_id'
   },
-  content: {
-    type: DataTypes.TEXT,
-  },
+
   notes: {
     type: DataTypes.TEXT
   },
@@ -69,7 +67,7 @@ const EvidenceBookmark = sequelize.define('EvidenceBookmark', {
   tableName: 'evidence_bookmarks',
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  updatedAt: false
 });
 
 export default EvidenceBookmark;

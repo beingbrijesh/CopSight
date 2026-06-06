@@ -21,7 +21,7 @@ class EmbeddingService:
         """Generate embedding for a single text"""
         try:
             logger.info(f"Generating embedding using model: {self.model}")
-            response = self.client.embeddings(
+            response: dict = self.client.embeddings(  # type: ignore[assignment]
                 model=self.model,
                 prompt=text
             )

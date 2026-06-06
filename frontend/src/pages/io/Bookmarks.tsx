@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Bookmark, Trash2, Tag, Search, Download, Star } from 'lucide-react';
-import { bookmarkAPI } from '../../lib/api';
 import { Bookmark, Trash2, Tag, Search, Download, Star, FileText } from 'lucide-react';
-import { Navbar } from '../../components/Navbar';
 import { bookmarkAPI } from '../../lib/api';
 import { EvidenceChip } from '../../components/EvidenceChip';
 
@@ -21,7 +18,6 @@ export const Bookmarks = () => {
   const loadBookmarks = async () => {
     try {
       setLoading(true);
-      const response = await bookmarkAPI.getBookmarks(Number(caseId));
       const response = await bookmarkAPI.getBookmarks(parseInt(caseId!));
       setBookmarks(response.data.data?.bookmarks || []);
     } catch (error) {
@@ -68,11 +64,7 @@ export const Bookmarks = () => {
       <div className="mx-auto max-w-7xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Bookmark className="w-6 h-6 text-yellow-600" />
-              Bookmarked Evidence
-            </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-600 font-medium">
               {filteredBookmarks.length} bookmarks saved
             </p>
           </div>

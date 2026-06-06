@@ -221,7 +221,7 @@ class AnomalyDetector:
                         anomaly_type = self._classify_hourly_anomaly(hour, z_score)
 
                         # Identify context for the spike (most active contact in this hour)
-                        hour_data = [r for r in temporal_data if pd.to_datetime(r.get('timestamp')).hour == hour]
+                        hour_data = [r for r in temporal_data if pd.to_datetime(str(r.get('timestamp'))).hour == hour]
                         entities = [r.get('contact_name') or r.get('phone_number') or r.get('type') for r in hour_data]
                         main_entity = max(set(entities), key=entities.count) if entities else 'various'
 
@@ -311,7 +311,7 @@ class AnomalyDetector:
                     burst_score = (center_value - local_mean) / local_std
 
                     if burst_score > 3.0:  # Strong burst
-                        confidence = min(burst_score / 6, 1.0)
+                        confidence = min(float(burst_score) / 6, 1.0)
 
                         # Identify the primary entity in the burst
                         burst_window = sorted_data[max(0, i-window_size):min(len(sorted_data), i+window_size)]
@@ -345,8 +345,8 @@ class AnomalyDetector:
             gaps = []
             for i in range(1, len(sorted_data)):
                 try:
-                    current_time = pd.to_datetime(sorted_data[i].get('timestamp'))
-                    prev_time = pd.to_datetime(sorted_data[i-1].get('timestamp'))
+                    current_time = pd.to_datetime(str(sorted_data[i].get('timestamp')))
+                    prev_time = pd.to_datetime(str(sorted_data[i-1].get('timestamp')))
 
                     gap_hours = (current_time - prev_time).total_seconds() / 3600
 
@@ -685,7 +685,7 @@ class AnomalyDetector:
         if phone.startswith('+') and not phone.startswith('+91'):
             feats[6] = 1.0
 
-        feats[22] = float(record.get('communication_frequency', record.get('frequency', 1)))
+        feats[22] = float(record.get('communication_frequency', 0) or record.get('frequency', 1) or 0)
         feats[23] = float(record.get('unique_contacts', 1))
 
         return feats
@@ -717,7 +717,7 @@ class AnomalyDetector:
 
         phone = record.get('phone_number', '')
         feats[7] = 1.0 if (phone.startswith('+') and not phone.startswith('+91')) else 0.0
-        feats[8] = float(record.get('communication_frequency', record.get('frequency', 1)))
+        feats[8] = float(record.get('communication_frequency', 0) or record.get('frequency', 1) or 0)
 
         source_type = str(record.get('source_type', '')).lower()
         domain_map = {'network': 4, 'iot': 2, 'mobile': 3, 'cloud': 0, 'cyber': 1, 'crime': 5}
@@ -756,7 +756,7 @@ class AnomalyDetector:
         phone = record.get('phone_number', '')
         feats[6] = 1.0 if (phone.startswith('+') and not phone.startswith('+91')) else 0.0
         feats[7] = float(record.get('unique_contacts', 1))
-        feats[8] = float(record.get('communication_frequency', record.get('frequency', 1)))
+        feats[8] = float(record.get('communication_frequency', 0) or record.get('frequency', 1) or 0)
 
         return feats
 
@@ -1006,7 +1006,7 @@ class AnomalyDetector:
                         'confidence': confidence,
                         'description': description,
                         'reconstruction_error': float(mse),
-                        'threshold': float(bundle.lstm_ae_threshold),
+                        'threshold': bundle.lstm_ae_threshold,
                         'window_start': start,
                         'window_end': end,
                         'record': window_records,
@@ -1049,7 +1049,7 @@ class AnomalyDetector:
     #  Comprehensive detection (original + advanced)
     # ─────────────────────────────────────────────────────────────────
 
-    def detect_all_anomalies(self, case_data: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
+    def detect_all_anomalies(self, case_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Comprehensive anomaly detection across all data types
 
@@ -1136,10 +1136,11 @@ class AnomalyDetector:
             logger.error(f"Error in comprehensive anomaly detection: {e}")
             return results
 
-    def _calculate_overall_risk(self, results: Dict[str, List[Dict[str, Any]]]) -> str:
+    def _calculate_overall_risk(self, results: Dict[str, Any]) -> str:
         """Calculate overall risk level based on anomalies detected (legacy)"""
-        total_anomalies = results['summary'].get('total_anomalies', 0)
-        high_confidence = results['summary'].get('high_confidence_count', 0)
+        summary = results.get('summary', {})
+        total_anomalies = summary.get('total_anomalies', 0) if isinstance(summary, dict) else 0
+        high_confidence = summary.get('high_confidence_count', 0) if isinstance(summary, dict) else 0
 
         if high_confidence >= 5 or total_anomalies >= 10:
             return 'critical'

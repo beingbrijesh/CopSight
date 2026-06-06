@@ -106,7 +106,7 @@ class AIClient {
    * @param {import('express').Response} res - Express response to pipe into
    * @param {string} sessionId
    */
-  async streamQuery(caseId, query, userId, res, sessionId = null) {
+  async streamQuery(caseId, query, userId, res, sessionId = null, queryType = 'natural_language') {
     // Check cache first — if we have a cached result, replay it as an SSE stream
     const cached = queryCache.get(caseId, query);
     if (cached) {
@@ -156,7 +156,7 @@ class AIClient {
     try {
       const upstream = await axios.post(
         `${this.baseURL}/api/query/stream`,
-        { case_id: caseId, query, user_id: userId, session_id: sessionId },
+        { case_id: caseId, query, user_id: userId, session_id: sessionId, query_type: queryType },
         {
           responseType: 'stream',
           timeout: 130000

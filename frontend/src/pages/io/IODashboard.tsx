@@ -28,10 +28,7 @@ export const IODashboard = () => {
 
   return (
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900">My Cases</h2>
-          <p className="text-gray-600 mt-1">Assigned investigations and evidence</p>
-        </div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">

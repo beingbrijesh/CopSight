@@ -3,7 +3,7 @@ RAG (Retrieval-Augmented Generation) Pipeline
 Combines search, retrieval, and generation for answering queries
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from loguru import logger
 import json
 
@@ -21,7 +21,8 @@ class RAGPipeline:
         case_id: int,
         query: str,
         user_id: int,
-        session_id: str = None
+        session_id: Optional[str] = None,
+        query_type: str = "natural_language"
     ) -> Dict[str, Any]:
         """Execute complete RAG pipeline"""
         
@@ -60,7 +61,8 @@ class RAGPipeline:
             answer = await llm_service.synthesize_answer(
                 query,
                 ranked_results[:settings.TOP_K],
-                conversation_history
+                conversation_history,
+                query_type=query_type
             )
             logger.info(f"Answer synthesis result type: {type(answer)}, value: {answer}")
             
@@ -93,8 +95,8 @@ class RAGPipeline:
         self,
         case_id: int,
         query_components: Dict[str, Any],
-        connected_cases: List[int] = None,
-        semantic_query: str = None
+        connected_cases: Optional[List[int]] = None,
+        semantic_query: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """Search across all databases in parallel (current case + connected cases)"""
         
@@ -161,7 +163,7 @@ class RAGPipeline:
         
         try:
             # Build Elasticsearch query
-            must_clauses = [
+            must_clauses: List[Dict[str, Any]] = [
                 {"term": {"caseId": case_id}}
             ]
             
@@ -197,6 +199,8 @@ class RAGPipeline:
             sort_clause = [{"timestamp": {"order": "desc", "unmapped_type": "date"}}]
             
             # Execute search
+            if not db_manager.elasticsearch:
+                return []
             response = await db_manager.elasticsearch.search(
                 index="ufdr-*",
                 body={
@@ -249,59 +253,50 @@ class RAGPipeline:
             # Generate query embedding
             logger.info(f"Generating embedding for query: '{semantic_query}'")
             query_embedding = await embedding_service.generate_embedding(semantic_query)
-            logger.info(f"Generated embedding with length: {len(query_embedding) if query_embedding else 'None'}")
             
             if not query_embedding or len(query_embedding) == 0:
                 logger.warning("Failed to generate query embedding")
                 return []
             
-            # Search ChromaDB (remove where clause to avoid filtering issues)
-            logger.info("Executing ChromaDB query...")
+            # Search ChromaDB with native case_id filter — avoids fetching all docs
+            logger.info(f"Executing ChromaDB query for case_id={case_id}...")
             results = db_manager.chroma_collection.query(
                 query_embeddings=[query_embedding],
-                n_results=50,  # Get more results, we'll filter in Python
+                n_results=50,
+                where={"case_id": case_id},
                 include=["documents", "metadatas", "distances"]
             )
             
-            # Debug logging
-            logger.info(f"ChromaDB raw results - ids: {len(results.get('ids', []))}, docs: {len(results.get('documents', []))}")
-            if results.get('ids') and len(results['ids']) > 0:
-                logger.info(f"First result ids[0] length: {len(results['ids'][0])}")
-            if results.get('metadatas') and len(results['metadatas']) > 0:
-                logger.info(f"First result metadatas[0] length: {len(results['metadatas'][0])}")
-            
-            # Format results and filter by case_id
+            # Format results
             formatted_results = []
-            if results and results.get('ids') and len(results['ids']) > 0 and len(results['ids'][0]) > 0:
-                for i, doc_id in enumerate(results['ids'][0]):
-                    # Get metadata and check case_id
-                    metadata = results['metadatas'][0][i] if results.get('metadatas') and len(results['metadatas']) > 0 and len(results['metadatas'][0]) > i else {}
-                    
-                    logger.info(f"Checking document {doc_id}: metadata case_id={metadata.get('case_id')} (type: {type(metadata.get('case_id'))}), target case_id={case_id} (type: {type(case_id)})")
-                    
-                    # Skip if not matching case_id
-                    if metadata.get('case_id') != case_id:
-                        logger.info(f"Skipping document {doc_id} - case_id mismatch")
-                        continue
-                    
-                    # ChromaDB returns distances (lower is better), convert to similarity score
-                    distance = results['distances'][0][i] if results.get('distances') and len(results['distances']) > 0 and len(results['distances'][0]) > i else 1.0
-                    similarity = 1.0 / (1.0 + distance)  # Convert distance to similarity
-                    
-                    document = results['documents'][0][i] if results.get('documents') and len(results['documents']) > 0 and len(results['documents'][0]) > i else ""
-                    
-                    formatted_results.append({
-                        "id": doc_id,
-                        "score": similarity,
-                        "source": {"type": "rag", "name": "RAG"},
-                        "content": document,
-                        "metadata": {
-                            "sourceType": metadata.get("source_type"),
-                            "timestamp": metadata.get("timestamp")
-                        }
-                    })
+            ids_list = results.get('ids', [[]])[0]
+            docs_list = results.get('documents', [[]])[0]
+            metas_list = results.get('metadatas', [[]])[0]
+            dists_list = results.get('distances', [[]])[0]
             
-            logger.info(f"ChromaDB found {len(formatted_results)} results")
+            for i, doc_id in enumerate(ids_list):
+                metadata = metas_list[i] if i < len(metas_list) else {}
+                distance = dists_list[i] if i < len(dists_list) else 1.0
+                document = docs_list[i] if i < len(docs_list) else ""
+                
+                # Cosine distance from ChromaDB is in [0,2]; convert to similarity [0,1]
+                similarity = max(0.0, 1.0 - (distance / 2.0))
+                
+                formatted_results.append({
+                    "id": doc_id,
+                    "score": round(similarity, 4),
+                    "source": {"type": "rag", "name": "RAG"},
+                    "content": document,
+                    "metadata": {
+                        "sourceType": metadata.get("source_type"),
+                        "appName": metadata.get("app_name"),
+                        "phoneNumber": metadata.get("phone_number"),
+                        "timestamp": metadata.get("timestamp"),
+                        "direction": metadata.get("direction"),
+                    }
+                })
+            
+            logger.info(f"ChromaDB found {len(formatted_results)} results for case_id={case_id}")
             return formatted_results
             
         except Exception as e:
@@ -331,6 +326,8 @@ class RAGPipeline:
             LIMIT 20
             """
             
+            if not db_manager.neo4j:
+                return []
             async with db_manager.neo4j.session() as session:
                 result = await session.run(cypher, caseId=case_id, entities=entities)
                 records = await result.data()
@@ -384,7 +381,7 @@ class RAGPipeline:
         case_id: int,
         user_id: int,
         limit: int = 5,
-        session_id: str = None
+        session_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """Get recent conversation history for the case and user"""
         
@@ -396,9 +393,11 @@ class RAGPipeline:
                     logger.warning("PostgreSQL reconnection failed, proceeding without conversation history")
                     return []
                     
+            if not db_manager.postgres:
+                return []
             async with db_manager.postgres.acquire() as conn:
                 where_clause = "WHERE case_id = $1 AND user_id = $2 AND answer IS NOT NULL"
-                params = [case_id, user_id]
+                params: List[Any] = [case_id, user_id]
                 
                 if session_id:
                     where_clause += " AND session_id = $3"
@@ -446,6 +445,12 @@ class RAGPipeline:
                         'total_connections': 0
                     }
                     
+            if not db_manager.postgres:
+                return {
+                    'connected_cases': [],
+                    'links': [],
+                    'total_connections': 0
+                }
             async with db_manager.postgres.acquire() as conn:
                 # Get direct cross-case links
                 links = await conn.fetch("""
@@ -593,7 +598,7 @@ class RAGPipeline:
         query: str,
         query_components: Dict[str, Any],
         answer: Dict[str, Any],
-        session_id: str = None
+        session_id: Optional[str] = None
     ) -> int:
         """Save query to database"""
         
@@ -607,6 +612,8 @@ class RAGPipeline:
                     logger.warning("PostgreSQL reconnection failed, skipping query save")
                     return 0
                     
+            if not db_manager.postgres:
+                return 0
             async with db_manager.postgres.acquire() as conn:
                 query_id = await conn.fetchval("""
                     INSERT INTO case_queries (
@@ -621,7 +628,7 @@ class RAGPipeline:
                     query,
                     query_components.get("intent", "search"),
                     json.dumps(query_components.get("filters", {})),
-                    answer.get("results_count", 0),
+                    answer.get("evidence_count", 0),
                     answer.get("confidence", 0.0),
                     answer.get("answer", ""),
                     session_id,

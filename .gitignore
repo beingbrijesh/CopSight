@@ -44,3 +44,13 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+.agents/
+*.ipynb
+*.zip
+*.pdf
+.DS_Store
+Presentation PPTs
+graphify-out/
+prompts/
+.graphifyignore

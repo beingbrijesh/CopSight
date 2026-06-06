@@ -71,6 +71,7 @@ class StreamQueryRequest(BaseModel):
     query: str
     user_id: int
     session_id: Optional[str] = None
+    query_type: str = "natural_language"
 
 
 class RelationshipQueryRequest(BaseModel):
@@ -210,7 +211,8 @@ async def _stream_rag_tokens(
     case_id: int,
     query: str,
     user_id: int,
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None,
+    query_type: str = "natural_language"
 ) -> AsyncGenerator[str, None]:
     """Generator that yields SSE-formatted chunks from the RAG pipeline.
     
@@ -260,7 +262,8 @@ async def _stream_rag_tokens(
                     case_id=case_id,
                     query=query,
                     user_id=user_id,
-                    session_id=session_id
+                    session_id=session_id,
+                    query_type=query_type
                 ),
                 timeout=120.0  # 2-minute hard cap for local LLM
             )
@@ -326,7 +329,7 @@ async def stream_query(request: StreamQueryRequest):
     logger.info(f"SSE stream request for case {request.case_id}: {request.query[:60]}...")
 
     return StreamingResponse(
-        _stream_rag_tokens(request.case_id, request.query, request.user_id, request.session_id),
+        _stream_rag_tokens(request.case_id, request.query, request.user_id, request.session_id, request.query_type),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -411,6 +414,9 @@ async def get_query_history(case_id: int, limit: int = 20):
     try:
         from app.services.database import db_manager
         
+        if not db_manager.postgres:
+            raise HTTPException(status_code=503, detail="Database unavailable")
+        
         async with db_manager.postgres.acquire() as conn:
             queries = await conn.fetch("""
                 SELECT 
@@ -437,6 +443,9 @@ async def get_query_result(query_id: int):
     """Get a specific query result"""
     try:
         from app.services.database import db_manager
+        
+        if not db_manager.postgres:
+            raise HTTPException(status_code=503, detail="Database unavailable")
         
         async with db_manager.postgres.acquire() as conn:
             query = await conn.fetchrow("""

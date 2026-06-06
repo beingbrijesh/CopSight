@@ -3,10 +3,16 @@ UFDR AI Service - FastAPI application.
 Handles RAG pipeline, embeddings, and natural language queries.
 """
 
+import os
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+
 import sys
 import warnings
 from contextlib import asynccontextmanager
 
+import xgboost
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger

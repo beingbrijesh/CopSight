@@ -1,6 +1,9 @@
+# pyrefly: ignore-errors
+
 """
 LLM service using Ollama for query processing and response generation
 """
+
 
 import ollama
 from typing import Dict, Any, List
@@ -14,24 +17,38 @@ from app.config import settings
 # ── Forensic Analyst Persona ──────────────────────────────────────────
 SYSTEM_PROMPT = """You are **CopSight**, an elite digital forensics analyst embedded in a law-enforcement investigation platform.
 
-Your role:
-- You are a Senior Digital Forensics & Cyber-Crime Analyst with expertise in mobile forensics, communication analysis, financial crime tracing, and network intelligence.
-- You assist Investigating Officers (IOs) by analyzing extracted digital evidence from seized devices (phones, laptops, storage media) that have been parsed from UFDR (Universal Forensic Data Reader) files.
-- You ONLY answer questions grounded in the case evidence provided to you. You NEVER fabricate, assume, or hallucinate data that is not in the provided records.
+## Role
+You are a Senior Digital Forensics & Cyber-Crime Analyst with expertise in mobile forensics, communication analysis, financial crime tracing, and network intelligence. You assist Investigating Officers (IOs) by analyzing extracted digital evidence from seized devices (phones, laptops, storage media) that have been parsed from UFDR (Universal Forensic Data Reader) files.
 
-Your communication style:
-- Professional, precise, and authoritative — like a forensic report.
-- Use structured formatting: bullet points, numbered lists, tables where appropriate.
-- Always cite evidence sources as [Evidence #X] when referencing specific records.
+## Evidence Taxonomy
+You will receive evidence artifacts of the following types — understand each precisely:
+| Type | Description |
+|------|-------------|
+| `chat` / `rag` | Chat messages from WhatsApp, Telegram, SMS, iMessage — includes sender, receiver, message body, timestamp, direction (sent/received) |
+| `call_log` | Incoming, outgoing, and missed calls — includes phone numbers, call duration, timestamps |
+| `contacts` | Device address book entries — name, phone numbers, email addresses, organization |
+| `email` | Extracted email artifacts — subject line, sender, recipients (To/CC/BCC), body, attachments list |
+| `browser_history` | Web browsing artifacts — visited URLs, page titles, visit timestamps, visit count |
+| `app_data` | Third-party application artifacts — banking apps, ride-hailing, crypto wallets, social media |
+| `file_system` | Extracted files — images, documents, audio; includes file path, size, creation/modification dates |
+| `elasticsearch` | Full-text search match across all indexed evidence — may span multiple types |
+
+## Core Rules
+- You ONLY answer questions grounded in the case evidence provided. You NEVER fabricate, assume, or hallucinate data not present in the records.
+- Every claim MUST cite [Evidence #X].
+- When data is insufficient, explicitly state the gap and recommend what additional evidence is needed.
+
+## Communication Style
+- Professional, precise, and authoritative — like an intelligence brief or forensic report.
+- Use structured Markdown: tables, bullet points, numbered lists, bold section headers.
 - Flag anomalies, suspicious patterns, and investigative leads clearly.
-- Use forensic terminology appropriately (e.g., "artifact", "exhibit", "chain of custody", "temporal correlation").
-- When data is insufficient, explicitly state the gap and recommend what additional evidence or analysis is needed.
+- Use forensic terminology ("artifact", "exhibit", "chain of custody", "temporal correlation", "corroboration").
 
-You must NEVER:
-- Provide legal advice or make guilt/innocence determinations.
-- Discuss topics outside the scope of the case data (no general knowledge, no chitchat).
-- Invent phone numbers, names, dates, or any evidence not present in the provided records.
-- Use casual, chatbot-like language (e.g., "Sure!", "Of course!", "Happy to help!").
+## Hard Restrictions
+- No legal advice. No guilt/innocence determinations.
+- No general knowledge answers — only case evidence.
+- No invented phone numbers, names, dates, or content.
+- No casual chatbot language ("Sure!", "Of course!", "Happy to help!").
 """
 
 
@@ -143,7 +160,8 @@ Rules:
         self,
         query: str,
         evidence: List[Dict[str, Any]],
-        conversation_history: List[Dict[str, Any]] = None
+        conversation_history: List[Dict[str, Any]] = None,
+        query_type: str = "natural_language"
     ) -> Dict[str, Any]:
         """Synthesize answer from evidence using RAG with conversation context"""
         
@@ -159,7 +177,23 @@ Rules:
         has_current_evidence = len(evidence) > 0
         
         if has_current_evidence:
-            prompt = f"""Analyze the following digital evidence records retrieved from a forensic case database and provide a structured forensic analysis in response to the investigator's query.
+            if query_type == "profile":
+                prompt = f"""Analyze the following digital evidence records retrieved from a forensic case database.
+
+═══ EVIDENCE RECORDS ═══
+{context}
+
+═══ PRIOR INVESTIGATION CONTEXT ═══
+{conversation_context if conversation_context else "No prior context for this session."}
+
+═══ INVESTIGATOR'S QUERY & REQUIRED FORMAT ═══
+{query}
+
+Keep your response brief, actionable, and strictly adhere to the requested markdown headers from the query.
+
+═══ FORENSIC ANALYSIS ═══"""
+            else:
+                prompt = f"""Analyze the following digital evidence records retrieved from a forensic case database and provide a structured forensic intelligence brief.
 
 ═══ EVIDENCE RECORDS ═══
 {context}
@@ -170,16 +204,36 @@ Rules:
 ═══ INVESTIGATOR'S QUERY ═══
 {query}
 
-═══ ANALYSIS DIRECTIVES ═══
-1. **Direct Answer**: Begin immediately with the forensic analysis. No greetings, no preamble.
-2. **Evidence-Grounded**: Every claim MUST cite [Evidence #X]. Do NOT state anything not supported by the provided records.
-3. **Structured Output**: Use clear sections where appropriate:
-   - **Key Findings**: Bullet-point the primary discoveries.
-   - **Pattern Analysis**: Note temporal sequences, communication clusters, financial flows, or behavioral patterns.
-   - **Anomalies & Red Flags**: Highlight anything unusual — odd timing, suspicious contacts, coded language, burner-phone indicators.
-   - **Investigative Leads**: Suggest concrete next steps the IO should pursue based on the evidence.
-4. **Quantify**: Include counts, date ranges, frequencies where the data supports it.
-5. **Professional Tone**: Write as a forensic analyst filing an intelligence brief, not as a chatbot.
+═══ REQUIRED OUTPUT FORMAT ═══
+Respond using EXACTLY this structure. Do not deviate from these section headers:
+
+## 🔍 Intelligence Summary
+One-paragraph direct answer to the query, grounded in the evidence. No preamble.
+
+## 📋 Evidence Overview
+A Markdown table of the most relevant records:
+| # | Type | Timestamp | Parties | Key Content | Relevance |
+|---|------|-----------|---------|-------------|-----------|
+(Fill with actual [Evidence #X] data. Skip rows for irrelevant evidence.)
+
+## 🎯 Key Findings
+- **Finding 1** [Evidence #X, #Y]: ...
+- **Finding 2** [Evidence #X]: ...
+(Each bullet must cite at least one evidence reference.)
+
+## 📈 Pattern Analysis
+Describe temporal sequences, communication clusters, financial flows, or behavioral patterns observed across the evidence set. Use sub-bullets for individual data points.
+
+## ⚠️ Anomalies & Red Flags
+- **[Anomaly label]**: Description + evidence citation + why it is suspicious.
+(Only include if genuinely anomalous. Skip section if nothing stands out.)
+
+## 🔎 Investigative Leads
+1. **Lead**: Specific actionable step the IO should take next, based only on evidence gaps or patterns found.
+(Number each lead. Be concrete, not generic.)
+
+## 📊 Confidence Assessment
+Evidence strength: [STRONG / MODERATE / LIMITED] — X records directly relevant, Y corroborating.
 
 ═══ FORENSIC ANALYSIS ═══"""
         else:
@@ -191,13 +245,18 @@ Rules:
 ═══ INVESTIGATOR'S QUERY ═══
 {query}
 
-═══ RESPONSE DIRECTIVES ═══
-1. State clearly that no matching evidence artifacts were found in the current case dataset for this query.
-2. If the prior investigation context contains relevant findings, reference them explicitly as "per earlier analysis" — but do NOT present them as newly discovered evidence.
-3. Provide specific, actionable recommendations:
-   - What type of evidence might answer this query (e.g., "Check if call detail records have been ingested", "This may require analysis of deleted artifacts").
-   - Whether additional data sources should be parsed (e.g., cloud backups, additional UFDR extractions).
-4. Keep the response concise and professional. Do NOT pad with generic statements.
+═══ REQUIRED OUTPUT FORMAT ═══
+
+## 🔍 Assessment
+State clearly that no matching evidence artifacts were found for this query.
+
+## 📌 Prior Context Relevance
+If prior investigation context contains relevant findings, reference them as "per earlier analysis" — do NOT present as new evidence. If not relevant, state "Not applicable."
+
+## 🔎 Recommended Next Steps
+1. **[Action]**: What type of evidence or extraction method could answer this query.
+2. **[Action]**: Whether additional UFDR data sources need to be parsed (cloud backup, deleted partition, etc.).
+(Be specific. Do not pad with generic statements.)
 
 ═══ ASSESSMENT ═══"""
 
@@ -286,42 +345,59 @@ Return ONLY the JSON object."""
         return prompt
     
     def _build_evidence_context(self, evidence: List[Dict[str, Any]]) -> str:
-        """Build context string from evidence"""
+        """Build rich context string from evidence for LLM analysis"""
         context_parts = []
         
         for idx, item in enumerate(evidence, 1):
             source = item.get('source', {})
             content = item.get('content', '')
             metadata = item.get('metadata', {})
+            is_cross_case = item.get('is_cross_case', False)
+            source_case_id = item.get('source_case_id')
+            highlight = item.get('highlight', {})
             
-            # Handle source being a string (e.g., "elasticsearch") or a dict
+            # Resolve source type
             if isinstance(source, str):
                 source_type = source
+                source_name = source
             elif isinstance(source, dict):
                 source_type = source.get('type', 'unknown')
+                source_name = source.get('name', source_type)
             else:
                 source_type = 'unknown'
+                source_name = 'unknown'
             
-            # Handle metadata being a string or dict
+            # Resolve metadata fields
             if isinstance(metadata, str):
-                phone_number = 'unknown'
-                timestamp = 'unknown'
+                phone_number = direction = app_name = timestamp = 'unknown'
             else:
-                phone_number = metadata.get('phoneNumber', 'unknown')
-                timestamp = metadata.get('timestamp', 'unknown')
+                phone_number = metadata.get('phoneNumber') or metadata.get('phone_number') or 'unknown'
+                timestamp = metadata.get('timestamp') or 'unknown'
+                direction = metadata.get('direction') or 'unknown'
+                app_name = metadata.get('appName') or metadata.get('app_name') or metadata.get('sourceType') or source_name
+            
+            # Use highlighted snippet if available, otherwise full content
+            display_content = content
+            if highlight and highlight.get('content'):
+                snippets = highlight['content']
+                display_content = ' … '.join(snippets) if isinstance(snippets, list) else snippets
+            
+            # Cross-case indicator
+            cross_case_note = f"  ⚠️  CROSS-CASE SOURCE (Case #{source_case_id})" if is_cross_case else ""
             
             context_parts.append(
-                f"[Evidence #{idx}]\n"
-                f"Type: {source_type}\n"
-                f"From: {phone_number}\n"
-                f"Date: {timestamp}\n"
-                f"Content: {content}\n"
+                f"[Evidence #{idx}]{cross_case_note}\n"
+                f"  Source   : {app_name} ({source_type})\n"
+                f"  Phone    : {phone_number}\n"
+                f"  Direction: {direction}\n"
+                f"  Timestamp: {timestamp}\n"
+                f"  Content  : {display_content}\n"
             )
         
         return "\n".join(context_parts)
     
     def _build_conversation_context(self, conversation_history: List[Dict[str, Any]]) -> str:
-        """Build conversation context string from history"""
+        """Build conversation context string from history, preserving semantic meaning."""
         if not conversation_history:
             return ""
         
@@ -329,47 +405,159 @@ Return ONLY the JSON object."""
         for i, entry in enumerate(conversation_history[-5:], 1):  # Last 5 queries
             query = entry.get("query", "")
             answer = entry.get("answer", "")
+            
+            # Priority 1: use pre-extracted findings if available (already compact & structured)
+            findings = entry.get("findings", [])
+            if findings and isinstance(findings, list) and len(findings) > 0:
+                finding_lines = []
+                for f in findings[:3]:  # top 3 findings
+                    if isinstance(f, dict):
+                        finding_lines.append(f"  • {f.get('finding', '').strip()[:200]}")
+                    elif isinstance(f, str):
+                        finding_lines.append(f"  • {f.strip()[:200]}")
+                summary = "Key findings:\n" + "\n".join(finding_lines)
+            # Priority 2: first complete paragraph from the answer
+            elif answer:
+                # Extract the Intelligence Summary / first meaningful paragraph
+                # Try to grab content after the first ## header if structured
+                if '## 🔍' in answer or '## Intelligence' in answer:
+                    sections = re.split(r'##\s+[🔍📋🎯📈⚠️🔎📊]?\s*', answer)
+                    # Second element is the content of the first section
+                    first_section = sections[1].strip() if len(sections) > 1 else answer
+                    summary = self._truncate_at_boundary(first_section, 400)
+                else:
+                    # Plain text: first paragraph (split on double newline)
+                    paragraphs = [p.strip() for p in answer.split('\n\n') if p.strip()]
+                    first_para = paragraphs[0] if paragraphs else answer
+                    summary = self._truncate_at_boundary(first_para, 400)
+            else:
+                summary = "(No response recorded)"
+            
             context_parts.append(
-                f"Query {i}: {query}\n"
-                f"Response {i}: {answer[:500]}..."  # Truncate long responses
+                f"[Prior Query {i}]: {query}\n"
+                f"[Prior Response {i}]: {summary}"
             )
         
         return "\n\n".join(context_parts)
+    
+    def _truncate_at_boundary(self, text: str, max_chars: int) -> str:
+        """Truncate text at the last sentence boundary within max_chars."""
+        if len(text) <= max_chars:
+            return text
+        window = text[:max_chars]
+        # Find last sentence terminator
+        last_end = max(window.rfind('.'), window.rfind('!'), window.rfind('?'))
+        if last_end > max_chars // 2:  # Only truncate here if it's not too short
+            return window[:last_end + 1]
+        # Fallback: last word boundary
+        last_space = window.rfind(' ')
+        return window[:last_space] if last_space > 0 else window
     
     def _extract_findings(
         self,
         answer: str,
         evidence: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """Extract key findings from answer"""
+        """Extract structured key findings from the LLM's formatted output."""
         findings = []
         
-        # Simple extraction based on common patterns
-        lines = answer.split('\n')
-        for line in lines:
-            if any(keyword in line.lower() for keyword in ['found', 'identified', 'shows', 'indicates']):
+        # Strategy 1: Parse the structured '## 🎯 Key Findings' section
+        key_findings_match = re.search(
+            r'##\s+[🎯]?\s*Key Findings\s*\n(.*?)(?=\n##|\Z)',
+            answer,
+            re.DOTALL | re.IGNORECASE
+        )
+        if key_findings_match:
+            block = key_findings_match.group(1)
+            for line in block.split('\n'):
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                # Strip markdown list markers (-, *, •)
+                line = re.sub(r'^[-*•]\s*', '', line)
+                if len(line) < 10:
+                    continue
+                # Extract evidence references like [Evidence #1, #3]
+                evidence_refs = re.findall(r'\[Evidence #(\d+)\]', line)
+                # Classify severity
+                severity = 'high' if any(w in line.lower() for w in ['critical', 'suspicious', 'anomal', 'red flag', 'alert']) else \
+                           'medium' if any(w in line.lower() for w in ['pattern', 'cluster', 'frequent', 'repeated']) else 'low'
                 findings.append({
-                    "finding": line.strip(),
-                    "type": "observation"
+                    "finding": line,
+                    "type": "key_finding",
+                    "severity": severity,
+                    "evidence_refs": evidence_refs
                 })
+                if len(findings) >= 8:
+                    break
         
-        return findings[:5]  # Top 5 findings
+        # Strategy 2: Parse anomalies section if findings still sparse
+        if len(findings) < 3:
+            anomaly_match = re.search(
+                r'##\s+[⚠️]?\s*Anomalies.*?\n(.*?)(?=\n##|\Z)',
+                answer,
+                re.DOTALL | re.IGNORECASE
+            )
+            if anomaly_match:
+                block = anomaly_match.group(1)
+                for line in block.split('\n'):
+                    line = re.sub(r'^[-*•]\s*', '', line.strip())
+                    if len(line) >= 10:
+                        findings.append({
+                            "finding": line,
+                            "type": "anomaly",
+                            "severity": "high",
+                            "evidence_refs": re.findall(r'\[Evidence #(\d+)\]', line)
+                        })
+        
+        # Strategy 3: Keyword fallback for unstructured answers
+        if not findings:
+            for line in answer.split('\n'):
+                line = line.strip()
+                if any(kw in line.lower() for kw in ['found', 'identified', 'shows', 'indicates', 'detected', 'observed']):
+                    findings.append({
+                        "finding": line,
+                        "type": "observation",
+                        "severity": "low",
+                        "evidence_refs": re.findall(r'\[Evidence #(\d+)\]', line)
+                    })
+                    if len(findings) >= 5:
+                        break
+        
+        return findings[:8]
     
     def _calculate_confidence(
         self,
         answer: str,
         evidence: List[Dict[str, Any]]
     ) -> float:
-        """Calculate confidence score for the answer"""
-        
-        # Simple heuristic based on evidence count and answer length
+        """Multi-factor confidence score: evidence depth + citation density + answer completeness."""
         if not evidence:
             return 0.0
         
-        evidence_score = min(len(evidence) / 10, 1.0)  # Max at 10 evidence items
-        answer_score = min(len(answer) / 500, 1.0)  # Max at 500 chars
+        # Factor 1: Evidence count (diminishing returns — 5 items = 0.5, 10 = 0.8, 20 = 1.0)
+        import math
+        evidence_score = min(math.log1p(len(evidence)) / math.log1p(20), 1.0)
         
-        return (evidence_score + answer_score) / 2
+        # Factor 2: Citation density — how many evidence references appear in the answer
+        citation_count = len(re.findall(r'\[Evidence #\d+\]', answer))
+        # Expect at least 1 citation per 2 evidence items; 0 citations → 0.0
+        citation_score = min(citation_count / max(len(evidence) * 0.5, 1), 1.0) if citation_count > 0 else 0.0
+        
+        # Factor 3: Answer completeness — presence of key structured sections
+        section_score = 0.0
+        for marker in ['Key Findings', 'Pattern Analysis', 'Investigative Leads', 'Anomalies']:
+            if marker.lower() in answer.lower():
+                section_score += 0.25
+        section_score = min(section_score, 1.0)
+        
+        # Factor 4: Cross-case penalty — cross-case results are inherently less certain
+        cross_case_count = sum(1 for e in evidence if e.get('is_cross_case', False))
+        cross_case_ratio = cross_case_count / len(evidence) if evidence else 0
+        cross_case_penalty = cross_case_ratio * 0.15  # up to 15% penalty
+        
+        raw = (evidence_score * 0.35) + (citation_score * 0.35) + (section_score * 0.30)
+        return round(max(0.0, min(raw - cross_case_penalty, 1.0)), 3)
 
 
 # Global instance

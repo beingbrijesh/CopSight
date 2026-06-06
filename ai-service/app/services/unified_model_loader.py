@@ -13,6 +13,7 @@ import logging
 import warnings
 from typing import Dict, Any, Optional
 
+import xgboost
 import numpy as np
 import torch
 import joblib

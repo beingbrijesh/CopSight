@@ -74,12 +74,13 @@ class EvidenceClassifier:
             X_text_features = text_vectorizer.fit_transform(X_text)
 
             # Numeric feature scaling
+            numeric_scaler = None
             if X_numeric.shape[1] > 0:
                 numeric_scaler = StandardScaler()
-                X_numeric_scaled = numeric_scaler.fit_transform(X_numeric)
-                X_combined = np.hstack([X_text_features.toarray(), X_numeric_scaled])
+                X_numeric_scaled = numeric_scaler.fit_transform(X_numeric)  # type: ignore[arg-type]
+                X_combined = np.hstack([X_text_features.toarray(), X_numeric_scaled])  # type: ignore[union-attr]
             else:
-                X_combined = X_text_features.toarray()
+                X_combined = X_text_features.toarray()  # type: ignore[union-attr]
 
             # Label encoding
             label_encoder = LabelEncoder()
@@ -119,9 +120,9 @@ class EvidenceClassifier:
                 )
                 X_text_counts = count_vectorizer.fit_transform(X_text)
                 if X_numeric.shape[1] > 0:
-                    X_combined_nb = np.hstack([X_text_counts.toarray(), X_numeric])
+                    X_combined_nb = np.hstack([X_text_counts.toarray(), X_numeric])  # type: ignore[union-attr]
                 else:
-                    X_combined_nb = X_text_counts.toarray()
+                    X_combined_nb = X_text_counts.toarray()  # type: ignore[union-attr]
 
                 X_train_nb, X_test_nb = train_test_split(
                     X_combined_nb, test_size=0.2, random_state=42, stratify=y_encoded
@@ -164,7 +165,7 @@ class EvidenceClassifier:
             # Store trained components
             self.classifiers[algorithm] = classifier
             self.vectorizers[algorithm] = text_vectorizer
-            if 'numeric_scaler' in locals():
+            if numeric_scaler is not None:
                 self.scalers[algorithm] = numeric_scaler
             self.encoders[algorithm] = label_encoder
 
@@ -350,10 +351,10 @@ class EvidenceClassifier:
             # Combine features
             if X_numeric.shape[1] > 0:
                 scaler = StandardScaler()
-                X_numeric_scaled = scaler.fit_transform(X_numeric)
-                X_combined = np.hstack([X_text_features.toarray(), X_numeric_scaled])
+                X_numeric_scaled = scaler.fit_transform(X_numeric)  # type: ignore[arg-type]
+                X_combined = np.hstack([X_text_features.toarray(), X_numeric_scaled])  # type: ignore[union-attr]
             else:
-                X_combined = X_text_features.toarray()
+                X_combined = X_text_features.toarray()  # type: ignore[union-attr]
 
             # Perform clustering
             kmeans = KMeans(
@@ -387,8 +388,8 @@ class EvidenceClassifier:
                 'n_clusters': n_clusters,
                 'total_samples': len(evidence_list),
                 'cluster_analysis': cluster_analysis,
-                'silhouette_score': self._calculate_silhouette_score(X_combined, cluster_labels),
-                'inertia': float(kmeans.inertia_)
+                'silhouette_score': self._calculate_silhouette_score(X_combined, cluster_labels),  # type: ignore[arg-type]
+                'inertia': kmeans.inertia_
             }
 
         except Exception as e:
@@ -421,10 +422,10 @@ class EvidenceClassifier:
 
             if X_numeric.shape[1] > 0:
                 scaler = StandardScaler()
-                X_numeric_scaled = scaler.fit_transform(X_numeric)
-                X_combined = np.hstack([X_text_features.toarray(), X_numeric_scaled])
+                X_numeric_scaled = scaler.fit_transform(X_numeric)  # type: ignore[arg-type]
+                X_combined = np.hstack([X_text_features.toarray(), X_numeric_scaled])  # type: ignore[union-attr]
             else:
-                X_combined = X_text_features.toarray()
+                X_combined = X_text_features.toarray()  # type: ignore[union-attr]
 
             label_encoder = LabelEncoder()
             y_encoded = label_encoder.fit_transform(y)
@@ -465,7 +466,7 @@ class EvidenceClassifier:
                 'success': True,
                 'algorithm': algorithm,
                 'best_parameters': grid_search.best_params_,
-                'best_score': float(grid_search.best_score_),
+                'best_score': grid_search.best_score_,
                 'cv_results': {
                     'mean_test_score': grid_search.cv_results_['mean_test_score'].tolist(),
                     'std_test_score': grid_search.cv_results_['std_test_score'].tolist()
@@ -600,7 +601,7 @@ class EvidenceClassifier:
         """Calculate silhouette score for clustering evaluation"""
         try:
             from sklearn.metrics import silhouette_score
-            return float(silhouette_score(X, labels))
+            return float(silhouette_score(X, labels))  # type: ignore[arg-type]
         except:
             return 0.0
 

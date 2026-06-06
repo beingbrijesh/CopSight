@@ -102,6 +102,9 @@ CREATE TABLE IF NOT EXISTS case_queries (
     results_count INTEGER DEFAULT 0,
     confidence_score FLOAT,
     answer TEXT,
+    session_id VARCHAR(100),
+    findings JSONB,
+    evidence JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

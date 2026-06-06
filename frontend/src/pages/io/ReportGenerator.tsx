@@ -88,11 +88,7 @@ export const ReportGenerator = () => {
   return (
       <div className="mx-auto max-w-7xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <FileText className="w-6 h-6 text-green-600" />
-            Generate Case Report
-          </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 font-medium">
             Create a comprehensive PDF report for case {caseData?.caseNumber}
           </p>
         </div>

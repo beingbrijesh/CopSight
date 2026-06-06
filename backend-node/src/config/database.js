@@ -48,6 +48,28 @@ export const connectDatabase = async () => {
       // await sequelize.sync();
       logger.info('Database schema sync skipped');
     }
+
+    // Ensure critical tables exist (safe idempotent migration)
+    try {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS notifications (
+          id SERIAL PRIMARY KEY,
+          recipient_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          case_id INTEGER REFERENCES cases(id) ON DELETE CASCADE,
+          type VARCHAR(50) NOT NULL,
+          title VARCHAR(200) NOT NULL,
+          message TEXT NOT NULL,
+          data JSONB,
+          is_read BOOLEAN DEFAULT false,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+      `);
+      logger.info('Ensured notifications table exists');
+    } catch (migrationError) {
+      logger.warn('Could not ensure notifications table:', migrationError.message);
+    }
   } catch (error) {
     logger.error('Unable to connect to database:', error);
     process.exit(1);

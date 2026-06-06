@@ -54,6 +54,7 @@ const AuditLog = sequelize.define('AuditLog', {
 }, {
   tableName: 'audit_log',
   timestamps: true,
+  createdAt: 'created_at',
   updatedAt: false
 });
 

@@ -46,8 +46,7 @@ export const AdminDashboard = () => {
     <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-            <p className="text-gray-600 mt-1">System overview and management</p>
+            <p className="text-gray-600 font-medium">System overview and management</p>
           </div>
           <button
             onClick={loadStats}

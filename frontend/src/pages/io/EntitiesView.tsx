@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Database, Filter, Search, Download, MessageCircle, Activity, Upload } from 'lucide-react';
+import { Database, Filter, Search, Download, MessageCircle, Activity, Upload } from 'lucide-react';
 import { caseAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
-import { Navbar } from '../../components/Navbar';
 import { EvidenceChip } from '../../components/EvidenceChip';
 
 interface Entity {
@@ -79,7 +78,19 @@ export const EntitiesView = () => {
       const response = await caseAPI.getCaseEntities(parseInt(caseId!), params);
       const data = response.data.data;
 
-      setEntities(data.entities);
+      const normalizedEntities = data.entities.map((e: any) => ({
+        ...e,
+        id: e.id,
+        entityValue: e.entityValue || e.entity_value || e.value,
+        entityType: e.entityType || e.entity_type || e.type,
+        evidenceType: e.evidenceType || e.evidence_type,
+        evidenceId: e.evidenceId || e.evidence_id,
+        confidenceScore: e.confidenceScore || e.confidence_score || e.confidence || 0,
+        entityMetadata: e.entityMetadata || e.entity_metadata || e.metadata || {},
+        created_at: e.created_at || e.createdAt || new Date().toISOString()
+      }));
+
+      setEntities(normalizedEntities);
       setEntityTypes(data.summary.types);
       setTotalEntities(data.pagination.total);
       setTotalPages(data.pagination.pages);
@@ -172,13 +183,7 @@ export const EntitiesView = () => {
   if (error) {
     return (
         <div className="mx-auto max-w-7xl py-8">
-          <button
-            onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Case
-          </button>
+
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <div className="flex items-center gap-3">
               <div className="text-red-600">
@@ -201,23 +206,12 @@ export const EntitiesView = () => {
 
   return (
       <div className="mx-auto max-w-7xl py-8">
-        <button
-          onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Case
-        </button>
-
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <Database className="w-6 h-6 text-blue-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {totalEntities + totalChats > 0 ? 'Extracted Data' : 'Forensic Analysis Ready'}
-                </h1>
-                <p className="text-gray-600 mt-1">
+                <p className="text-gray-600 font-medium mt-1">
                   {totalEntities + totalChats > 0
                     ? `All entities and chat messages extracted from case #${caseId}`
                     : `Case #${caseId} is ready for forensic data extraction`}
