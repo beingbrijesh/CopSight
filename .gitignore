@@ -54,3 +54,5 @@ Presentation PPTs
 graphify-out/
 prompts/
 .graphifyignore
+skills-lock.json
+Makefile
