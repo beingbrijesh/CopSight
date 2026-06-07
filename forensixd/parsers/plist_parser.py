@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import io
 import plistlib
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -43,7 +43,7 @@ class PlistParser:
     All public methods perform recursive type normalisation via
     :meth:`_convert_types` before returning, ensuring that:
 
-    * Naive :class:`~datetime.datetime` objects are tagged with UTC.
+    * Naive :class:`~datetime.datetime` objects are tagged with IST.
     * :class:`bytes` values are hex-encoded strings so that results are safely
       JSON-serialisable.
     """
@@ -171,7 +171,7 @@ class PlistParser:
 
         Transformations applied:
 
-        * :class:`~datetime.datetime` without timezone info → UTC-aware.
+        * :class:`~datetime.datetime` without timezone info → IST-aware.
         * :class:`bytes` → lowercase hex string (e.g. ``"deadbeef"``).
         * :class:`dict` → recurse over values.
         * :class:`list` → recurse over items.
@@ -189,7 +189,7 @@ class PlistParser:
         """
         if isinstance(obj, datetime):
             if obj.tzinfo is None:
-                return obj.replace(tzinfo=timezone.utc)
+                return obj.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
             return obj
 
         if isinstance(obj, bytes):

@@ -39,7 +39,7 @@ from __future__ import annotations
 import logging
 import tempfile
 from collections.abc import Iterator
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -543,7 +543,7 @@ class DiskImageExtractor(AbstractExtractor):
                 artifact_type=artifact_type,
                 source_app="disk_image",
                 source_path=file_path_str,
-                acquired_at=datetime.now(timezone.utc),
+                acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
                 hashes=hashes,
                 data={
                     "image_path": str(self._image_path),

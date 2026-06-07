@@ -5,7 +5,7 @@ forensixd.legal.authorization
 Interactive and file-based authorization management for forensic acquisitions.
 """
 
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 
 from rich.console import Console
@@ -82,7 +82,7 @@ class AuthorizationManager:
             examiner_id=examiner_id,
             jurisdiction=jurisdiction,
             consent_type=consent_type,
-            authorized_at=datetime.now(timezone.utc),
+            authorized_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
             device=device,
         )
 
@@ -144,7 +144,7 @@ class AuthorizationManager:
                 examiner_id=str(data["examiner_id"]).strip(),
                 jurisdiction=str(data["jurisdiction"]).strip(),
                 consent_type=consent_type,
-                authorized_at=data.get("authorized_at", datetime.now(timezone.utc)),
+                authorized_at=data.get("authorized_at", datetime.now(timezone(timedelta(hours=5, minutes=30)))),
                 device=device,
                 notes=data.get("notes")
             )

@@ -18,7 +18,7 @@ from forensixd.parsers.sqlite_parser import SQLiteParser
 
 __all__ = ["BrowserParser"]
 
-_CHROME_EPOCH = datetime(1601, 1, 1, tzinfo=timezone.utc)
+_CHROME_EPOCH = datetime(1601, 1, 1, tzinfo=timezone(timedelta(hours=5, minutes=30)))
 
 
 @ParserRegistry.register("History", "places.db", "com.android.chrome", "firefox")
@@ -73,7 +73,7 @@ class BrowserParser(AbstractParser):
         )
         rows = SQLiteParser.query(db, sql)
 
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=timezone(timedelta(hours=5, minutes=30)))
         records: list[ParsedRecord] = []
 
         for row in rows:
@@ -114,13 +114,13 @@ class BrowserParser(AbstractParser):
         )
         rows = SQLiteParser.query(db, sql)
 
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=timezone(timedelta(hours=5, minutes=30)))
         records: list[ParsedRecord] = []
 
         for row in rows:
             raw_ts: Any = row.get("visit_date")
             try:
-                ts = datetime.fromtimestamp(float(raw_ts) / 1e6, tz=timezone.utc)
+                ts = datetime.fromtimestamp(float(raw_ts) / 1e6, tz=timezone(timedelta(hours=5, minutes=30)))
             except (TypeError, ValueError, OSError):
                 ts = now
 

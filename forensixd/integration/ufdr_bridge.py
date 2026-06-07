@@ -1,7 +1,7 @@
 import json
 import shutil
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from typing import Any
 
 from pydantic import BaseModel
@@ -77,7 +77,7 @@ class UFDRBridge:
             "ufdr_file": str(ufdr_path),
             "artifact_count": artifact_count,
             "root_hash": session.root_hash,
-            "last_updated": datetime.now(timezone.utc).isoformat()
+            "last_updated": datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
         }
 
         # Replace existing entry for same case_number

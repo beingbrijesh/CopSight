@@ -1,5 +1,5 @@
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from typing import List, Union
 
 from jinja2 import Environment, BaseLoader
@@ -84,7 +84,7 @@ class ReportWriter:
         html_content = template.render(
             session=session,
             artifacts=artifacts,
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
         )
 
         try:

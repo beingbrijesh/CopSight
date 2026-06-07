@@ -33,7 +33,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Callable
 
-from forensixd.core.exceptions import ParseError
 from forensixd.core.models import Artifact, ParsedRecord
 
 __all__ = ["AbstractParser", "ParserRegistry"]

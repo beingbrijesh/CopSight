@@ -40,7 +40,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterator
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path  # noqa: F401 — re-exported per spec
 from typing import Optional
 
@@ -303,7 +303,7 @@ class AndroidExtractor(AbstractExtractor):
                     artifact_type=artifact_type,
                     source_app="adb_logical",
                     source_path=path,
-                    acquired_at=datetime.now(timezone.utc),
+                    acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
                     hashes=hashes,
                     data={"method": "adb_logical"},
                     device=self._device,
@@ -361,7 +361,7 @@ class AndroidExtractor(AbstractExtractor):
                     artifact_type=artifact_type,
                     source_app="adb_logical",
                     source_path=path,
-                    acquired_at=datetime.now(timezone.utc),
+                    acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
                     hashes=hashes,
                     data={"method": "adb_logical"},
                     device=self._device,

@@ -47,7 +47,7 @@ from __future__ import annotations
 import logging
 import platform as sys_platform
 from collections.abc import Iterator
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -284,7 +284,7 @@ class WindowsExtractor(AbstractExtractor):
             artifact_type=artifact_type,
             source_app=source_app,
             source_path=str(path),
-            acquired_at=datetime.now(timezone.utc),
+            acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
             hashes=hashes,
             data=data,
             device=self._device,

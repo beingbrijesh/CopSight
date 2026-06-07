@@ -31,7 +31,7 @@ than silently returning an empty list.
 from __future__ import annotations
 
 import tempfile
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -328,13 +328,13 @@ class WhatsAppParser(AbstractParser):
         )
         rows = SQLiteParser.query(db, sql)
 
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=timezone(timedelta(hours=5, minutes=30)))
         records: list[ParsedRecord] = []
 
         for row in rows:
             raw_ts: Any = row.get("timestamp")
             try:
-                ts = datetime.fromtimestamp(int(raw_ts) / 1000, tz=timezone.utc)
+                ts = datetime.fromtimestamp(int(raw_ts) / 1000, tz=timezone(timedelta(hours=5, minutes=30)))
             except (TypeError, ValueError, OSError):
                 ts = now
 
@@ -401,14 +401,14 @@ class WhatsAppParser(AbstractParser):
         )
         rows = SQLiteParser.query(db, sql)
 
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=timezone(timedelta(hours=5, minutes=30)))
         records: list[ParsedRecord] = []
 
         for row in rows:
             raw_ts: Any = row.get("ZMESSAGEDATE")
             try:
                 ts = datetime.fromtimestamp(
-                    _APPLE_EPOCH_OFFSET + float(raw_ts), tz=timezone.utc
+                    _APPLE_EPOCH_OFFSET + float(raw_ts), tz=timezone(timedelta(hours=5, minutes=30))
                 )
             except (TypeError, ValueError, OSError):
                 ts = now

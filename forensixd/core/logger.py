@@ -4,7 +4,7 @@ forensixd.core.logger
 Tamper-evident, hash-chained audit log for forensic sessions.
 
 Each log line is a JSON object containing a running sequence number,
-a UTC timestamp, the originating session ID, the event name, arbitrary
+an IST timestamp, the originating session ID, the event name, arbitrary
 event data, the hash of the *previous* line, and the SHA-256 hash of
 the current line (computed over all other fields with sorted keys).
 
@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 import hashlib
 import threading
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import IO, Any
 
@@ -82,7 +82,7 @@ class AuditLogger:
             # Build the record in the required key order.
             record: dict[str, Any] = {
                 "seq": self._seq,
-                "ts": datetime.now(tz=timezone.utc).isoformat(),
+                "ts": datetime.now(tz=timezone(timedelta(hours=5, minutes=30))).isoformat(),
                 "session_id": self._session_id,
                 "event": event,
                 "data": data,

@@ -5,7 +5,7 @@ forensixd.legal.chain_of_custody
 Chain of Custody tracking and document generation.
 """
 
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import Optional, List
 
@@ -32,7 +32,7 @@ Generated:    {{ generated_at }}
 EVENTS
 ------
 {% for e in events %}
-[{{ loop.index | string | rjust(3) }}] {{ e.occurred_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+[{{ loop.index | string | rjust(3) }}] {{ e.occurred_at.strftime('%Y-%m-%d %H:%M:%S IST') }}
      Event:  {{ e.event_type }}
      Actor:  {{ e.actor }}
      Detail: {{ e.description }}
@@ -76,7 +76,7 @@ class ChainOfCustodyEngine:
 
         event = AcquisitionEvent(
             event_type=event_type,
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
             actor=actor,
             description=description
         )
@@ -100,7 +100,7 @@ class ChainOfCustodyEngine:
         env = Environment(loader=BaseLoader())
         env.filters["rjust"] = lambda s, w: str(s).rjust(w)
         template = env.from_string(COC_TEMPLATE)
-        generated_at = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+        generated_at = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y-%m-%d %H:%M:%S IST')
         rendered = template.render(
             session=self.session,
             generated_at=generated_at,
@@ -122,7 +122,7 @@ class ChainOfCustodyEngine:
         env = Environment(loader=BaseLoader())
         env.filters["rjust"] = lambda s, w: str(s).rjust(w)
         template = env.from_string(COC_TEMPLATE)
-        generated_at = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+        generated_at = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y-%m-%d %H:%M:%S IST')
         rendered = template.render(
             session=self.session,
             generated_at=generated_at,

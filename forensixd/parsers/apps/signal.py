@@ -7,7 +7,7 @@ Parser for Signal secure messenger databases.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -63,18 +63,18 @@ class SignalParser(AbstractParser):
         )
         rows = SQLiteParser.query(db, sql)
 
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=timezone(timedelta(hours=5, minutes=30)))
         records: list[ParsedRecord] = []
 
         for row in rows:
             raw_ts: Any = row.get("date")
             try:
                 # Signal dates are typically milliseconds since epoch
-                ts = datetime.fromtimestamp(int(raw_ts) / 1000, tz=timezone.utc)
+                ts = datetime.fromtimestamp(int(raw_ts) / 1000, tz=timezone(timedelta(hours=5, minutes=30)))
             except (TypeError, ValueError, OSError):
                 ts = now
 
-            # type: 1=received, 2=sent
+            # message type: 1=received, 2=sent
             is_sent = row.get("type") == 2
 
             fields: dict[str, Any] = {

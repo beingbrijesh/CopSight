@@ -44,7 +44,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterator
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -353,7 +353,7 @@ class IosExtractor(AbstractExtractor):
                     artifact_type=artifact_type,
                     source_app="ios_backup",
                     source_path=str(file_path),
-                    acquired_at=datetime.now(timezone.utc),
+                    acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
                     hashes=hashes,
                     data={
                         "backup_dir": str(self._backup_dir),

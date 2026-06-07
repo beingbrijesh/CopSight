@@ -155,12 +155,12 @@ class RegistryParser:
 
     @staticmethod
     def _key_last_written(key: Any) -> datetime | None:
-        """Return the UTC last-written timestamp of *key*, or *None* on failure."""
+        """Return the IST last-written timestamp of *key*, or *None* on failure."""
         try:
             ts: datetime = key.timestamp()
             if ts.tzinfo is None:
-                return ts.replace(tzinfo=timezone.utc)
-            return ts.astimezone(timezone.utc)
+                return ts.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
+            return ts.astimezone(timezone(timedelta(hours=5, minutes=30)))
         except Exception:  # noqa: BLE001
             return None
 
@@ -291,7 +291,7 @@ class RegistryParser:
 
     @staticmethod
     def convert_filetime(filetime: int) -> datetime:
-        """Convert a Windows FILETIME integer to a timezone-aware UTC datetime.
+        """Convert a Windows FILETIME integer to a timezone-aware IST datetime.
 
         Windows FILETIME counts 100-nanosecond intervals since
         1601-01-01 00:00:00 UTC.
@@ -304,16 +304,16 @@ class RegistryParser:
         Returns
         -------
         datetime
-            Equivalent UTC-aware :class:`~datetime.datetime` object.
+            Equivalent IST-aware :class:`~datetime.datetime` object.
 
         Examples
         --------
         >>> RegistryParser.convert_filetime(132_000_000_000_000_000)
-        datetime.datetime(2019, 10, 14, 2, 13, 20, tzinfo=datetime.timezone.utc)
+        datetime.datetime(2019, 10, 14, 2, 13, 20, tzinfo=datetime.timezone(timedelta(hours=5, minutes=30)))
         """
         total_seconds_since_1601: float = filetime / _FILETIME_TICKS_PER_SECOND
         unix_timestamp: float = total_seconds_since_1601 + _FILETIME_EPOCH_DELTA_SECONDS
-        return datetime.fromtimestamp(unix_timestamp, tz=timezone.utc)
+        return datetime.fromtimestamp(unix_timestamp, tz=timezone(timedelta(hours=5, minutes=30)))
 
 
 __all__ = ["RegistryParser", "RegistryRecord"]

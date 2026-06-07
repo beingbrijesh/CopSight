@@ -11,7 +11,7 @@ import email
 import email.message
 import email.utils
 import mailbox
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -44,18 +44,18 @@ class EmailParser(AbstractParser):
     def _extract_message(
         self, msg: email.message.Message, artifact: Artifact
     ) -> ParsedRecord:
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=timezone(timedelta(hours=5, minutes=30)))
 
         # Parse Date
         date_header = msg.get("Date")
         ts = now
         if date_header:
             try:
-                parsed_date = email.utils.parsedate_to_datetime(str(date_header))
+                parsed_date = email.utils.parsedate_to_datetime(date_header)
                 if parsed_date.tzinfo is None:
-                    parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+                    parsed_date = parsed_date.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
                 else:
-                    parsed_date = parsed_date.astimezone(timezone.utc)
+                    parsed_date = parsed_date.astimezone(timezone(timedelta(hours=5, minutes=30)))
                 ts = parsed_date
             except (TypeError, ValueError, OSError):
                 pass
@@ -86,9 +86,9 @@ class EmailParser(AbstractParser):
             body_text = body_text[:5000] + "\n[truncated]"
 
         fields: dict[str, Any] = {
-            "From": str(msg.get("From", "")),
-            "To": str(msg.get("To", "")),
-            "Subject": str(msg.get("Subject", "")),
+            "From": msg.get("From", ""),
+            "To": msg.get("To", ""),
+            "Subject": msg.get("Subject", ""),
             "body": body_text.strip(),
             "attachment_names": attachment_names,
             "timestamp": ts.isoformat(),

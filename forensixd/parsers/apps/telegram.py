@@ -7,7 +7,7 @@ Parser for Telegram local message cache databases.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -49,13 +49,13 @@ class TelegramParser(AbstractParser):
         )
         rows = SQLiteParser.query(db, sql)
 
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=timezone(timedelta(hours=5, minutes=30)))
         records: list[ParsedRecord] = []
 
         for row in rows:
             raw_ts: Any = row.get("date")
             try:
-                ts = datetime.fromtimestamp(float(raw_ts), tz=timezone.utc)
+                ts = datetime.fromtimestamp(float(raw_ts), tz=timezone(timedelta(hours=5, minutes=30)))
             except (TypeError, ValueError, OSError):
                 ts = now
 

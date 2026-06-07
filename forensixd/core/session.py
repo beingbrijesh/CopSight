@@ -25,7 +25,7 @@ from __future__ import annotations
 import hashlib
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 
 from forensixd.core.models import CaseMetadata, Artifact, SessionLog, AcquisitionEvent
@@ -75,7 +75,7 @@ class ForensicSession:
         self._closed: bool = False
         self._artifacts: list[Artifact] = []
         self._lock: threading.Lock = threading.Lock()
-        self._started_at: datetime = datetime.now(timezone.utc)
+        self._started_at: datetime = datetime.now(timezone(timedelta(hours=5, minutes=30)))
 
         # Initialise the hash-chained audit log for this session.
         log_path: Path = self._case_dir / f"{self._session_id}.audit.jsonl"
@@ -179,7 +179,7 @@ class ForensicSession:
 
         event = AcquisitionEvent(
             event_type=event_type,
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
             actor=self._case.examiner_id,
             description=description,
             metadata=metadata or {},
@@ -230,7 +230,7 @@ class ForensicSession:
             combined: str = "|".join(a.hashes.sha256 for a in self._artifacts)
             root_hash = hashlib.sha256(combined.encode()).hexdigest()
 
-        ended_at: datetime = datetime.now(timezone.utc)
+        ended_at: datetime = datetime.now(timezone(timedelta(hours=5, minutes=30)))
 
         self._logger.write(
             "SESSION_CLOSED",

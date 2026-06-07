@@ -7,7 +7,7 @@ Parser for Apple iMessage / SMS and CallHistory databases.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -61,7 +61,7 @@ class IMessageParser(AbstractParser):
         )
         rows = SQLiteParser.query(db, sql)
 
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=timezone(timedelta(hours=5, minutes=30)))
         records: list[ParsedRecord] = []
 
         for row in rows:
@@ -70,7 +70,7 @@ class IMessageParser(AbstractParser):
                 date_val = float(raw_ts)
                 if date_val > 1e12:
                     date_val /= 1e9
-                ts = datetime.fromtimestamp(_APPLE_EPOCH_OFFSET + date_val, tz=timezone.utc)
+                ts = datetime.fromtimestamp(_APPLE_EPOCH_OFFSET + date_val, tz=timezone(timedelta(hours=5, minutes=30)))
             except (TypeError, ValueError, OSError):
                 ts = now
 
@@ -109,7 +109,7 @@ class IMessageParser(AbstractParser):
         )
         rows = SQLiteParser.query(db, sql)
 
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=timezone(timedelta(hours=5, minutes=30)))
         records: list[ParsedRecord] = []
 
         for row in rows:
@@ -118,7 +118,7 @@ class IMessageParser(AbstractParser):
                 date_val = float(raw_ts)
                 if date_val > 1e12:
                     date_val /= 1e9
-                ts = datetime.fromtimestamp(_APPLE_EPOCH_OFFSET + date_val, tz=timezone.utc)
+                ts = datetime.fromtimestamp(_APPLE_EPOCH_OFFSET + date_val, tz=timezone(timedelta(hours=5, minutes=30)))
             except (TypeError, ValueError, OSError):
                 ts = now
 
