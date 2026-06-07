@@ -1,0 +1,65 @@
+name: Build Executables
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install WeasyPrint OS Dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0 libfontconfig1
+
+    - name: Install WeasyPrint OS Dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install glib pango fontconfig
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install -e .
+      # Assuming your project has a setup.py or pyproject.toml
+      # If you use requirements.txt instead, you can uncomment the line below:
+      # pip install -r requirements.txt
+
+    - name: Build with PyInstaller
+      run: |
+        pyinstaller forensixd/cli.py \
+          --onefile \
+          --name forensixd \
+          --hidden-import pymobiledevice3 \
+          --hidden-import Registry \
+          --hidden-import pycparser.yacctab \
+          --hidden-import pycparser.lextab \
+          --collect-all Crypto \
+          --collect-all jinja2 \
+          --collect-all weasyprint \
+          --noconfirm
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: forensixd-${{ matrix.os }}
+        path: |
+          dist/forensixd*
