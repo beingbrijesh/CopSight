@@ -142,6 +142,10 @@ def pdf(html_path, output_pdf):
 
 def interactive_mode():
     import shlex
+    try:
+        import readline
+    except ImportError:
+        pass
     console.print(Panel("[bold green]forensixd Interactive Shell[/bold green]", subtitle="Type 'help' for commands or 'exit' to quit"))
     while True:
         try:
