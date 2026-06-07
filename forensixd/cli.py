@@ -17,10 +17,13 @@ from forensixd.writers.report_writer import ReportWriter
 
 console = Console()
 
-@click.group()
+@click.group(invoke_without_command=True)
+@click.pass_context
 @click.version_option("0.1.0", prog_name="forensixd")
-def main():
+def main(ctx):
     """forensixd — Forensic Data Extraction for Law Enforcement."""
+    if ctx.invoked_subcommand is None:
+        interactive_mode()
 
 @main.command()
 @click.option("--output-dir","-o", required=True, type=click.Path())
@@ -136,6 +139,33 @@ def pdf(html_path, output_pdf):
     except ForensixdError as e:
         console.print(f"[red]{e}[/red]")
         sys.exit(1)
+
+def interactive_mode():
+    import shlex
+    console.print(Panel("[bold green]forensixd Interactive Shell[/bold green]", subtitle="Type 'help' for commands or 'exit' to quit"))
+    while True:
+        try:
+            cmd_in = console.input("[bold blue]forensixd>[/bold blue] ").strip()
+            if not cmd_in:
+                continue
+            if cmd_in.lower() in ["exit", "quit"]:
+                break
+            
+            args = shlex.split(cmd_in)
+            try:
+                main(args=args, standalone_mode=False)
+            except click.ClickException as e:
+                e.show()
+            except click.exceptions.Exit:
+                pass
+            except SystemExit as e:
+                if e.code != 0 and e.code is not None:
+                    console.print(f"[red]Command exited with code {e.code}[/red]")
+        except (KeyboardInterrupt, EOFError):
+            console.print()
+            break
+        except Exception as e:
+            console.print(f"[red]Error:[/red] {e}")
 
 if __name__ == "__main__":
     main()
