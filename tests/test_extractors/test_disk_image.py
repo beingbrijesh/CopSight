@@ -363,7 +363,7 @@ def test_walk_image_success(tmp_path: Path, device: DeviceInfo, case: CaseMetada
     e = DiskImageExtractor()
     e.connect(device)
     
-    import pytsk3
+    import pytsk3  # type: ignore
     
     entries_root = [
         MockEntry(b".", pytsk3.TSK_FS_META_TYPE_DIR),
@@ -426,7 +426,7 @@ def test_walk_image_exceptions(tmp_path: Path, device: DeviceInfo, case: CaseMet
 def test_walk_dir_exceptions(tmp_path: Path, device: DeviceInfo, case: CaseMetadata) -> None:
     e = DiskImageExtractor()
     e.connect(device)
-    import pytsk3
+    import pytsk3  # type: ignore
     
     class BadDirIter:
         def __iter__(self):
@@ -456,7 +456,7 @@ def test_walk_dir_exceptions(tmp_path: Path, device: DeviceInfo, case: CaseMetad
 def test_extract_file_artifact_exceptions(tmp_path: Path, device: DeviceInfo, case: CaseMetadata) -> None:
     e = DiskImageExtractor()
     e.connect(device)
-    import pytsk3
+    import pytsk3  # type: ignore
     
     # Missing size
     class MockMetaNoSize:
@@ -469,7 +469,7 @@ def test_extract_file_artifact_exceptions(tmp_path: Path, device: DeviceInfo, ca
     class EntryNoSize:
         def __init__(self):
             self.info = MockInfo(b"file", None)
-            self.info.meta = MockMetaNoSize()
+            self.info.meta = MockMetaNoSize()  # type: ignore[assignment]
 
     # Read error
     class EntryBadRead(MockEntry):

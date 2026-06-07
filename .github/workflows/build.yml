@@ -44,6 +44,7 @@ jobs:
       # pip install -r requirements.txt
 
     - name: Build with PyInstaller
+      shell: bash
       run: |
         pyinstaller forensixd/cli.py \
           --onefile \
