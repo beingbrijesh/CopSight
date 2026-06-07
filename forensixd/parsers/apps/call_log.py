@@ -1,8 +1,8 @@
 """
-forensixd.parsers.apps.telegram
+forensixd.parsers.apps.call_log
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Parser for Telegram local message cache databases.
+Parser for Android call logs.
 """
 
 from __future__ import annotations
@@ -16,53 +16,65 @@ from forensixd.core.models import Artifact, ArtifactType, ParsedRecord
 from forensixd.parsers.base import AbstractParser, ParserRegistry
 from forensixd.parsers.sqlite_parser import SQLiteParser
 
-__all__ = ["TelegramParser"]
+__all__ = ["CallLogParser"]
 
 
-@ParserRegistry.register("org.telegram.messenger", "cache4.db")
-class TelegramParser(AbstractParser):
-    """Parse local Telegram message cache databases."""
+@ParserRegistry.register("com.android.providers.contacts", "calllog.db")
+class CallLogParser(AbstractParser):
+    """Parse local Android Call logs."""
 
     @property
     def app_name(self) -> str:
-        return "Telegram"
+        return "CallLog"
 
     def can_parse(self, artifact: Artifact) -> bool:
         lower = artifact.source_path.lower()
-        return "telegram" in lower or "cache4" in lower
+        return "calllog" in lower
 
     def parse(self, artifact: Artifact) -> list[ParsedRecord]:
         db = Path(artifact.source_path)
 
-        if not SQLiteParser.table_exists(db, "messages"):
+        if not SQLiteParser.table_exists(db, "calls"):
             # If it's a dummy extraction path (e.g. from AndroidExtractor), generate mock data
-            if not db.exists() and "telegram" in str(db).lower():
+            if not db.exists() and "calllog" in str(db).lower():
                 now = datetime.now(tz=timezone(timedelta(hours=5, minutes=30)))
                 return [
                     ParsedRecord(
-                        record_type=ArtifactType.MESSAGE,
+                        record_type=ArtifactType.CALL_LOG,
                         source_artifact_id=artifact.artifact_id,
                         parsed_at=now,
                         confidence=1.0,
                         fields={
-                            "body": "This is a mock Telegram message.",
+                            "number": "9876543210",
+                            "duration": 120,
+                            "direction": "incoming",
+                            "timestamp": (now - timedelta(hours=1)).isoformat(),
+                        },
+                        app_name=self.app_name,
+                    ),
+                    ParsedRecord(
+                        record_type=ArtifactType.CALL_LOG,
+                        source_artifact_id=artifact.artifact_id,
+                        parsed_at=now,
+                        confidence=1.0,
+                        fields={
+                            "number": "9876543210",
+                            "duration": 45,
+                            "direction": "outgoing",
                             "timestamp": now.isoformat(),
-                            "from_id": "987654321",
-                            "is_outgoing": True,
                         },
                         app_name=self.app_name,
                     )
                 ]
             
             raise ParseError(
-                "Required table 'messages' not found in Telegram database.",
+                "Required table 'calls' not found in CallLog database.",
                 context={"db_path": str(db), "artifact_id": artifact.artifact_id},
             )
 
         sql = (
-            "SELECT uid, date, message, from_id, out "
-            "FROM messages "
-            "WHERE message != '' "
+            "SELECT number, date, duration, type "
+            "FROM calls "
             "ORDER BY date "
             "LIMIT 50000"
         )
@@ -74,26 +86,37 @@ class TelegramParser(AbstractParser):
         for row in rows:
             raw_ts: Any = row.get("date")
             try:
-                ts = datetime.fromtimestamp(float(raw_ts), tz=timezone(timedelta(hours=5, minutes=30)))
+                # Android stores call log dates in milliseconds
+                ts = datetime.fromtimestamp(float(raw_ts) / 1000.0, tz=timezone(timedelta(hours=5, minutes=30)))
             except (TypeError, ValueError, OSError):
                 ts = now
+                
+            call_type_int = int(row.get("type", 0))
+            call_type = "unknown"
+            if call_type_int == 1:
+                call_type = "incoming"
+            elif call_type_int == 2:
+                call_type = "outgoing"
+            elif call_type_int == 3:
+                call_type = "missed"
+            elif call_type_int == 5:
+                call_type = "rejected"
 
             fields: dict[str, Any] = {
-                "body": row.get("message"),
+                "number": row.get("number"),
                 "timestamp": ts.isoformat(),
-                "from_id": row.get("from_id"),
-                "is_outgoing": bool(row.get("out")),
+                "duration": row.get("duration"),
+                "direction": call_type,
             }
 
             records.append(
                 ParsedRecord(
-                    record_type=ArtifactType.MESSAGE,
+                    record_type=ArtifactType.CALL_LOG,
                     source_artifact_id=artifact.artifact_id,
                     parsed_at=now,
-                    confidence=0.80,
+                    confidence=0.90,
                     fields=fields,
                     app_name=self.app_name,
-                    completeness_note="Local device cache only. Cloud messages require separate legal order.",
                 )
             )
 

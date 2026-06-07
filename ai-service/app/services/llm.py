@@ -107,7 +107,8 @@ Extract and return in this exact JSON format:
         "date_from": "YYYY-MM-DD or null",
         "date_to": "YYYY-MM-DD or null",
         "source_type": "sms|whatsapp|telegram|call_log|contacts or null",
-        "phone_number": "phone number or null"
+        "phone_number": "phone number or null",
+        "recent_upload": "boolean, true if user explicitly asks for data from the recently uploaded or latest file"
     }},
     "keywords": ["important forensic keywords for evidence search — include synonyms and related terms"],
     "semantic_query": "rephrased query optimized for semantic similarity search against chat messages, call logs, and transaction records"
@@ -370,11 +371,13 @@ Return ONLY the JSON object."""
             # Resolve metadata fields
             if isinstance(metadata, str):
                 phone_number = direction = app_name = timestamp = 'unknown'
+                file_name = 'unknown'
             else:
                 phone_number = metadata.get('phoneNumber') or metadata.get('phone_number') or 'unknown'
                 timestamp = metadata.get('timestamp') or 'unknown'
                 direction = metadata.get('direction') or 'unknown'
                 app_name = metadata.get('appName') or metadata.get('app_name') or metadata.get('sourceType') or source_name
+                file_name = metadata.get('fileName') or metadata.get('file_name') or 'unknown'
             
             # Use highlighted snippet if available, otherwise full content
             display_content = content
@@ -388,6 +391,7 @@ Return ONLY the JSON object."""
             context_parts.append(
                 f"[Evidence #{idx}]{cross_case_note}\n"
                 f"  Source   : {app_name} ({source_type})\n"
+                f"  File     : {file_name}\n"
                 f"  Phone    : {phone_number}\n"
                 f"  Direction: {direction}\n"
                 f"  Timestamp: {timestamp}\n"

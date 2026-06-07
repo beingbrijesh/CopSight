@@ -44,24 +44,29 @@ class UFDRWriter:
         try:
             self.output_path.parent.mkdir(parents=True, exist_ok=True)
             with zipfile.ZipFile(self.output_path, "w", zipfile.ZIP_DEFLATED) as zf:
-                self._write_report_xml(zf)
+                self._write_report_xml(zf, artifacts)
                 self._write_index_xml(zf, artifacts)
                 self._write_artifact_files(zf, artifacts)
             return self.output_path
         except Exception as e:
             raise WriteError(f"Failed to build UFDR archive at {self.output_path}: {e}") from e
 
-    def _write_report_xml(self, zf: zipfile.ZipFile) -> None:
+    def _write_report_xml(self, zf: zipfile.ZipFile, artifacts: List[Artifact]) -> None:
         """
         Write the report.xml file to the UFDR archive.
 
         Args:
             zf: The open zipfile object.
+            artifacts: The list of artifacts.
         """
-        root = etree.Element("UFDReport", version="1.0")
+        from forensixd.parsers.base import ParserRegistry
+
+        root = etree.Element("UFDR")
+        
+        device = etree.SubElement(root, "device")
 
         # DeviceInfo
-        device_info = etree.SubElement(root, "DeviceInfo")
+        device_info = etree.SubElement(device, "deviceInfo")
         if self.session.case and self.session.case.device:
             dev = self.session.case.device
             platform = etree.SubElement(device_info, "Platform")
@@ -72,7 +77,7 @@ class UFDRWriter:
             model.text = dev.model or ""
 
         # CaseInfo
-        case_info = etree.SubElement(root, "CaseInfo")
+        case_info = etree.SubElement(device, "caseInfo")
         if self.session.case:
             case = self.session.case
             case_number = etree.SubElement(case_info, "CaseNumber")
@@ -87,9 +92,39 @@ class UFDRWriter:
             acquisition_time.text = self.session.started_at.isoformat()
 
         # Statistics
-        statistics = etree.SubElement(root, "Statistics")
+        statistics = etree.SubElement(device, "statistics")
         session_hash = etree.SubElement(statistics, "SessionHash")
         session_hash.text = self.session.root_hash or ""
+
+        # Communications
+        communications = etree.SubElement(device, "communications")
+        sms_messages = etree.SubElement(communications, "smsMessages")
+        call_logs = etree.SubElement(communications, "callLogs")
+        
+        for artifact in artifacts:
+            parsers = ParserRegistry.get_parsers_for(artifact)
+            for parser in parsers:
+                try:
+                    records = parser.parse(artifact)
+                    for rec in records:
+                        if rec.record_type.value == "message":
+                            msg_el = etree.SubElement(sms_messages, "message")
+                            etree.SubElement(msg_el, "id").text = str(id(rec))
+                            etree.SubElement(msg_el, "direction").text = "outgoing" if rec.fields.get("is_from_me") else "incoming"
+                            etree.SubElement(msg_el, "phoneNumber").text = str(rec.fields.get("from") or "")
+                            etree.SubElement(msg_el, "content").text = str(rec.fields.get("body") or "")
+                            etree.SubElement(msg_el, "timestamp").text = str(rec.fields.get("timestamp") or "")
+                            etree.SubElement(msg_el, "type").text = rec.app_name
+                        elif rec.record_type.value == "call_log":
+                            call_el = etree.SubElement(call_logs, "call")
+                            etree.SubElement(call_el, "id").text = str(id(rec))
+                            etree.SubElement(call_el, "direction").text = str(rec.fields.get("direction") or "")
+                            etree.SubElement(call_el, "phoneNumber").text = str(rec.fields.get("number") or "")
+                            etree.SubElement(call_el, "duration").text = str(rec.fields.get("duration") or "0")
+                            etree.SubElement(call_el, "timestamp").text = str(rec.fields.get("timestamp") or "")
+                except Exception:
+                    # Silently ignore parsing errors during UFDR generation
+                    pass
 
         tree_bytes = etree.tostring(root, pretty_print=True, xml_declaration=True, encoding="UTF-8")
         zf.writestr("report.xml", tree_bytes)

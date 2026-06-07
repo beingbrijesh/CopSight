@@ -136,6 +136,15 @@ class DeviceDetector:
             platform: Optional[Platform] = VID_PID_MAP.get((vid, pid))
 
             if platform is None:
+                # Fallback to Vendor ID matching for robust detection across USB modes (MTP vs ADB)
+                # Google, Samsung, Motorola, Xiaomi, Qualcomm, ZTE
+                if vid in (0x18D1, 0x04E8, 0x22B8, 0x2717, 0x05C6, 0x19D2):
+                    platform = Platform.ANDROID
+                # Apple
+                elif vid == 0x05AC:
+                    platform = Platform.IOS
+
+            if platform is None:
                 continue
 
             device_id: str = f"0x{vid:04x}:0x{pid:04x}"

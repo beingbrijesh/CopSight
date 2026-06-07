@@ -375,7 +375,7 @@ export const CaseDetail = () => {
                 {uploadError.includes('Failed to upload file') ?
                   'Please check your internet connection and try again.' :
                   uploadError.includes('Invalid file type') ?
-                  'Only UFDR, XML, JSON, ZIP, and UFD files are supported.' :
+                  'Only UFDR, XML, JSON, ZIP, UFD, and DFXML files are supported.' :
                   'Please check the file format and try again.'}
               </p>
             </div>
@@ -396,7 +396,7 @@ export const CaseDetail = () => {
             )}
             <input
               type="file"
-              accept=".xml,.json,.zip,.ufd,.ufdr"
+              accept=".xml,.json,.zip,.ufd,.ufdr,.dfxml"
               onChange={handleFileUpload}
               disabled={uploading}
               className="hidden"

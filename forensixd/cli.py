@@ -71,7 +71,7 @@ def acquire(output_dir, level, ufdr_config):
 
     # Step 4: extract
     artifacts = []
-    ext_level = ExtractionLevel(level)
+    ext_level = ExtractionLevel(level.upper())
     with ForensicSession(case, Path(output_dir)) as session:
         extractor.connect(device)
         with Progress(SpinnerColumn(), TextColumn("{task.description}")) as p:
@@ -103,8 +103,12 @@ def acquire(output_dir, level, ufdr_config):
             from forensixd.integration.ufdr_bridge import UFDRBridge, UFDRBridgeConfig
             UFDRBridge(UFDRBridgeConfig.from_yaml(Path(ufdr_config))).inject_session(log, artifacts)
             console.print("[green]Injected into UFDR project.[/green]")
+        except FileNotFoundError as e:
+            console.print(f"[red]Error:[/red] {e}")
         except ForensixdError as e:
             console.print(f"[yellow]UFDR warning:[/yellow] {e}")
+        except Exception as e:
+            console.print(f"[red]Error:[/red] {e}")
 
     # Summary
     tbl = Table(title="Done")
@@ -147,35 +151,48 @@ def pdf(html_path, output_pdf):
         sys.exit(1)
 
 def interactive_mode():
-    import shlex
+    from rich.prompt import Prompt
     try:
         import readline
     except ImportError:
         pass
-    console.print(Panel("[bold green]forensixd Interactive Shell[/bold green]", subtitle="Type 'help' for commands or 'exit' to quit"))
+    console.print(Panel("[bold green]forensixd Interactive Shell[/bold green]", subtitle="Select an operation by entering the corresponding number"))
     while True:
         try:
-            cmd_in = console.input("[bold blue]forensixd>[/bold blue] ").strip()
-            if not cmd_in:
-                continue
-            if cmd_in.lower() in ["exit", "quit"]:
+            console.print("\n[bold cyan]Available Features:[/bold cyan]")
+            console.print("  [1] Acquire Forensic Data")
+            console.print("  [2] Verify Chain of Custody")
+            console.print("  [3] Generate PDF Report")
+            console.print("  [4] Exit")
+            
+            choice = Prompt.ask("\nSelect option", choices=["1", "2", "3", "4"], default="4")
+            
+            if choice == "4":
                 break
             
-            args = shlex.split(cmd_in)
+            args = []
+            if choice == "1":
+                out_dir = Prompt.ask("Output directory", default="./cases")
+                level = Prompt.ask("Extraction level", choices=["logical", "file_system", "physical"], default="logical")
+                ufdr_config = Prompt.ask("UFDR config path (optional, press Enter to skip)", default="")
+                
+                args = ["acquire", "--output-dir", out_dir, "--level", level]
+                if ufdr_config.strip():
+                    args.extend(["--ufdr-config", ufdr_config.strip()])
+                    
+            elif choice == "2":
+                session_dir = Prompt.ask("Session directory")
+                if session_dir.strip():
+                    args = ["verify", session_dir.strip()]
+            
+            elif choice == "3":
+                html_path = Prompt.ask("Path to HTML report")
+                out_pdf = Prompt.ask("Path for output PDF")
+                if html_path.strip() and out_pdf.strip():
+                    args = ["pdf", html_path.strip(), out_pdf.strip()]
+            
             if not args:
                 continue
-            
-            # Usability: allow users to type 'help' instead of '--help'
-            if args[0].lower() == "help":
-                args[0] = "--help"
-            
-            # Usability: allow users to paste 'forensixd ...' commands
-            if args[0].lower() == "forensixd":
-                args.pop(0)
-                if not args:
-                    continue
-                if args[0].lower() == "help":
-                    args[0] = "--help"
 
             try:
                 main(args=args, standalone_mode=False)

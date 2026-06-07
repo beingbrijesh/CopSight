@@ -39,9 +39,10 @@ Usage
 from __future__ import annotations
 
 import logging
+import subprocess
 from collections.abc import Iterator
 from datetime import timedelta, datetime, timezone
-from pathlib import Path  # noqa: F401 — re-exported per spec
+from pathlib import Path
 from typing import Optional
 
 from forensixd.core.exceptions import ExtractionError
@@ -54,6 +55,7 @@ from forensixd.core.models import (
     Platform,
 )
 from forensixd.core.session import ForensicSession
+from forensixd.core.gui_prompter import prompt_allow_deny, prompt_password, prompt_error_action
 from forensixd.extractors.base import AbstractExtractor, ExtractorRegistry
 
 # ---------------------------------------------------------------------------
@@ -81,7 +83,13 @@ _LOGICAL_PATHS: list[tuple[str, ArtifactType]] = [
     ("/sdcard/DCIM/", ArtifactType.MEDIA),
     ("/sdcard/Download/", ArtifactType.APP_DATA),
     ("/sdcard/WhatsApp/", ArtifactType.MESSAGE),
+    ("/sdcard/Android/media/com.whatsapp/WhatsApp/", ArtifactType.MESSAGE),
     ("/sdcard/Telegram/", ArtifactType.MESSAGE),
+    ("/sdcard/Android/media/org.telegram.messenger/", ArtifactType.MESSAGE),
+    ("/sdcard/Android/data/org.telegram.messenger/", ArtifactType.MESSAGE),
+    ("/sdcard/Signal/Backups/", ArtifactType.MESSAGE),
+    ("/sdcard/Documents/Signal/Backups/", ArtifactType.MESSAGE),
+    ("/sdcard/CallLogs/", ArtifactType.CALL_LOG),
 ]
 
 #: Root-only paths used by file-system extraction.
@@ -276,47 +284,181 @@ class AndroidExtractor(AbstractExtractor):
     def _logical_extract(self, session: ForensicSession) -> Iterator[Artifact]:
         """Yield artefacts from standard user-accessible paths via ADB.
 
-        Iterates over :data:`_LOGICAL_PATHS` and constructs one
-        :class:`~forensixd.core.models.Artifact` per entry.  Hashes are
-        computed from the UTF-8–encoded path bytes (a lightweight placeholder
-        for an actual ADB pull).  Single-path errors are logged and skipped so
-        one bad entry never aborts the entire extraction pass.
-
-        Parameters
-        ----------
-        session:
-            Active forensic session; each artefact is registered via
-            :meth:`~forensixd.core.session.ForensicSession.register_artifact`
-            before being yielded.
-
-        Yields
-        ------
-        Artifact
-            One artefact per entry in :data:`_LOGICAL_PATHS`.
+        Iterates over :data:`_LOGICAL_PATHS` and uses `adb pull` to extract real
+        files to the session's output directory. Generates one
+        :class:`~forensixd.core.models.Artifact` per successfully pulled file.
+        Also attempts an `adb backup` if the user approves the prompt.
         """
         assert self._device is not None, "connect() must be called before extract()."
 
-        for path, artifact_type in _LOGICAL_PATHS:
-            try:
-                hashes = HashEngine.hash_bytes(path.encode())
+        # 1. Ask the user to authorize USB debugging
+        instructions = (
+            "To extract data from an Android device, USB Debugging must be enabled:\n\n"
+            "1. If not enabled, go to Settings -> About Phone -> tap 'Build Number' 7 times.\n"
+            "2. Go back to Settings -> System -> Developer Options.\n"
+            "3. Turn on 'USB Debugging' (and 'Install via USB' / 'USB debugging (Security settings)' if present).\n"
+            "4. Connect the device to the computer.\n"
+            "5. A prompt will appear on the phone: 'Allow USB debugging?'. Check 'Always allow' and tap OK.\n\n"
+            "Click 'Yes' to proceed ONLY after you have completed these steps."
+        )
+        prompt_allow_deny("Android Connection - Setup Required", instructions)
+
+        adb_pull_dir = session.output_dir / "adb_pull"
+        adb_pull_dir.mkdir(parents=True, exist_ok=True)
+
+        # Attempt to get actual ADB serial and check authorization status
+        adb_serial = None
+        device_status = None
+        
+        # Restart ADB server to ensure fresh connection
+        subprocess.run(["adb", "kill-server"], capture_output=True)
+        subprocess.run(["adb", "start-server"], capture_output=True)
+        
+        devices_out = subprocess.run(["adb", "devices"], capture_output=True, text=True).stdout
+        for line in devices_out.splitlines()[1:]:
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split("\t")
+            if len(parts) >= 2:
+                status = parts[1]
+                if status == "device":
+                    adb_serial = parts[0]
+                    device_status = "device"
+                    break
+                elif status in ["unauthorized", "offline"]:
+                    device_status = status
+
+        if adb_serial:
+            adb_target_args = ["-s", adb_serial]
+        else:
+            if device_status == "unauthorized":
+                raise ExtractionError("Device is connected but UNAUTHORIZED. Please check your phone screen and tap 'Allow USB debugging'.")
+            elif device_status == "offline":
+                raise ExtractionError("Device is OFFLINE. Please reconnect the USB cable and try again.")
+            else:
+                raise ExtractionError("No Android devices found with USB Debugging enabled. Please ensure Developer Options and USB Debugging are turned on.")
+
+        # Ask the user to create manual backups for secure messaging apps
+        backup_instructions = (
+            "Modern messaging apps like WhatsApp, Signal, and Telegram block standard extraction methods.\n"
+            "To extract their data without rooting the device, please perform these steps on the phone NOW:\n\n"
+            "WhatsApp: Open app -> Settings -> Chats -> Chat backup -> Tap 'Back up' (ensure 'Back up to Google Drive' is Never).\n\n"
+            "Signal: Open app -> Settings -> Chats -> Chat backups -> Turn on -> Tap 'Create backup' (Save the passphrase!).\n\n"
+            "Click 'Yes' when the backups are complete so we can extract them."
+        )
+        prompt_allow_deny("Manual App Backups Required", backup_instructions)
+
+        for remote_path, artifact_type in _LOGICAL_PATHS:
+            while True:
+                try:
+                    local_dest = adb_pull_dir / Path(remote_path).name
+                    _logger.info("Executing adb pull %s %s", remote_path, local_dest)
+                    result = subprocess.run(
+                        ["adb", *adb_target_args, "pull", remote_path, str(local_dest)],
+                        capture_output=True, text=True
+                    )
+                    
+                    if result.returncode == 0 and local_dest.exists():
+                        # Walk the pulled directory
+                        if local_dest.is_dir():
+                            files = [f for f in local_dest.rglob("*") if f.is_file()]
+                        else:
+                            files = [local_dest]
+                            
+                        for file_path in files:
+                            hashes = HashEngine.hash_file(file_path)
+                            artifact = Artifact(
+                                artifact_type=artifact_type,
+                                source_app="adb_logical",
+                                source_path=str(file_path),
+                                acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+                                hashes=hashes,
+                                data={"method": "adb_pull", "remote_path": remote_path},
+                                device=self._device,
+                            )
+                            session.register_artifact(artifact)
+                            yield artifact
+                        break
+                    else:
+                        _logger.warning("adb pull failed for %s: %s", remote_path, result.stderr)
+                        
+                        # If the path doesn't exist (e.g. app not installed), just skip silently
+                        err_lower = result.stderr.lower()
+                        if "does not exist" in err_lower or "stat failed" in err_lower or "no such file" in err_lower:
+                            _logger.info("Path %s does not exist on device, skipping.", remote_path)
+                            break
+                            
+                        action = prompt_error_action(
+                            "Extraction Error",
+                            f"Failed to extract {remote_path} via adb.\nError: {result.stderr}\n\nChoose an action:"
+                        )
+                        if action == "Retry":
+                            continue
+                        elif action == "Abort":
+                            raise ExtractionError(f"Aborted extraction due to error pulling {remote_path}")
+                        else: # Skip
+                            break
+
+                except Exception as exc:  # noqa: BLE001
+                    _logger.warning("AndroidExtractor: skipping path %r — error: %s", remote_path, exc, exc_info=True)
+                    action = prompt_error_action(
+                        "Extraction Exception",
+                        f"Exception while pulling {remote_path}: {exc}\n\nChoose an action:"
+                    )
+                    if action == "Retry":
+                        continue
+                    elif action == "Abort":
+                        raise ExtractionError(f"Aborted extraction due to exception pulling {remote_path}") from exc
+                    else:
+                        break
+                
+        # 2. Attempt ADB Backup for application data
+        if prompt_allow_deny("ADB Backup", "Would you like to perform a full ADB backup for deeper extraction? (Requires tapping 'Back up my data' on device)"):
+            backup_file = session.output_dir / "backup.ab"
+            _logger.info("Starting adb backup to %s", backup_file)
+            
+            while True:
+                backup_proc = subprocess.Popen(
+                    ["adb", *adb_target_args, "backup", "-all", "-f", str(backup_file)],
+                    stderr=subprocess.PIPE, text=True
+                )
+                
+                prompt_password(
+                    "Backup Password", 
+                    "If you set a desktop backup password on the device, please enter it here (or leave blank if none):"
+                )
+                
+                _, stderr_out = backup_proc.communicate()
+                
+                if backup_proc.returncode == 0 and backup_file.exists():
+                    break
+                else:
+                    _logger.warning("adb backup failed: %s", stderr_out)
+                    action = prompt_error_action(
+                        "Backup Error",
+                        f"adb backup failed.\nError: {stderr_out}\n\nChoose an action:"
+                    )
+                    if action == "Retry":
+                        continue
+                    elif action == "Abort":
+                        raise ExtractionError("Aborted extraction due to adb backup failure")
+                    else:
+                        break
+            
+            if backup_file.exists():
+                hashes = HashEngine.hash_file(backup_file)
                 artifact = Artifact(
-                    artifact_type=artifact_type,
-                    source_app="adb_logical",
-                    source_path=path,
+                    artifact_type=ArtifactType.APP_DATA,
+                    source_app="adb_backup",
+                    source_path=str(backup_file),
                     acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
                     hashes=hashes,
-                    data={"method": "adb_logical"},
+                    data={"method": "adb_backup"},
                     device=self._device,
                 )
                 session.register_artifact(artifact)
                 yield artifact
-            except Exception as exc:  # noqa: BLE001
-                _logger.warning(
-                    "AndroidExtractor: skipping path %r — error: %s",
-                    path,
-                    exc,
-                    exc_info=True,
-                )
 
     def _fs_extract(self, session: ForensicSession) -> Iterator[Artifact]:
         """Yield artefacts from protected application-data paths (root required).

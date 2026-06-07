@@ -3,7 +3,7 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = []
 binaries = []
-hiddenimports = ['pymobiledevice3', 'Registry', 'pycparser.yacctab', 'pycparser.lextab', 'readline']
+hiddenimports = ['pymobiledevice3', 'Registry', 'pycparser.yacctab', 'pycparser.lextab']
 tmp_ret = collect_all('Crypto')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('jinja2')

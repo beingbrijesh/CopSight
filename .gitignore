@@ -56,3 +56,10 @@ prompts/
 .graphifyignore
 skills-lock.json
 Makefile
+
+# Forensixd Test Outputs and Data
+test_extraction/
+test_pkg/
+*.ufdr
+*.sqlite3
+viewer.html

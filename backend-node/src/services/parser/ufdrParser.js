@@ -127,10 +127,27 @@ class UFDRParser {
         const zip = new AdmZip(filePath);
         const zipEntries = zip.getEntries();
 
-        // Find XML file in the ZIP
-        const xmlEntry = zipEntries.find(entry =>
-          entry.entryName.toLowerCase().endsWith('.xml') && !entry.isDirectory
+        // Find the actual report XML file in the ZIP (prioritize report.xml or export.xml over index.xml)
+        let xmlEntry = zipEntries.find(entry =>
+          (entry.entryName.toLowerCase().endsWith('report.xml') || 
+           entry.entryName.toLowerCase() === 'ufdr.xml') && !entry.isDirectory
         );
+        
+        // Fallback to any XML that isn't index.xml
+        if (!xmlEntry) {
+          xmlEntry = zipEntries.find(entry => 
+            entry.entryName.toLowerCase().endsWith('.xml') && 
+            !entry.entryName.toLowerCase().endsWith('index.xml') && 
+            !entry.isDirectory
+          );
+        }
+        
+        // Final fallback to any XML
+        if (!xmlEntry) {
+          xmlEntry = zipEntries.find(entry =>
+            entry.entryName.toLowerCase().endsWith('.xml') && !entry.isDirectory
+          );
+        }
 
         if (!xmlEntry) {
           throw new Error('No XML file found in the ZIP archive. UFDR files should contain an XML export.');
@@ -288,6 +305,56 @@ class UFDRParser {
     } catch (error) {
       logger.error('Error parsing JSON file:', error);
       throw new Error(`Failed to parse JSON file: ${error.message}`);
+    }
+  }
+
+  /**
+   * Parse DFXML file
+   */
+  async parseDFXMLFile(filePath) {
+    try {
+      logger.info(`Parsing DFXML file: ${filePath}`);
+
+      const xmlContent = await fs.readFile(filePath, 'utf-8');
+      const result = await this.parser.parseStringPromise(xmlContent);
+
+      const dfxml = result.dfxml || result;
+      
+      const deviceInfo = {
+        deviceName: 'Unknown Device (DFXML)',
+        deviceType: 'storage',
+        manufacturer: 'Unknown',
+        model: 'Unknown Model',
+        osVersion: null,
+        extractionDate: new Date()
+      };
+
+      const dataSources = [];
+      const fileObjects = this.normalizeArray(dfxml.fileobject);
+
+      if (fileObjects.length > 0) {
+        dataSources.push({
+          sourceType: 'file_metadata',
+          appName: 'File System',
+          totalRecords: fileObjects.length,
+          data: fileObjects.map((file, i) => ({
+            id: `file_${i}`,
+            content: `File: ${file.filename || ''}\nSize: ${file.filesize || ''}\nModified: ${file.mtime || ''}`,
+            timestamp: file.mtime || new Date(),
+            path: file.filename || '',
+            type: 'file_metadata'
+          }))
+        });
+      }
+
+      return {
+        deviceInfo,
+        dataSources,
+        rawData: result
+      };
+    } catch (error) {
+      logger.error('Error parsing DFXML file:', error);
+      throw new Error(`Failed to parse DFXML file: ${error.message}`);
     }
   }
 
@@ -802,6 +869,8 @@ export const parseUFDRFile = async (filePath) => {
     return await parserInstance.parseJSONFile(filePath);
   } else if (ext === 'xml' || ext === 'ufdr') {
     return await parserInstance.parseUFDRFile(filePath);
+  } else if (ext === 'dfxml') {
+    return await parserInstance.parseDFXMLFile(filePath);
   } else {
     throw new Error(`Unsupported file format: ${ext}`);
   }

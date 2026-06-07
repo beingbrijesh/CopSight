@@ -111,16 +111,20 @@ class ReportWriter:
             WriteError: If the PDF report cannot be generated or weasyprint is missing.
         """
         try:
-            from weasyprint import HTML
+            from xhtml2pdf import pisa
         except ImportError:
-            raise WriteError("Run: pip install weasyprint")
+            raise WriteError("Run: pip install xhtml2pdf")
 
         html_p = Path(html_path)
         out_p = Path(output_path)
 
         try:
             out_p.parent.mkdir(parents=True, exist_ok=True)
-            HTML(filename=str(html_p)).write_pdf(str(out_p))
+            with open(html_p, "r", encoding="utf-8") as source_html:
+                with open(out_p, "w+b") as result_file:
+                    pisa_status = pisa.CreatePDF(source_html, dest=result_file)
+            if pisa_status.err:
+                raise Exception("xhtml2pdf rendering error")
         except Exception as e:
             raise WriteError(f"Failed to generate PDF at {out_p}: {e}") from e
 
