@@ -152,6 +152,21 @@ def interactive_mode():
                 break
             
             args = shlex.split(cmd_in)
+            if not args:
+                continue
+            
+            # Usability: allow users to type 'help' instead of '--help'
+            if args[0].lower() == "help":
+                args[0] = "--help"
+            
+            # Usability: allow users to paste 'forensixd ...' commands
+            if args[0].lower() == "forensixd":
+                args.pop(0)
+                if not args:
+                    continue
+                if args[0].lower() == "help":
+                    args[0] = "--help"
+
             try:
                 main(args=args, standalone_mode=False)
             except click.ClickException as e:
