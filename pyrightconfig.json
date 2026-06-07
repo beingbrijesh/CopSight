@@ -1,9 +1,11 @@
 {
-  "venvPath": "ai-service",
-  "venv": "venv",
+  "venvPath": ".",
+  "venv": "forensixd/venv",
   "extraPaths": [
-    "ai-service"
+    "ai-service",
+    "forensixd"
   ],
+  "pythonPath": "forensixd/venv/bin/python",
   "exclude": [
     "**/node_modules",
     "**/__pycache__"
