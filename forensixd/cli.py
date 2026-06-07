@@ -40,7 +40,13 @@ def acquire(output_dir, level, ufdr_config):
         devices = detector.scan()
         p.remove_task(t)
     if not devices:
-        console.print("[red]No devices found.[/red]")
+        from forensixd.core.device_detector import USB_AVAILABLE
+        if not USB_AVAILABLE:
+            console.print("[red]Error: pyusb library is missing or no USB backend is available.[/red]")
+            console.print("[yellow]Hint: Run 'pip install pyusb' and ensure libusb is installed (e.g. 'brew install libusb' on macOS).[/yellow]")
+        else:
+            console.print("[red]No devices found.[/red]")
+            console.print("[yellow]Hint: If a device is connected, ensure libusb is installed (e.g. 'brew install libusb' on macOS) and your device is trusted.[/yellow]")
         sys.exit(1)
     device = devices[0]
     console.print(f"[green]Found:[/green] {device.platform.value} — {device.device_id}")
