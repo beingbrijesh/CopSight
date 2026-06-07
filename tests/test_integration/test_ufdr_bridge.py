@@ -133,3 +133,32 @@ def test_from_yaml_creates_config(tmp_path, ufdr_project):
     yaml_file.write_text(yaml.dump(data), encoding="utf-8")
     cfg = UFDRBridgeConfig.from_yaml(yaml_file)
     assert cfg.ufdr_project_path == ufdr_project
+
+
+def test_update_index_json_decode_error(config, session, artifacts):
+    index = config.ufdr_project_path / "index.json"
+    index.write_text("{bad json: true}", encoding="utf-8")
+    bridge = UFDRBridge(config)
+    bridge.inject_session(session, artifacts)
+    # the index should be overwritten correctly
+    data = json.loads(index.read_text(encoding="utf-8"))
+    assert data["cases"][0]["case_number"] == session.case.case_number
+
+
+def test_update_index_existing_case_replaced(config, session, artifacts):
+    bridge = UFDRBridge(config)
+    # Inject once
+    bridge.inject_session(session, artifacts)
+    # Inject again
+    bridge.inject_session(session, artifacts)
+    
+    data = json.loads((config.ufdr_project_path / "index.json").read_text(encoding="utf-8"))
+    # Should only have 1 case, not 2
+    assert len(data["cases"]) == 1
+
+
+def test_list_cases_json_decode_error(config):
+    index = config.ufdr_project_path / "index.json"
+    index.write_text("{bad json}", encoding="utf-8")
+    bridge = UFDRBridge(config)
+    assert bridge.list_cases() == []

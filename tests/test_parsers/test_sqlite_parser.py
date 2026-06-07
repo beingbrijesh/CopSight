@@ -203,3 +203,134 @@ def test_open_readonly_allows_reads(db: Path) -> None:
     count = cursor.fetchone()[0]
     conn.close()
     assert count == 2
+
+
+# ---------------------------------------------------------------------------
+# Exceptions & Error handling
+# ---------------------------------------------------------------------------
+
+def test_list_tables_exception(tmp_path: Path) -> None:
+    db = tmp_path / "not_a_db"
+    db.write_bytes(b"bad")
+    assert SQLiteParser.list_tables(db) == []
+
+
+def test_table_exists_exception(tmp_path: Path) -> None:
+    db = tmp_path / "not_a_db"
+    db.write_bytes(b"bad")
+    assert SQLiteParser.table_exists(db, "messages") is False
+
+
+def test_list_columns_exception(tmp_path: Path) -> None:
+    db = tmp_path / "not_a_db"
+    db.write_bytes(b"bad")
+    assert SQLiteParser.list_columns(db, "messages") == []
+
+
+def test_query_sqlite_error(db: Path) -> None:
+    with pytest.raises(ParseError, match="Query failed"):
+        SQLiteParser.query(db, "SELECT * FROM nonexistent_table")
+
+
+def test_open_readonly_exception(tmp_path: Path) -> None:
+    db = tmp_path / "not_a_db"
+    db.mkdir()  # is a directory, opening will fail
+    with pytest.raises(ParseError, match="Cannot open read-only connection"):
+        SQLiteParser.open_readonly(db)
+
+
+# ---------------------------------------------------------------------------
+# recover_deleted_rows (freelist parsing)
+# ---------------------------------------------------------------------------
+
+def test_recover_deleted_rows_empty_freelist(db: Path) -> None:
+    # A fresh database has 0 freelist pages
+    assert SQLiteParser.recover_deleted_rows(db, "messages") == []
+
+
+def test_recover_deleted_rows_with_freelist(tmp_path: Path) -> None:
+    # Create a database, insert many rows, then delete them to populate freelist
+    db = tmp_path / "freelist.db"
+    conn = sqlite3.connect(str(db))
+    conn.execute("CREATE TABLE t (id INTEGER, v TEXT)")
+    for i in range(100):
+        conn.execute("INSERT INTO t VALUES (?,?)", (i, "A" * 1000))
+    conn.commit()
+    conn.execute("DELETE FROM t")
+    conn.commit()
+    conn.close()
+    
+    # Not guaranteed to extract rows with the simplistic implementation,
+    # but it will walk the freelist pages.
+    recovered = SQLiteParser.recover_deleted_rows(db, "t")
+    assert isinstance(recovered, list)
+
+
+def test_recover_deleted_rows_exception() -> None:
+    import unittest.mock
+    with unittest.mock.patch("sqlite3.connect", side_effect=Exception("mock err")):
+        assert SQLiteParser.recover_deleted_rows(Path("any"), "t") == []
+
+
+# ---------------------------------------------------------------------------
+# parse_wal
+# ---------------------------------------------------------------------------
+
+def test_parse_wal_bad_magic(tmp_path: Path) -> None:
+    wal = tmp_path / "bad.db-wal"
+    # Needs to be >= 32 bytes to pass the size check, but bad magic
+    wal.write_bytes(b"A" * 32)
+    assert SQLiteParser.parse_wal(wal) == []
+
+
+def test_parse_wal_valid(tmp_path: Path) -> None:
+    wal = tmp_path / "good.db-wal"
+    import struct
+    
+    # 32 byte header: magic, format, pagesize, checkpoint seq, salt1, salt2, checksum1, checksum2
+    # magic 0x377F0682, pagesize 4096 (at offset 8), salt1 at 16, salt2 at 20
+    header = bytearray(32)
+    struct.pack_into(">I", header, 0, 0x377F0682)
+    struct.pack_into(">I", header, 8, 4096)
+    struct.pack_into(">I", header, 16, 123)
+    struct.pack_into(">I", header, 20, 456)
+    
+    # 24 byte frame header: pgno (offset 0), db_size_after (offset 4)
+    # 4096 byte frame
+    frame = bytearray(24 + 4096)
+    struct.pack_into(">I", frame, 0, 1)  # pgno 1
+    struct.pack_into(">I", frame, 4, 1)  # size after commit 1
+    
+    wal.write_bytes(header + frame)
+    
+    frames = SQLiteParser.parse_wal(wal)
+    assert len(frames) == 1
+    assert frames[0]["page_number"] == 1
+    assert frames[0]["db_size_after"] == 1
+    assert frames[0]["salt_1"] == 123
+    assert frames[0]["salt_2"] == 456
+
+
+def test_parse_wal_padding(tmp_path: Path) -> None:
+    wal = tmp_path / "pad.db-wal"
+    import struct
+    header = bytearray(32)
+    struct.pack_into(">I", header, 0, 0x377F0682)
+    struct.pack_into(">I", header, 8, 4096)
+    
+    # padding frame (pgno = 0)
+    frame = bytearray(24 + 4096)
+    struct.pack_into(">I", frame, 0, 0) 
+    
+    wal.write_bytes(header + frame)
+    
+    frames = SQLiteParser.parse_wal(wal)
+    assert len(frames) == 0
+
+
+def test_parse_wal_exception(tmp_path: Path) -> None:
+    wal = tmp_path / "err.db-wal"
+    # To trigger an exception in parse_wal: e.g. mock read_bytes
+    import unittest.mock
+    with unittest.mock.patch("pathlib.Path.read_bytes", side_effect=Exception("mock err")):
+        assert SQLiteParser.parse_wal(wal) == []

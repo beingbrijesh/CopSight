@@ -19,6 +19,7 @@ Strategy
 
 import pytest
 from datetime import timedelta, datetime, timezone
+from pathlib import Path
 from unittest.mock import patch
 
 from forensixd.extractors.disk_image import DiskImageExtractor, TSK_AVAILABLE
@@ -295,3 +296,196 @@ def test_extract_all_levels_raise_tsk_unavailable(
         with ForensicSession(case, tmp_path) as session:
             with pytest.raises(ExtractionError):
                 list(e.extract(session, level))
+
+
+# ---------------------------------------------------------------------------
+# _artifact_type_for_tsk_path
+# ---------------------------------------------------------------------------
+
+def test_artifact_type_for_tsk_path() -> None:
+    from forensixd.extractors.disk_image import _artifact_type_for_tsk_path
+    from forensixd.core.models import ArtifactType
+    
+    assert _artifact_type_for_tsk_path("/DCIM/photo.jpg") == ArtifactType.MEDIA
+    assert _artifact_type_for_tsk_path("/data/sms.db") == ArtifactType.MESSAGE
+    assert _artifact_type_for_tsk_path("/calls.db") == ArtifactType.CALL_LOG
+    assert _artifact_type_for_tsk_path("/contacts.db") == ArtifactType.CONTACT
+    assert _artifact_type_for_tsk_path("/Chrome/History") == ArtifactType.BROWSER_HISTORY
+    assert _artifact_type_for_tsk_path("/mail/Outlook") == ArtifactType.EMAIL
+    assert _artifact_type_for_tsk_path("/location/geo") == ArtifactType.LOCATION
+    assert _artifact_type_for_tsk_path("/var/log/syslog") == ArtifactType.SYSTEM_LOG
+    assert _artifact_type_for_tsk_path("/other/random.dat") == ArtifactType.APP_DATA
+
+
+# ---------------------------------------------------------------------------
+# _walk_image mocks
+# ---------------------------------------------------------------------------
+
+class MockMeta:
+    def __init__(self, type_val, size=100):
+        self.type = type_val
+        self.size = size
+
+class MockName:
+    def __init__(self, name_bytes):
+        self.name = name_bytes
+
+class MockInfo:
+    def __init__(self, name_bytes=None, meta_type=None, meta_size=100):
+        self.name = MockName(name_bytes) if name_bytes is not None else None
+        self.meta = MockMeta(meta_type, meta_size) if meta_type is not None else None
+
+class MockEntry:
+    def __init__(self, name_bytes=None, meta_type=None, data=b"data", meta_size=100):
+        self.info = MockInfo(name_bytes, meta_type, meta_size)
+        self._data = data
+        
+    def read_random(self, offset, size):
+        return self._data
+
+class MockDir:
+    def __init__(self, entries):
+        self.entries = entries
+        
+    def __iter__(self):
+        return iter(self.entries)
+
+class MockFS:
+    def __init__(self, dirs):
+        self.dirs = dirs
+        
+    def open_dir(self, path):
+        if path in self.dirs:
+            return self.dirs[path]
+        raise Exception("Dir not found")
+
+def test_walk_image_success(tmp_path: Path, device: DeviceInfo, case: CaseMetadata) -> None:
+    e = DiskImageExtractor()
+    e.connect(device)
+    
+    import pytsk3
+    
+    entries_root = [
+        MockEntry(b".", pytsk3.TSK_FS_META_TYPE_DIR),
+        MockEntry(b"..", pytsk3.TSK_FS_META_TYPE_DIR),
+        MockEntry(b"test.txt", pytsk3.TSK_FS_META_TYPE_REG, b"hello", 5),
+        MockEntry(b"sub", pytsk3.TSK_FS_META_TYPE_DIR),
+        MockEntry(b"bad_meta", None), # Missing meta
+    ]
+    
+    entries_sub = [
+        MockEntry(b"pic.jpg", pytsk3.TSK_FS_META_TYPE_REG, b"jpeg", 4),
+    ]
+    
+    fs = MockFS({
+        "/": MockDir(entries_root),
+        "/sub": MockDir(entries_sub),
+    })
+
+    with patch("forensixd.extractors.disk_image.TSK_AVAILABLE", True):
+        with patch("pytsk3.Img_Info"):
+            with patch("pytsk3.FS_Info", return_value=fs):
+                with ForensicSession(case, tmp_path) as session:
+                    artifacts = list(e.extract(session, ExtractionLevel.LOGICAL))
+                    
+    assert len(artifacts) == 2
+    paths = [a.source_path for a in artifacts]
+    assert "/test.txt" in paths
+    assert "/sub/pic.jpg" in paths
+
+
+def test_walk_image_exceptions(tmp_path: Path, device: DeviceInfo, case: CaseMetadata) -> None:
+    e = DiskImageExtractor()
+    e.connect(device)
+    
+    with patch("forensixd.extractors.disk_image.TSK_AVAILABLE", True):
+        # 1. Img_Info raises
+        with patch("pytsk3.Img_Info", side_effect=Exception("img error")):
+            with ForensicSession(case, tmp_path) as session:
+                with pytest.raises(ExtractionError, match="Failed to open disk image"):
+                    list(e.extract(session, ExtractionLevel.LOGICAL))
+        
+        # 2. FS_Info raises
+        with patch("pytsk3.Img_Info"):
+            with patch("pytsk3.FS_Info", side_effect=Exception("fs error")):
+                with ForensicSession(case, tmp_path) as session:
+                    with pytest.raises(ExtractionError, match="No supported file system"):
+                        list(e.extract(session, ExtractionLevel.LOGICAL))
+        
+        # 3. open_dir("/") raises
+        class MockFSBadRoot:
+            def open_dir(self, path): raise Exception("root error")
+            
+        with patch("pytsk3.Img_Info"):
+            with patch("pytsk3.FS_Info", return_value=MockFSBadRoot()):
+                with ForensicSession(case, tmp_path) as session:
+                    with pytest.raises(ExtractionError, match="Cannot open root directory"):
+                        list(e.extract(session, ExtractionLevel.LOGICAL))
+
+
+def test_walk_dir_exceptions(tmp_path: Path, device: DeviceInfo, case: CaseMetadata) -> None:
+    e = DiskImageExtractor()
+    e.connect(device)
+    import pytsk3
+    
+    class BadDirIter:
+        def __iter__(self):
+            raise Exception("dir iter error")
+            
+    class BadSubDirFS:
+        def open_dir(self, path):
+            if path == "/":
+                return MockDir([MockEntry(b"sub", pytsk3.TSK_FS_META_TYPE_DIR)])
+            raise Exception("sub dir error")
+
+    with patch("forensixd.extractors.disk_image.TSK_AVAILABLE", True):
+        with patch("pytsk3.Img_Info"):
+            # Test dir iteration error
+            with patch("pytsk3.FS_Info", return_value=MockFS({"/": BadDirIter()})):
+                with ForensicSession(case, tmp_path) as session:
+                    artifacts = list(e.extract(session, ExtractionLevel.LOGICAL))
+                    assert len(artifacts) == 0
+            
+            # Test sub dir open error
+            with patch("pytsk3.FS_Info", return_value=BadSubDirFS()):
+                with ForensicSession(case, tmp_path) as session:
+                    artifacts = list(e.extract(session, ExtractionLevel.LOGICAL))
+                    assert len(artifacts) == 0
+
+
+def test_extract_file_artifact_exceptions(tmp_path: Path, device: DeviceInfo, case: CaseMetadata) -> None:
+    e = DiskImageExtractor()
+    e.connect(device)
+    import pytsk3
+    
+    # Missing size
+    class MockMetaNoSize:
+        def __init__(self):
+            self.type = pytsk3.TSK_FS_META_TYPE_REG
+        @property
+        def size(self):
+            raise Exception("no size")
+            
+    class EntryNoSize:
+        def __init__(self):
+            self.info = MockInfo(b"file", None)
+            self.info.meta = MockMetaNoSize()
+
+    # Read error
+    class EntryBadRead(MockEntry):
+        def read_random(self, offset, size):
+            raise Exception("read error")
+
+    entries = [
+        EntryNoSize(),
+        EntryBadRead(b"badread", pytsk3.TSK_FS_META_TYPE_REG, b"", 100),
+    ]
+    
+    fs = MockFS({"/": MockDir(entries)})
+
+    with patch("forensixd.extractors.disk_image.TSK_AVAILABLE", True):
+        with patch("pytsk3.Img_Info"):
+            with patch("pytsk3.FS_Info", return_value=fs):
+                with ForensicSession(case, tmp_path) as session:
+                    artifacts = list(e.extract(session, ExtractionLevel.LOGICAL))
+                    assert len(artifacts) == 0

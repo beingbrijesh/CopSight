@@ -153,10 +153,6 @@ def test_concrete_extractor_satisfies_contract() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(
-    reason="android.py is still a stub; registration will be added during implementation.",
-    strict=False,
-)
 def test_android_registered_after_import() -> None:
     """Importing forensixd.extractors.android must register Platform.ANDROID."""
     import forensixd.extractors.android  # noqa: F401
@@ -164,10 +160,6 @@ def test_android_registered_after_import() -> None:
     assert Platform.ANDROID in ExtractorRegistry.available_platforms()
 
 
-@pytest.mark.xfail(
-    reason="windows.py is still a stub; registration will be added during implementation.",
-    strict=False,
-)
 def test_windows_registered_after_import() -> None:
     """Importing forensixd.extractors.windows must register Platform.WINDOWS."""
     import forensixd.extractors.windows  # noqa: F401

@@ -525,3 +525,128 @@ def test_artifact_hashes_are_populated(
     for a in artifacts:
         assert len(a.hashes.md5) == 32
         assert len(a.hashes.sha256) == 64
+
+
+# ---------------------------------------------------------------------------
+# extract — Exception handling branches
+# ---------------------------------------------------------------------------
+
+def test_extract_registry_exceptions(tmp_path: Path, device: DeviceInfo) -> None:
+    case = _make_case(device, "WIN-020")
+    e = WindowsExtractor()
+    e.connect(device)
+    
+    # We want to test NTUSER.DAT glob PermissionError, and single hive PermissionError/Exception
+    import unittest.mock
+    import forensixd.extractors.windows as win_ext
+
+    with unittest.mock.patch.object(win_ext, "_USERS_ROOT") as mock_users:
+        mock_users.exists.return_value = True
+        mock_users.glob.side_effect = PermissionError("no access")
+        
+        with unittest.mock.patch.object(win_ext, "_REGISTRY_HIVES", [tmp_path / "A", tmp_path / "B"]):
+            # For the first hive, raise PermissionError on hash_file to simulate access error
+            # For the second, raise generic Exception
+            def mock_make_artifact(*args, **kwargs):
+                if "A" in kwargs["path"].name:
+                    raise PermissionError("A")
+                raise Exception("B")
+            
+            with unittest.mock.patch.object(e, "_make_artifact", side_effect=mock_make_artifact):
+                # Need to make the paths exist
+                (tmp_path / "A").write_bytes(b"a")
+                (tmp_path / "B").write_bytes(b"b")
+                
+                with ForensicSession(case, tmp_path) as session:
+                    artifacts = list(e._extract_registry(session))
+                    
+    assert len(artifacts) == 0
+
+
+def test_extract_event_logs_exceptions(tmp_path: Path, device: DeviceInfo) -> None:
+    case = _make_case(device, "WIN-021")
+    e = WindowsExtractor()
+    e.connect(device)
+
+    import unittest.mock
+    
+    # 1. glob raises PermissionError
+    with unittest.mock.patch("pathlib.Path.exists", return_value=True):
+        with unittest.mock.patch("pathlib.Path.glob", side_effect=PermissionError("no logs")):
+            with ForensicSession(case, tmp_path) as session:
+                artifacts = list(e._extract_event_logs(session))
+    assert len(artifacts) == 0
+
+    # 2. artifact creation raises Exception and PermissionError
+    with unittest.mock.patch("pathlib.Path.exists", return_value=True):
+        with unittest.mock.patch("pathlib.Path.glob", return_value=[tmp_path / "A.evtx", tmp_path / "B.evtx"]):
+            def mock_make_artifact(*args, **kwargs):
+                if "A" in kwargs["path"].name:
+                    raise PermissionError("A")
+                raise Exception("B")
+                
+            with unittest.mock.patch.object(e, "_make_artifact", side_effect=mock_make_artifact):
+                with ForensicSession(case, tmp_path) as session:
+                    artifacts = list(e._extract_event_logs(session))
+    assert len(artifacts) == 0
+
+
+def test_extract_prefetch_exceptions(tmp_path: Path, device: DeviceInfo) -> None:
+    case = _make_case(device, "WIN-022")
+    e = WindowsExtractor()
+    e.connect(device)
+
+    import unittest.mock
+    
+    # 1. glob raises PermissionError
+    with unittest.mock.patch("pathlib.Path.exists", return_value=True):
+        with unittest.mock.patch("pathlib.Path.glob", side_effect=PermissionError("no pf")):
+            with ForensicSession(case, tmp_path) as session:
+                artifacts = list(e._extract_prefetch(session))
+    assert len(artifacts) == 0
+
+    # 2. artifact creation raises Exception and PermissionError
+    with unittest.mock.patch("pathlib.Path.exists", return_value=True):
+        with unittest.mock.patch("pathlib.Path.glob", return_value=[tmp_path / "A.pf", tmp_path / "B.pf"]):
+            def mock_make_artifact(*args, **kwargs):
+                if "A" in kwargs["path"].name:
+                    raise PermissionError("A")
+                raise Exception("B")
+                
+            with unittest.mock.patch.object(e, "_make_artifact", side_effect=mock_make_artifact):
+                with ForensicSession(case, tmp_path) as session:
+                    artifacts = list(e._extract_prefetch(session))
+    assert len(artifacts) == 0
+
+
+def test_extract_browser_dbs_exceptions(tmp_path: Path, device: DeviceInfo) -> None:
+    case = _make_case(device, "WIN-023")
+    e = WindowsExtractor()
+    e.connect(device)
+
+    import unittest.mock
+    import forensixd.extractors.windows as win_ext
+    
+    # 1. glob raises PermissionError
+    with unittest.mock.patch.object(win_ext, "_USERS_ROOT") as mock_users:
+        mock_users.exists.return_value = True
+        mock_users.glob.side_effect = PermissionError("no access")
+        
+        with ForensicSession(case, tmp_path) as session:
+            artifacts = list(e._extract_browser_dbs(session))
+    assert len(artifacts) == 0
+
+    # 2. artifact creation raises Exception and PermissionError
+    with unittest.mock.patch.object(win_ext, "_USERS_ROOT") as mock_users:
+        mock_users.exists.return_value = True
+        mock_users.glob.return_value = [tmp_path / "A.db", tmp_path / "B.db"]
+        
+        def mock_make_artifact(*args, **kwargs):
+            if "A" in kwargs["path"].name:
+                raise PermissionError("A")
+            raise Exception("B")
+            
+        with unittest.mock.patch.object(e, "_make_artifact", side_effect=mock_make_artifact):
+            with ForensicSession(case, tmp_path) as session:
+                artifacts = list(e._extract_browser_dbs(session))
+    assert len(artifacts) == 0

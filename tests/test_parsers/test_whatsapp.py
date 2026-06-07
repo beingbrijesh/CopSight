@@ -245,3 +245,208 @@ def test_encrypted_without_key_raises(tmp_path: Path, device: DeviceInfo) -> Non
     )
     with pytest.raises(EncryptionError):
         WhatsAppParser().parse(artifact)
+
+
+def test_crypto_not_available_raises(tmp_path: Path, device: DeviceInfo) -> None:
+    import unittest.mock
+    import forensixd.parsers.apps.whatsapp as wa
+    crypt_file = tmp_path / "msgstore.db.crypt15"
+    crypt_file.write_bytes(b"a" * 100)
+    key_file = tmp_path / "key"
+    key_file.write_bytes(b"b" * 67)
+
+    artifact = Artifact(
+        artifact_type=ArtifactType.APP_DATA,
+        source_app="com.whatsapp",
+        source_path=str(crypt_file),
+        acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+        hashes=HashPair(md5="a" * 32, sha256="b" * 64),
+        device=device,
+    )
+    with unittest.mock.patch.object(wa, "CRYPTO_AVAILABLE", False):
+        with pytest.raises(EncryptionError, match="pycryptodome is required"):
+            WhatsAppParser().parse(artifact)
+
+
+def test_crypt15_unlink_oserror(tmp_path: Path, android_db: Path, device: DeviceInfo) -> None:
+    import unittest.mock
+    crypt_file = tmp_path / "msgstore.db.crypt15"
+    crypt_file.write_bytes(b"a" * 100)
+    key_file = tmp_path / "key"
+    key_file.write_bytes(b"b" * 67)
+
+    artifact = Artifact(
+        artifact_type=ArtifactType.APP_DATA,
+        source_app="com.whatsapp",
+        source_path=str(crypt_file),
+        acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+        hashes=HashPair(md5="a" * 32, sha256="b" * 64),
+        device=device,
+    )
+    
+    with unittest.mock.patch.object(WhatsAppParser, "_decrypt_crypt15", return_value=android_db.read_bytes()):
+        with unittest.mock.patch("pathlib.Path.unlink", side_effect=OSError("mock oserror")):
+            records = WhatsAppParser().parse(artifact)
+    assert len(records) == 2
+
+
+@pytest.fixture
+def ios_db(tmp_path: Path) -> Path:
+    db = tmp_path / "ChatStorage.sqlite"
+    conn = sqlite3.connect(str(db))
+    conn.execute(
+        """CREATE TABLE ZWAMESSAGE (
+            ZFROMJID TEXT,
+            ZTEXT TEXT,
+            ZMESSAGEDATE REAL,
+            ZISFROMME INTEGER,
+            ZMEDIAURL TEXT
+        )"""
+    )
+    # iOS Apple CoreData epoch: seconds since 2001-01-01
+    conn.execute(
+        "INSERT INTO ZWAMESSAGE VALUES (?,?,?,?,?)",
+        ("123@s.whatsapp.net", "iOS Hello", 700000000.0, 0, None),
+    )
+    conn.commit()
+    conn.close()
+    return db
+
+
+def test_parse_ios(ios_db: Path, device: DeviceInfo) -> None:
+    artifact = Artifact(
+        artifact_type=ArtifactType.APP_DATA,
+        source_app="com.whatsapp",
+        source_path=str(ios_db),
+        acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+        hashes=HashPair(md5="a" * 32, sha256="b" * 64),
+        device=device,
+    )
+    records = WhatsAppParser().parse(artifact)
+    assert len(records) == 1
+    assert records[0].fields["body"] == "iOS Hello"
+
+
+def test_missing_ios_table_raises(tmp_path: Path, device: DeviceInfo) -> None:
+    db = tmp_path / "ChatStorage.sqlite"
+    conn = sqlite3.connect(str(db))
+    conn.execute("CREATE TABLE foo (id INTEGER)")
+    conn.commit()
+    conn.close()
+
+    artifact = Artifact(
+        artifact_type=ArtifactType.APP_DATA,
+        source_app="com.whatsapp",
+        source_path=str(db),
+        acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+        hashes=HashPair(md5="a" * 32, sha256="b" * 64),
+        device=device,
+    )
+    with pytest.raises(ParseError, match="Required table 'ZWAMESSAGE' not found"):
+        WhatsAppParser().parse(artifact)
+
+
+def test_ios_invalid_timestamp(ios_db: Path, device: DeviceInfo) -> None:
+    conn = sqlite3.connect(str(ios_db))
+    conn.execute("INSERT INTO ZWAMESSAGE VALUES ('bad', 'Bad Date', 'invalid', 0, NULL)")
+    conn.commit()
+    conn.close()
+
+    artifact = Artifact(
+        artifact_type=ArtifactType.APP_DATA,
+        source_app="com.whatsapp",
+        source_path=str(ios_db),
+        acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+        hashes=HashPair(md5="a" * 32, sha256="b" * 64),
+        device=device,
+    )
+    records = WhatsAppParser().parse(artifact)
+    assert len(records) == 2
+    bad_record = next(r for r in records if r.fields["from"] == "bad")
+    assert "timestamp" in bad_record.fields
+
+
+def test_android_invalid_timestamp(android_db: Path, device: DeviceInfo) -> None:
+    conn = sqlite3.connect(str(android_db))
+    conn.execute("INSERT INTO messages VALUES ('bad', 'Bad Date', 'invalid', 0, NULL)")
+    conn.commit()
+    conn.close()
+
+    artifact = Artifact(
+        artifact_type=ArtifactType.APP_DATA,
+        source_app="com.whatsapp",
+        source_path=str(android_db),
+        acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+        hashes=HashPair(md5="a" * 32, sha256="b" * 64),
+        device=device,
+    )
+    records = WhatsAppParser().parse(artifact)
+    assert len(records) == 3
+    bad_record = next(r for r in records if r.fields["from"] == "bad")
+    assert "timestamp" in bad_record.fields
+
+
+def test_crypt15_key_too_short(tmp_path: Path, device: DeviceInfo) -> None:
+    crypt_file = tmp_path / "msgstore.db.crypt15"
+    crypt_file.write_bytes(b"encrypted")
+    key_file = tmp_path / "key"
+    key_file.write_bytes(b"short")
+
+    artifact = Artifact(
+        artifact_type=ArtifactType.APP_DATA,
+        source_app="com.whatsapp",
+        source_path=str(crypt_file),
+        acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+        hashes=HashPair(md5="a" * 32, sha256="b" * 64),
+        device=device,
+    )
+    with pytest.raises(EncryptionError, match="Key file is too short"):
+        WhatsAppParser().parse(artifact)
+
+
+def test_crypt15_decryption_failure(tmp_path: Path, device: DeviceInfo) -> None:
+    import unittest.mock
+    crypt_file = tmp_path / "msgstore.db.crypt15"
+    # Needs to be at least some length, though the mock will raise ValueError
+    crypt_file.write_bytes(b"a" * 100)
+    key_file = tmp_path / "key"
+    key_file.write_bytes(b"b" * 67)
+
+    artifact = Artifact(
+        artifact_type=ArtifactType.APP_DATA,
+        source_app="com.whatsapp",
+        source_path=str(crypt_file),
+        acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+        hashes=HashPair(md5="a" * 32, sha256="b" * 64),
+        device=device,
+    )
+    
+    with unittest.mock.patch("Crypto.Cipher.AES.new") as mock_aes:
+        mock_cipher = unittest.mock.Mock()
+        mock_cipher.decrypt_and_verify.side_effect = ValueError("Mocked GCM error")
+        mock_aes.return_value = mock_cipher
+        
+        with pytest.raises(EncryptionError, match="crypt15 GCM authentication failed"):
+            WhatsAppParser().parse(artifact)
+
+
+def test_crypt15_decryption_success(tmp_path: Path, android_db: Path, device: DeviceInfo) -> None:
+    import unittest.mock
+    crypt_file = tmp_path / "msgstore.db.crypt15"
+    crypt_file.write_bytes(b"a" * 100)
+    key_file = tmp_path / "key"
+    key_file.write_bytes(b"b" * 67)
+
+    artifact = Artifact(
+        artifact_type=ArtifactType.APP_DATA,
+        source_app="com.whatsapp",
+        source_path=str(crypt_file),
+        acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+        hashes=HashPair(md5="a" * 32, sha256="b" * 64),
+        device=device,
+    )
+    
+    # We will mock _decrypt_crypt15 to return the bytes of the android_db
+    with unittest.mock.patch.object(WhatsAppParser, "_decrypt_crypt15", return_value=android_db.read_bytes()):
+        records = WhatsAppParser().parse(artifact)
+    assert len(records) == 2

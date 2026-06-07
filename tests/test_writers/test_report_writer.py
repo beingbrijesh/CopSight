@@ -135,3 +135,42 @@ def test_report_is_utf8(tmp_path, session, artifacts):
     out = tmp_path / "report.html"
     ReportWriter.generate_html(session, artifacts, out)
     out.read_text(encoding="utf-8")  # must not raise
+
+
+def test_generate_html_exception(tmp_path, session, artifacts):
+    # Pass a path that is a directory instead of a file so write_text raises IsADirectoryError
+    out = tmp_path / "dir_out"
+    out.mkdir()
+    with pytest.raises(WriteError, match="Failed to write HTML report"):
+        ReportWriter.generate_html(session, artifacts, out)
+
+
+def test_generate_pdf_success(tmp_path, session, artifacts):
+    out_html = tmp_path / "report.html"
+    ReportWriter.generate_html(session, artifacts, out_html)
+    out_pdf = tmp_path / "report.pdf"
+
+    mock_weasyprint = unittest.mock.MagicMock()
+    mock_html_class = mock_weasyprint.HTML
+    mock_instance = mock_html_class.return_value
+
+    with unittest.mock.patch.dict("sys.modules", {"weasyprint": mock_weasyprint}):
+        ReportWriter.generate_pdf(out_html, out_pdf)
+        
+    mock_html_class.assert_called_once_with(filename=str(out_html))
+    mock_instance.write_pdf.assert_called_once_with(str(out_pdf))
+
+
+def test_generate_pdf_exception(tmp_path, session, artifacts):
+    out_html = tmp_path / "report.html"
+    ReportWriter.generate_html(session, artifacts, out_html)
+    out_pdf = tmp_path / "report.pdf"
+
+    mock_weasyprint = unittest.mock.MagicMock()
+    mock_html_class = mock_weasyprint.HTML
+    mock_instance = mock_html_class.return_value
+    mock_instance.write_pdf.side_effect = Exception("weasyprint error")
+
+    with unittest.mock.patch.dict("sys.modules", {"weasyprint": mock_weasyprint}):
+        with pytest.raises(WriteError, match="Failed to generate PDF"):
+            ReportWriter.generate_pdf(out_html, out_pdf)
