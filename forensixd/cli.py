@@ -210,6 +210,11 @@ def interactive_mode():
             console.print(f"[red]Error:[/red] {e}")
 
 if __name__ == "__main__":
+    import atexit
+    def pause_on_exit():
+        if getattr(sys, 'frozen', False) and sys.platform == "win32":
+            input("\nPress Enter to exit...")
+    atexit.register(pause_on_exit)
     main()
 
 __all__ = ["main"]

@@ -61,6 +61,7 @@ jobs:
           --collect-all Crypto \
           --collect-all jinja2 \
           --collect-all xhtml2pdf \
+          --collect-all libusb_package \
           --noconfirm
 
     - name: Upload Artifacts

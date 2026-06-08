@@ -38,7 +38,12 @@ from forensixd.core.models import DeviceInfo, Platform
 
 try:
     import usb.core  # type: ignore[import-untyped]
-
+    try:
+        import libusb_package
+        # Install the bundled libusb library backend globally for pyusb
+        usb.core.find(backend=libusb_package.get_libusb1_backend())
+    except ImportError:
+        pass
     USB_AVAILABLE: bool = True
 except ImportError:  # pragma: no cover
     USB_AVAILABLE = False
@@ -122,7 +127,10 @@ class DeviceDetector:
         matched: list[DeviceInfo] = []
 
         try:
-            raw_devices = usb.core.find(find_all=True)
+            backend = None
+            if 'libusb_package' in globals():
+                backend = libusb_package.get_libusb1_backend()
+            raw_devices = usb.core.find(find_all=True, backend=backend)
         except usb.core.NoBackendError:
             # libusb / OpenUSB native driver not present on this machine.
             return []

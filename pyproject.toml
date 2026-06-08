@@ -22,6 +22,7 @@ dependencies = [
     "tqdm>=4.66.0",
     "humanize>=4.9.0",
     "pyusb>=1.2.1",
+    "libusb-package>=1.0.26",
     "pymobiledevice3>=2.36.0",
     "paramiko>=3.4.0",
 ]
