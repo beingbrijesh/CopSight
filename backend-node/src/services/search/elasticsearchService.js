@@ -31,6 +31,7 @@ export const initializeIndices = async () => {
                     confidence: { type: 'float' }
                   }
                 },
+                indexedAt: { type: 'date' },
                 metadata: { type: 'object', enabled: false }
               }
             }
@@ -78,6 +79,7 @@ export const indexToElasticsearch = async (caseId, parsedData, entities) => {
               phoneNumber,
               timestamp: record.timestamp,
               entities: recordEntities,
+              indexedAt: new Date().toISOString(),
               metadata: record
             }
           );

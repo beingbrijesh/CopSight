@@ -560,6 +560,22 @@ LLM_MODEL=llama3.2
 
 This is a law enforcement tool. Contributions should maintain security and data privacy standards.
 
+### Local Development Workflow (Git Hooks)
+To ensure code quality and automatically build the project locally when collaborating, we use `pre-commit`.
+After cloning the repository, install the development dependencies and setup the Git hooks:
+
+```bash
+# Install development dependencies (including pre-commit and pyinstaller)
+pip install -e .[dev]
+
+# Install pre-commit hook (Runs linters and tests on git commit)
+pre-commit install
+
+# Install pre-push hook (Runs the PyInstaller build on git push)
+pre-commit install -t pre-push
+```
+This ensures that any developer working on Mac, Windows, or Linux automatically runs tests on commit and builds the executable on push.
+
 ## 📄 License
 
 MIT License - See LICENSE file for details

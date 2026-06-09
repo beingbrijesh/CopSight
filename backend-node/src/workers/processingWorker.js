@@ -56,8 +56,14 @@ try {
       let processedSources = 0;
       let totalEntities = 0;
       const allEntities = []; // Collect all entities for indexing
+      
+      const fileName = filePath.split('/').pop().split('\\').pop();
 
       for (const source of parsedData.dataSources) {
+        // Inject file_name and job_id for AI clarity
+        source.file_name = fileName;
+        source.job_id = jobId;
+
         // Create data source record
         const dataSource = await DataSource.create({
           deviceId: device.id,

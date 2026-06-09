@@ -373,8 +373,8 @@ async def get_model_stats():
 @router.post("/comprehensive-analysis")
 async def comprehensive_analysis(
     case_data: Dict[str, Any],
-    analysis_types: Optional[List[str]] = None,
-    background_tasks: Optional[BackgroundTasks] = None
+    background_tasks: BackgroundTasks,
+    analysis_types: Optional[List[str]] = None
 ):
     """Comprehensive AI-powered analysis of case data"""
     try:
