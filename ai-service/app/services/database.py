@@ -46,6 +46,7 @@ class DatabaseManager:
                 max_queries=50000,
                 max_inactive_connection_lifetime=600,
                 command_timeout=120,
+                statement_cache_size=0,
                 server_settings={
                     "tcp_keepalives_idle": "60",
                     "tcp_keepalives_interval": "10",
@@ -157,6 +158,7 @@ class DatabaseManager:
                 max_queries=50000,
                 max_inactive_connection_lifetime=600,
                 command_timeout=120,
+                statement_cache_size=0,
                 server_settings={
                     "tcp_keepalives_idle": "60",
                     "tcp_keepalives_interval": "10",
