@@ -3,8 +3,13 @@ import logger from '../config/logger.js';
 
 class CacheService {
   constructor() {
+    const redisHost = process.env.REDIS_HOST || 'localhost';
+    const redisPort = process.env.REDIS_PORT || '6379';
+    const redisPassword = process.env.REDIS_PASSWORD ? `:${process.env.REDIS_PASSWORD}@` : '';
+    const isUpstash = redisHost.includes('upstash');
+    
     this.client = createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379'
+      url: process.env.REDIS_URL || `redis${isUpstash ? 's' : ''}://${redisPassword}${redisHost}:${redisPort}`
     });
 
     this.client.on('error', (err) => {
