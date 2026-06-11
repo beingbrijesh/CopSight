@@ -16,11 +16,21 @@ _redis_pool = None
 async def get_redis_pool():
     global _redis_pool
     if _redis_pool is None:
-        _redis_pool = await arq.create_pool(RedisSettings(
-            host=settings.REDIS_HOST, 
-            port=settings.REDIS_PORT,
-            conn_timeout=15
-        ))
+        if settings.REDIS_URL:
+            rs = RedisSettings.from_dsn(settings.REDIS_URL)
+            rs.conn_timeout = 15
+        else:
+            import urllib.parse
+            encoded_redis_pass = urllib.parse.quote_plus(settings.REDIS_PASSWORD) if settings.REDIS_PASSWORD else None
+            is_ssl = "upstash" in settings.REDIS_HOST.lower()
+            rs = RedisSettings(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                password=settings.REDIS_PASSWORD,
+                ssl=is_ssl,
+                conn_timeout=15
+            )
+        _redis_pool = await arq.create_pool(rs)
     return _redis_pool
 
 class TextIngestRequest(BaseModel):

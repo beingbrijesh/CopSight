@@ -51,8 +51,8 @@ export const ChangePasswordModal = () => {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/75 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl">
         <div className="bg-blue-600 px-6 py-8 text-center text-white">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/20">
-            <Shield className="h-8 w-8" />
+          <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white border-2 border-white/20">
+            <img src="/logo.jpeg" alt="CopSight Logo" className="h-full w-full object-cover" />
           </div>
           <h2 className="mt-4 text-2xl font-bold">Action Required</h2>
           <p className="mt-2 text-blue-100">

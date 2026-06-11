@@ -94,10 +94,12 @@ class DatabaseManager:
         try:
             if settings.REDIS_URL:
                 redis_url = settings.REDIS_URL
+                is_rediss = redis_url.startswith("rediss://")
             else:
                 import urllib.parse
                 encoded_redis_pass = urllib.parse.quote_plus(settings.REDIS_PASSWORD) if settings.REDIS_PASSWORD else None
                 redis_protocol = "rediss" if "upstash" in settings.REDIS_HOST.lower() else "redis"
+                is_rediss = redis_protocol == "rediss"
                 redis_url = f"{redis_protocol}://:{encoded_redis_pass}@{settings.REDIS_HOST}:{settings.REDIS_PORT}" if encoded_redis_pass else f"{redis_protocol}://{settings.REDIS_HOST}:{settings.REDIS_PORT}"
             
             kwargs = {
@@ -105,7 +107,7 @@ class DatabaseManager:
                 "socket_timeout": 10,
                 "retry_on_timeout": True,
             }
-            if redis_protocol == "rediss":
+            if is_rediss:
                 kwargs["ssl_cert_reqs"] = None
 
             self.redis = await aioredis.from_url(redis_url, **kwargs)

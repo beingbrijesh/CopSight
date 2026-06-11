@@ -52,13 +52,18 @@ async def process_ingestion_batch(ctx, case_id: int, records: list):
 
 class WorkerSettings:
     functions = [process_ingestion_payload, process_ingestion_batch]
-    redis_settings = RedisSettings(
-        host=settings.REDIS_HOST, 
-        port=settings.REDIS_PORT,
-        password=settings.REDIS_PASSWORD,
-        ssl="upstash" in settings.REDIS_HOST.lower(),
-        conn_timeout=15
-    )
+    
+    if settings.REDIS_URL:
+        redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
+        redis_settings.conn_timeout = 15
+    else:
+        redis_settings = RedisSettings(
+            host=settings.REDIS_HOST, 
+            port=settings.REDIS_PORT,
+            password=settings.REDIS_PASSWORD,
+            ssl="upstash" in settings.REDIS_HOST.lower(),
+            conn_timeout=15
+        )
     on_startup = startup
     on_shutdown = shutdown
     job_timeout = 3600  # 1 hour max for heavy AI parsing
