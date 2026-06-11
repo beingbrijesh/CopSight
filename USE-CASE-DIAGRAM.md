@@ -1,4 +1,4 @@
-# UFDR System - Use Case Diagram
+# CopSight AI - Use Case Diagram
 
 ## Actors
 - **Admin**: System administrator with full access
@@ -23,7 +23,7 @@ graph LR
     UC6[UC-6: View Audit Logs]
     
     UC7[UC-7: View Assigned Cases]
-    UC8[UC-8: Upload UFDR File]
+    UC8[UC-8: Upload CopSight AI File]
     UC9[UC-9: Execute NL Query]
     UC10[UC-10: Manage Bookmarks]
     UC11[UC-11: Visualize Network]
@@ -102,7 +102,7 @@ graph LR
 7. System creates user with hashed password
 8. System logs action in audit trail
 
-### UC-8: Upload UFDR File
+### UC-8: Upload CopSight AI File
 **Actor**: IO  
 **Description**: IO uploads forensic data file for processing  
 **Preconditions**: IO has assigned case, file is valid XML/JSON  
@@ -189,7 +189,7 @@ graph LR
 | UC-5: Manage Cases | ✓ | ✗ | ✗ |
 | UC-6: View Audit Logs | ✓ | ✗ | ✗ |
 | UC-7: View Assigned Cases | ✓ | ✓ | ✗ |
-| UC-8: Upload UFDR File | ✓ | ✓ | ✗ |
+| UC-8: Upload CopSight AI File | ✓ | ✓ | ✗ |
 | UC-9: Execute Query | ✓ | ✓ | ✓ |
 | UC-10: Manage Bookmarks | ✓ | ✓ | ✗ |
 | UC-11: Visualize Network | ✓ | ✓ | ✓ |

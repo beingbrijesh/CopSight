@@ -1,6 +1,6 @@
 # Forensic ML Blueprint: Anomaly & Predictive Analysis
 
-This document outlines the structured use case, data flow, and architecture for implementing machine learning models within the UFDR platform, specifically targeting forensic anomaly detection and predictive relationship analysis.
+This document outlines the structured use case, data flow, and architecture for implementing machine learning models within the CopSight AI platform, specifically targeting forensic anomaly detection and predictive relationship analysis.
 
 ---
 
@@ -33,7 +33,7 @@ This document outlines the structured use case, data flow, and architecture for 
 ```mermaid
 flowchart TD
     subgraph Layer1[Forensic Extraction]
-        UFDR[UFDR Parser] -->|Extract| Sinks[Neo4j + Postgres]
+        CopSight AI[UFDR Parser] -->|Extract| Sinks[Neo4j + Postgres]
     end
 
     subgraph Layer2[ML Feature Engineering]

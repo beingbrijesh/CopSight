@@ -13,9 +13,9 @@ if (existsSync(envLocal)) {
 }
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME || 'ufdr_db',
-  process.env.DB_USER || 'ufdr_user',
-  process.env.DB_PASSWORD || 'ufdr_password',
+  process.env.DB_NAME || 'copsight_db',
+  process.env.DB_USER || 'copsight_user',
+  process.env.DB_PASSWORD || 'copsight_password',
   {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,

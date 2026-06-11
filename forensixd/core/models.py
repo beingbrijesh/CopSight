@@ -20,7 +20,7 @@ SessionLog        – top-level container for a full acquisition session
 ParsedRecord      – a parsed, structured record extracted from an Artifact
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from typing import Optional, Any
 from uuid import uuid4

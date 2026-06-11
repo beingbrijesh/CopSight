@@ -4,17 +4,22 @@ import logger, { auditLogger } from '../config/logger.js';
 
 export const authenticate = async (req, res, next) => {
   try {
-    // Get token from header
+    // Get token from header or query string (for SSE)
+    let token;
     const authHeader = req.headers.authorization;
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else if (req.query.token) {
+      token = req.query.token;
+    }
+    
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: 'No token provided. Please authenticate.'
       });
     }
-
-    const token = authHeader.substring(7);
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);

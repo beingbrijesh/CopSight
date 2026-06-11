@@ -213,8 +213,10 @@ class CacheService {
   // Cleanup
   async close() {
     try {
-      await this.client.quit();
-      logger.info('Redis cache connection closed');
+      if (this.client && this.client.isOpen) {
+        await this.client.quit();
+        logger.info('Redis cache connection closed');
+      }
     } catch (error) {
       logger.error('Error closing cache connection:', error);
     }

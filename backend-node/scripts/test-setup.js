@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * UFDR System - Setup Verification and Testing Script
+ * CopSight AI - Setup Verification and Testing Script
  * Tests all implemented features and identifies issues
  */
 
@@ -15,7 +15,7 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config({ path: join(__dirname, '../.env') });
 
-console.log('🔍 UFDR System - Setup Verification\n');
+console.log('🔍 CopSight AI - Setup Verification\n');
 console.log('=' .repeat(60));
 
 // Test 1: Check Node.js version
@@ -76,10 +76,10 @@ try {
   console.log('  2. Start PostgreSQL service');
   console.log('  3. Create database and user:');
   console.log('     psql -U postgres');
-  console.log('     CREATE DATABASE ufdr_db;');
-  console.log('     CREATE USER ufdr_user WITH PASSWORD \'ufdr_password\';');
-  console.log('     GRANT ALL PRIVILEGES ON DATABASE ufdr_db TO ufdr_user;');
-  console.log('  4. Run: psql -U ufdr_user -d ufdr_db -f backend/database/init.sql');
+  console.log('     CREATE DATABASE copsight_db;');
+  console.log('     CREATE USER copsight_user WITH PASSWORD \'copsight_password\';');
+  console.log('     GRANT ALL PRIVILEGES ON DATABASE copsight_db TO copsight_user;');
+  console.log('  4. Run: psql -U copsight_user -d copsight_db -f backend/database/init.sql');
   process.exit(1);
 }
 
@@ -117,7 +117,7 @@ try {
       console.log(`  ✅ Table '${table}' exists`);
     } else {
       console.log(`  ❌ Table '${table}' missing`);
-      console.log(`     Run: psql -U ufdr_user -d ufdr_db -f backend/database/init.sql`);
+      console.log(`     Run: psql -U copsight_user -d copsight_db -f backend/database/init.sql`);
     }
   }
   

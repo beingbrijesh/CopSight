@@ -56,8 +56,14 @@ try {
       let processedSources = 0;
       let totalEntities = 0;
       const allEntities = []; // Collect all entities for indexing
+      
+      const fileName = filePath.split('/').pop().split('\\').pop();
 
       for (const source of parsedData.dataSources) {
+        // Inject file_name and job_id for AI clarity
+        source.file_name = fileName;
+        source.job_id = jobId;
+
         // Create data source record
         const dataSource = await DataSource.create({
           deviceId: device.id,
@@ -160,14 +166,14 @@ try {
         // Continue processing even if indexing fails
       }
 
-      // Step 6: Build knowledge graph in Neo4j
-      logger.info('Building knowledge graph...');
+      // Step 6: Build knowledge graph in Neo4j (DISABLED: Now handled by Python AI Service GraphMapper)
+      logger.info('Building knowledge graph via AI service...');
       await ProcessingJob.update({ progress: 95 }, { where: { id: jobId } });
       job.progress(95);
 
       try {
-        await buildKnowledgeGraph(parseInt(caseId), parsedData, allEntities.flat());
-        logger.info('Knowledge graph building completed');
+        // await buildKnowledgeGraph(parseInt(caseId), parsedData, allEntities.flat());
+        logger.info('Knowledge graph building delegated to Python ARQ worker');
       } catch (error) {
         logger.error('Knowledge graph building failed:', error);
         // Continue processing even if graph building fails

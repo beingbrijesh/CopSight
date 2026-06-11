@@ -1,5 +1,5 @@
 """
-UFDR AI Service - FastAPI application.
+CopSight AI AI Service - FastAPI application.
 Handles RAG pipeline, embeddings, and natural language queries.
 """
 
@@ -10,17 +10,24 @@ os.environ['MKL_NUM_THREADS'] = '1'
 
 import sys
 import warnings
+import subprocess
 from contextlib import asynccontextmanager
 
-import xgboost
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from loguru import logger
-
-from app.config import settings
-from app.routers import analysis, embeddings, indexing, query
-from app.services.database import db_manager
-
+warnings.filterwarnings(
+    "ignore",
+    message=".*google.generativeai.*",
+    category=FutureWarning,
+)
+warnings.filterwarnings(
+    "ignore",
+    message=".*Changing updater from.*",
+    category=UserWarning,
+)
+warnings.filterwarnings(
+    "ignore",
+    message=".*Device is changed from GPU to CPU.*",
+    category=UserWarning,
+)
 warnings.filterwarnings(
     "ignore",
     message=".*Do not pass an `input_shape`.*",
@@ -31,6 +38,15 @@ warnings.filterwarnings(
     message=".*Field.*has conflict with protected namespace.*",
     category=UserWarning,
 )
+
+import xgboost
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
+
+from app.config import settings
+from app.routers import analysis, embeddings, indexing, query, ingestion
+from app.services.database import db_manager
 
 logger.remove()
 logger.add(
@@ -51,21 +67,46 @@ logger.add(
 )
 
 
+worker_process = None
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global worker_process
     """Startup and shutdown events."""
-    logger.info("Starting UFDR AI Service...")
+    logger.info("Starting CopSight AI AI Service...")
     await db_manager.connect()
+    
+    # Start ARQ worker automatically
+    try:
+        logger.info("Starting ARQ background worker...")
+        # Get the directory containing the 'app' module
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        worker_process = subprocess.Popen(
+            [sys.executable, "-m", "arq", "app.worker.WorkerSettings"],
+            cwd=base_dir
+        )
+    except Exception as e:
+        logger.error(f"Failed to start ARQ worker: {e}")
+        
     logger.info("AI Service ready")
     yield
     logger.info("Shutting down AI Service...")
+    
+    if worker_process:
+        logger.info("Terminating ARQ background worker...")
+        worker_process.terminate()
+        try:
+            worker_process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            worker_process.kill()
+            
     await db_manager.disconnect()
     logger.info("AI Service stopped")
 
 
 app = FastAPI(
-    title="UFDR AI Service",
-    description="AI-powered query and analysis service for UFDR system",
+    title="CopSight AI AI Service",
+    description="AI-powered query and analysis service for CopSight AI system",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -82,12 +123,13 @@ app.include_router(query.router, prefix="/api/query", tags=["Query"])
 app.include_router(embeddings.router, prefix="/api/embeddings", tags=["Embeddings"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"])
 app.include_router(indexing.router, prefix="/api/index", tags=["Indexing"])
+app.include_router(ingestion.router, prefix="/api/ingest", tags=["Ingestion"])
 
 
 @app.get("/")
 async def root():
     return {
-        "service": "UFDR AI Service",
+        "service": "CopSight AI AI Service",
         "version": "1.0.0",
         "status": "running",
     }

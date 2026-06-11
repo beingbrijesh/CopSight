@@ -1,4 +1,4 @@
-# UFDR System - Data Flow Diagram
+# CopSight AI - Data Flow Diagram
 
 ## Level 0: Context Diagram (Mermaid)
 
@@ -9,14 +9,14 @@ graph TB
     Supervisor[Supervisor]
     External[External Forensic Tools]
     
-    subgraph UFDR[UFDR SYSTEM - Digital Forensic Investigation Platform]
+    subgraph CopSight AI[CopSight AI SYSTEM - Digital Forensic Investigation Platform]
         Core[Core System]
     end
     
     Admin -->|User Management, Case Creation, System Config| Core
     IO -->|Case Data, Queries, Evidence| Core
     Supervisor -->|Case Monitoring, Reports, Oversight| Core
-    External -->|UFDR Files XML/JSON| Core
+    External -->|CopSight AI Files XML/JSON| Core
     
     Core -->|Dashboard, Reports| Admin
     Core -->|Results, Visualizations| IO
@@ -61,7 +61,7 @@ flowchart TD
     P2 <-->|Read/Write| D1
     P2 -->|3. Case Assignment| P3
     P3 <-->|Store/Retrieve| D2
-    P3 -->|4. UFDR File| P4
+    P3 -->|4. CopSight AI File| P4
     P4 <-->|Store/Read| D3
     P4 -->|5. Extracted Data| D4
     P4 -->|5. Extracted Data| D5
@@ -101,7 +101,7 @@ flowchart TD
     P33[3.3 Queue Job - Bull Queue]
     RQ[(Redis Queue Bull)]
     
-    P41[4.1 Parse UFDR File XML/JSON]
+    P41[4.1 Parse CopSight AI File XML/JSON]
     P42[4.2 Extract Entities NER]
     P43[4.3 Store in PostgreSQL]
     P44[4.4 Index to Elasticsearch]
@@ -109,7 +109,7 @@ flowchart TD
     P46[4.6 Generate Embeddings Optional]
     P47[4.7 Update Job Status]
     
-    IO -->|UFDR File XML/JSON| P31
+    IO -->|CopSight AI File XML/JSON| P31
     P31 -->|Valid File| P32
     P32 -->|Store| FS
     P32 -->|Job ID| P33
@@ -257,9 +257,9 @@ flowchart TD
 
 ### D5: Elasticsearch (Full-text Search)
 **Indices**: 
-- `ufdr-messages`: SMS, WhatsApp, Telegram messages
-- `ufdr-calls`: Call logs with duration, direction
-- `ufdr-contacts`: Contact information  
+- `copsight-messages`: SMS, WhatsApp, Telegram messages
+- `copsight-calls`: Call logs with duration, direction
+- `copsight-contacts`: Contact information  
 **Data**: Searchable text content with entity highlighting
 
 ### D6: Neo4j (Graph Database)
@@ -268,7 +268,7 @@ flowchart TD
 **Data**: Communication networks, relationship patterns
 
 ### D7: Milvus (Vector Database)
-**Collection**: `ufdr_embeddings`  
+**Collection**: `copsight_embeddings`  
 **Data**: 384-dimensional vectors for semantic search
 
 ### D8: Ollama (LLM Models)
@@ -290,7 +290,7 @@ flowchart TD
 
 ### Input Data Flows
 1. **User Credentials** → Authentication System
-2. **UFDR Files (XML/JSON)** → File Upload System
+2. **CopSight AI Files (XML/JSON)** → File Upload System
 3. **Natural Language Queries** → Query Processing System
 4. **Report Configurations** → Report Generator
 

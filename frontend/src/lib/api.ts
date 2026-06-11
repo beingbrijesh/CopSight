@@ -91,9 +91,12 @@ api.interceptors.response.use(
   async (error) => {
     // Handle authentication errors
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Don't force redirect if the error is from the login endpoint itself
+      if (error.config?.url && !error.config.url.includes('/auth/login')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
       return Promise.reject(error);
     }
 

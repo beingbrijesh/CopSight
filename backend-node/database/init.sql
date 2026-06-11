@@ -1,4 +1,4 @@
--- UFDR Database Initialization Script - Enhanced RBAC & Case Management
+-- CopSight AI Database Initialization Script - Enhanced RBAC & Case Management
 
 -- Create enum types for roles and statuses
 DO $$ BEGIN
@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
     supervisor_id INTEGER REFERENCES users(id),
     is_active BOOLEAN DEFAULT true,
     last_login TIMESTAMP,
+    requires_password_change BOOLEAN DEFAULT false,
     password_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

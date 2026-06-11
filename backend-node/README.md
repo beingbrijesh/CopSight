@@ -1,8 +1,8 @@
-# UFDR Backend - Node.js/Express Implementation
+# CopSight AI Backend - Node.js/Express Implementation
 
 ## 🎯 Overview
 
-This is the Node.js/Express backend for the UFDR (Unified Forensic Data Repository) system, implementing strict Role-Based Access Control (RBAC) for digital forensics investigations.
+This is the Node.js/Express backend for the CopSight AI (Unified Forensic Data Repository) system, implementing strict Role-Based Access Control (RBAC) for digital forensics investigations.
 
 ## 🏗️ Architecture
 
@@ -320,7 +320,7 @@ POST /api/auth/login
 GET /api/cases  // Returns only assigned cases
 ```
 
-### Step 3: Upload UFDR File
+### Step 3: Upload CopSight AI File
 ```javascript
 POST /api/upload/case/:caseId
 // File processed via Bull queue in background

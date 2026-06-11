@@ -1,4 +1,4 @@
-# UFDR System - Deployment Guide
+# CopSight AI - Deployment Guide
 
 ## Pre-Deployment Checklist
 
@@ -105,7 +105,7 @@ node scripts/reset-admin.js
 ### Backup Commands
 ```bash
 # PostgreSQL
-docker exec ufdr-postgres pg_dump -U ufdr_user ufdr_db > backup.sql
+docker exec copsight-postgres pg_dump -U copsight_user copsight_db > backup.sql
 
 # Files
 tar -czf uploads-backup.tar.gz backend-node/uploads/

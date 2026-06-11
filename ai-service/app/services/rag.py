@@ -195,8 +195,16 @@ class RAGPipeline:
                     date_range["lte"] = filters["date_to"]
                 must_clauses.append({"range": {"timestamp": date_range}})
             
-            # Build sort - use timestamp for broad queries, _score for keyword queries
-            sort_clause = [{"timestamp": {"order": "desc", "unmapped_type": "date"}}]
+            # Build sort - use _score for keyword queries, timestamp for broad queries
+            if filters.get("recent_upload"):
+                sort_clause = [{"indexedAt": {"order": "desc", "unmapped_type": "date"}}]
+                # If they just want the recent upload, wipe out the literal keywords ("recently", "uploaded")
+                # so we don't accidentally filter out messages that don't contain those words.
+                must_clauses = [c for c in must_clauses if "multi_match" not in c]
+            elif keywords:
+                sort_clause = [{"_score": {"order": "desc"}}]
+            else:
+                sort_clause = [{"timestamp": {"order": "desc", "unmapped_type": "date"}}]
             
             # Execute search
             if not db_manager.elasticsearch:
@@ -260,7 +268,9 @@ class RAGPipeline:
             
             # Search ChromaDB with native case_id filter — avoids fetching all docs
             logger.info(f"Executing ChromaDB query for case_id={case_id}...")
-            results = db_manager.chroma_collection.query(
+            import asyncio
+            results = await asyncio.to_thread(
+                db_manager.chroma_collection.query,
                 query_embeddings=[query_embedding],
                 n_results=50,
                 where={"case_id": case_id},
@@ -282,6 +292,10 @@ class RAGPipeline:
                 # Cosine distance from ChromaDB is in [0,2]; convert to similarity [0,1]
                 similarity = max(0.0, 1.0 - (distance / 2.0))
                 
+                # Filter out low similarity results to prevent hallucinations
+                if similarity < 0.6:
+                    continue
+                
                 formatted_results.append({
                     "id": doc_id,
                     "score": round(similarity, 4),
@@ -293,6 +307,7 @@ class RAGPipeline:
                         "phoneNumber": metadata.get("phone_number"),
                         "timestamp": metadata.get("timestamp"),
                         "direction": metadata.get("direction"),
+                        "fileName": metadata.get("file_name"),
                     }
                 })
             
@@ -552,6 +567,7 @@ class RAGPipeline:
                             'phone_number': record.get('phoneNumber'),
                             'timestamp': record.get('timestamp'),
                             'direction': record.get('direction'),
+                            'file_name': source.get('file_name'),
                             'entity_count': len(record_entities),
                             'entity_types': ','.join([e.get('type', '') for e in record_entities])
                         }
@@ -565,8 +581,10 @@ class RAGPipeline:
                 logger.info(f"Generating embeddings for {len(documents)} documents")
                 embeddings = await embedding_service.generate_embeddings(documents)
                 
-                # Index to ChromaDB with pre-computed embeddings
-                db_manager.chroma_collection.add(
+                # Index to ChromaDB with pre-computed embeddings using a thread pool to avoid blocking the event loop
+                import asyncio
+                await asyncio.to_thread(
+                    db_manager.chroma_collection.add,
                     ids=ids,
                     documents=documents,
                     metadatas=metadatas,

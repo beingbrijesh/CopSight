@@ -107,7 +107,8 @@ export const login = async (req, res) => {
         role: user.role,
         badgeNumber: user.badgeNumber,
         rank: user.rank,
-        unit: user.unit
+        unit: user.unit,
+        requiresPasswordChange: user.requiresPasswordChange
       },
       data: {
         token,
@@ -119,7 +120,8 @@ export const login = async (req, res) => {
           role: user.role,
           badgeNumber: user.badgeNumber,
           rank: user.rank,
-          unit: user.unit
+          unit: user.unit,
+          requiresPasswordChange: user.requiresPasswordChange
         }
       }
     });
@@ -224,6 +226,7 @@ export const changePassword = async (req, res) => {
 
     // Update password
     user.passwordHash = newPassword;
+    user.requiresPasswordChange = false;
     await user.save();
 
     // Log password change

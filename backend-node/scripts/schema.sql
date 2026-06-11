@@ -1,4 +1,4 @@
--- UFDR Database Schema Setup
+-- CopSight AI Database Schema Setup
 -- Creates all 14 model tables and seeds initial users
 
 -- Enable pgcrypto for password hashing

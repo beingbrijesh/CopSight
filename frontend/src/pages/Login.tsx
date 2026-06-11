@@ -12,6 +12,22 @@ export const Login = () => {
   
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  const cliCallback = urlParams.get('cli_callback');
+
+  if (isAuthenticated && cliCallback) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4">
+        <div className="bg-blue-600 p-4 rounded-full mb-6 animate-pulse">
+          <Shield className="w-12 h-12 text-white" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Authenticating CLI...</h2>
+        <p className="text-gray-600">Please wait while we securely connect your session.</p>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +39,14 @@ export const Login = () => {
       const { token, user } = response.data.data;
       
       login(token, user);
+      
+      // Check for CLI callback
+      const urlParams = new URLSearchParams(window.location.search);
+      const cliCallback = urlParams.get('cli_callback');
+      if (cliCallback) {
+        window.location.href = `${cliCallback}?token=${encodeURIComponent(token)}`;
+        return;
+      }
       
       // Redirect based on role
       if (user.role === 'admin') {
@@ -47,7 +71,7 @@ export const Login = () => {
             <div className="bg-blue-600 p-3 rounded-full mb-4">
               <Shield className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">UFDR System</h1>
+            <h1 className="text-3xl font-bold text-gray-900">CopSight AI</h1>
             <p className="text-gray-600 mt-2">Unified Forensic Data Repository</p>
           </div>
 

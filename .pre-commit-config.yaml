@@ -1,0 +1,32 @@
+default_stages: [commit]
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: Ruff Linter
+        entry: ruff check
+        language: system
+        types: [python]
+        require_serial: true
+
+      - id: mypy
+        name: MyPy Type Checker
+        entry: mypy forensixd/
+        language: system
+        pass_filenames: false
+        require_serial: true
+
+      - id: pytest
+        name: PyTest
+        entry: pytest tests/ -v
+        language: system
+        pass_filenames: false
+        require_serial: true
+
+      - id: pyinstaller-build
+        name: PyInstaller Build
+        entry: pyinstaller forensixd/cli.py --onefile --name forensixd --hidden-import pymobiledevice3 --hidden-import Registry --hidden-import pycparser.yacctab --hidden-import pycparser.lextab --collect-all Crypto --collect-all jinja2 --collect-all weasyprint --noconfirm
+        language: system
+        pass_filenames: false
+        stages: [push]

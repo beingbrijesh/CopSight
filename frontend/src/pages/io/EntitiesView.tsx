@@ -149,6 +149,7 @@ export const EntitiesView = () => {
     const getFriendlyType = (type: string) => {
       switch (type) {
         case 'phone_number': return 'Phone';
+        case 'person': return 'Person';
         case 'email': return 'Email';
         case 'crypto_address': return 'Crypto';
         case 'url': return 'URL';
@@ -283,6 +284,7 @@ export const EntitiesView = () => {
                     <div className="text-2xl font-bold text-gray-900">{type.count}</div>
                     <div className="text-sm text-gray-600">
                       {type.type === 'phone_number' ? '📱 Phones' :
+                       type.type === 'person' ? '👤 Persons' :
                        type.type === 'email' ? '✉️ Emails' :
                        type.type === 'crypto_address' ? '₿ Crypto' :
                        type.type === 'url' ? '🔗 URLs' :
@@ -335,7 +337,7 @@ export const EntitiesView = () => {
                         className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
                       >
                         <Upload className="w-4 h-4 mr-2" />
-                        Upload UFDR File
+                        Upload CopSight AI File
                       </button>
                     </div>
                   </div>
@@ -350,6 +352,7 @@ export const EntitiesView = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`px-2 py-1 text-xs rounded-full font-medium ${
                               entity.entityType === 'phone_number' ? 'bg-green-100 text-green-800' :
+                              entity.entityType === 'person' ? 'bg-orange-100 text-orange-800' :
                               entity.entityType === 'email' ? 'bg-blue-100 text-blue-800' :
                               entity.entityType === 'crypto_address' ? 'bg-yellow-100 text-yellow-800' :
                               entity.entityType === 'url' ? 'bg-purple-100 text-purple-800' :
@@ -358,6 +361,7 @@ export const EntitiesView = () => {
                               'bg-gray-100 text-gray-800'
                             }`}>
                               {entity.entityType === 'phone_number' ? '📱 Phone' :
+                               entity.entityType === 'person' ? '👤 Person' :
                                entity.entityType === 'email' ? '✉️ Email' :
                                entity.entityType === 'crypto_address' ? '₿ Crypto' :
                                entity.entityType === 'url' ? '🔗 URL' :
@@ -373,7 +377,7 @@ export const EntitiesView = () => {
                             <EvidenceChip
                               evidence={{
                                 id: `entity_${entity.id}`,
-                                type: entity.entityType === 'phone_number' ? 'phone' : entity.entityType === 'email' ? 'email' : entity.entityType === 'crypto_address' ? 'crypto' : entity.entityType === 'url' ? 'url' : 'entity',
+                                type: entity.entityType === 'phone_number' ? 'phone' : entity.entityType === 'person' ? 'contact' : entity.entityType === 'email' ? 'email' : entity.entityType === 'crypto_address' ? 'crypto' : entity.entityType === 'url' ? 'url' : 'entity',
                                 value: entity.entityValue,
                                 summary: `${entity.entityType.replace('_', ' ')} extracted from ${entity.evidenceType} (confidence: ${(entity.confidenceScore * 100).toFixed(0)}%)`,
                                 source: {
@@ -418,7 +422,7 @@ export const EntitiesView = () => {
                                   </span>
                                 </div>
                               )}
-                              {entity.entityType !== 'phone_number' && entity.entityType !== 'crypto_address' && entity.entityType !== 'indian_id' && (
+                              {entity.entityType !== 'phone_number' && entity.entityType !== 'crypto_address' && entity.entityType !== 'indian_id' && entity.entityType !== 'person' && (
                                 <div className="text-xs">
                                   {Object.entries(entity.entityMetadata).map(([key, value]) => (
                                     <span key={key} className="mr-3">
@@ -489,7 +493,7 @@ export const EntitiesView = () => {
                       className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      Upload UFDR File
+                      Upload CopSight AI File
                     </button>
                   </div>
                 </div>

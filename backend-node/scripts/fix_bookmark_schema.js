@@ -14,10 +14,10 @@ if (existsSync(envLocal)) {
 const { Pool } = pg;
 
 const pool = new Pool({
-  user: process.env.DB_USER || 'ufdr_user',
+  user: process.env.DB_USER || 'copsight_user',
   host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'ufdr_db',
-  password: process.env.DB_PASSWORD || 'ufdr_password',
+  database: process.env.DB_NAME || 'copsight_db',
+  password: process.env.DB_PASSWORD || 'copsight_password',
   port: parseInt(process.env.DB_PORT || '5432'),
 });
 

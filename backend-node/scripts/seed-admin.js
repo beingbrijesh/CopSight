@@ -10,36 +10,60 @@ const seedAdmin = async () => {
     await sequelize.authenticate();
     logger.info('Database connected');
 
-    // Check if admin already exists
-    const existingAdmin = await User.findOne({
-      where: { username: 'admin' }
-    });
+    const rolesToSeed = [
+      {
+        username: 'admin',
+        email: 'admin@copsight.local',
+        passwordHash: 'admin123',
+        fullName: 'System Administrator',
+        role: 'admin',
+        badgeNumber: 'ADMIN-001',
+        rank: 'System Admin',
+        isActive: true,
+        requiresPasswordChange: true
+      },
+      {
+        username: 'io',
+        email: 'io@copsight.local',
+        passwordHash: 'io123',
+        fullName: 'Default Investigating Officer',
+        role: 'investigating_officer',
+        badgeNumber: 'IO-001',
+        rank: 'Officer',
+        isActive: true,
+        requiresPasswordChange: true
+      },
+      {
+        username: 'supervisor',
+        email: 'supervisor@copsight.local',
+        passwordHash: 'supervisor123',
+        fullName: 'Default Supervisor',
+        role: 'supervisor',
+        badgeNumber: 'SUP-001',
+        rank: 'Supervisor',
+        isActive: true,
+        requiresPasswordChange: true
+      }
+    ];
 
-    if (existingAdmin) {
-      logger.info('Admin user already exists');
-      process.exit(0);
+    for (const userData of rolesToSeed) {
+      const existingUser = await User.findOne({
+        where: { username: userData.username }
+      });
+
+      if (!existingUser) {
+        await User.create(userData);
+        logger.info(`✅ ${userData.role} user created successfully (username: ${userData.username}, password: ${userData.passwordHash})`);
+      } else {
+        logger.info(`${userData.role} user already exists`);
+      }
     }
 
-    // Create admin user
-    const admin = await User.create({
-      username: 'admin',
-      email: 'admin@ufdr.local',
-      passwordHash: 'admin123', // Will be hashed by model hook
-      fullName: 'System Administrator',
-      role: 'admin',
-      badgeNumber: 'ADMIN-001',
-      rank: 'System Admin',
-      isActive: true
-    });
-
-    logger.info('✅ Admin user created successfully');
-    logger.info(`Username: admin`);
-    logger.info(`Password: Admin@123`);
-    logger.info(`⚠️  IMPORTANT: Change this password immediately after first login!`);
-
+    logger.info(`⚠️  IMPORTANT: All seeded users will be prompted to change their password immediately after first login!`);
+    
     process.exit(0);
   } catch (error) {
-    logger.error('Error seeding admin:', error);
+    logger.error('Error seeding roles:', error);
     process.exit(1);
   }
 };

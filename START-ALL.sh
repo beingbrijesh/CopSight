@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 UFDR System Startup Script"
+echo "🚀 CopSight AI Startup Script"
 echo "=============================="
 echo ""
 
@@ -22,7 +22,7 @@ echo ""
 
 # Start databases
 echo "📊 Starting database services..."
-docker-compose up -d postgresql elasticsearch redis neo4j
+docker-compose up -d postgresql elasticsearch redis neo4j chroma
 
 echo "⏳ Waiting for databases to be ready (15 seconds)..."
 sleep 15
@@ -43,7 +43,7 @@ else
     echo -e "${YELLOW}⚠ Elasticsearch not responding${NC}"
 fi
 
-if docker exec ufdr-redis redis-cli ping 2>/dev/null | grep -q PONG; then
+if docker exec copsight-redis redis-cli ping 2>/dev/null | grep -q PONG; then
     echo -e "${GREEN}✓ Redis ready${NC}"
 else
     echo -e "${YELLOW}⚠ Redis not responding${NC}"
