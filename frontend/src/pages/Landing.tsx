@@ -54,8 +54,7 @@ export const Landing = () => {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative flex items-center justify-center w-10 h-10 bg-white rounded-xl shadow-md border border-blue-100 overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-tr from-blue-600 to-indigo-600 opacity-10 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <Shield className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors duration-300 z-10" />
+              <img src="/logo.jpeg" alt="CopSight Logo" className="w-full h-full object-cover z-10" />
             </div>
             <span className="text-xl font-black tracking-tight text-slate-900">CopSight AI</span>
           </div>
@@ -333,7 +332,9 @@ export const Landing = () => {
       <section className="py-32 px-6 relative z-10 bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="relative rounded-[3rem] overflow-hidden bg-gradient-to-b from-blue-50 to-white border border-blue-100 p-16 md:p-24 text-center animate-on-scroll opacity-0 translate-y-8 transition-all duration-700 shadow-2xl shadow-blue-900/5">
-            <Shield className="w-16 h-16 text-blue-600 mx-auto mb-8 relative z-10 animate-[bounce_4s_ease-in-out_infinite]" />
+            <div className="w-20 h-20 mx-auto mb-8 relative z-10 animate-[bounce_4s_ease-in-out_infinite] rounded-full overflow-hidden shadow-lg border-2 border-white">
+              <img src="/logo.jpeg" alt="CopSight Logo" className="w-full h-full object-cover" />
+            </div>
             <h2 className="relative z-10 text-5xl md:text-6xl font-black tracking-tighter mb-8 text-slate-900">Modernize Your Operations.</h2>
             <p className="relative z-10 text-xl text-slate-600 font-medium max-w-2xl mx-auto mb-12 leading-relaxed">
               Join leading agencies in transforming how digital evidence is processed, analyzed, and presented.
@@ -357,8 +358,8 @@ export const Landing = () => {
       <footer className="bg-slate-50 border-t border-slate-200 py-16 px-6 relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="bg-blue-600 p-1.5 rounded-lg group-hover:bg-blue-700 transition-colors">
-              <Shield className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-200 shadow-sm group-hover:shadow-md transition-shadow">
+              <img src="/logo.jpeg" alt="CopSight Logo" className="w-full h-full object-cover" />
             </div>
             <span className="font-black text-xl text-slate-900 tracking-tight">CopSight AI</span>
           </div>
