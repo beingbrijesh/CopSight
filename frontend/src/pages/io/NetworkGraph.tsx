@@ -349,8 +349,9 @@ export const NetworkGraph = () => {
     if (loading || error) return; // Only start SSE after initial load succeeds
     
     const token = localStorage.getItem('token');
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
     const eventSource = new EventSource(
-      `http://localhost:5001/api/graph/network/${caseId}/extended?min_interaction_threshold=${threshold}&token=${token}`
+      `${baseUrl}/graph/network/${caseId}/extended?min_interaction_threshold=${threshold}&token=${token}`
     );
 
     eventSource.onmessage = (event) => {
@@ -467,7 +468,8 @@ export const NetworkGraph = () => {
         }
       }
 
-      const response = await fetch(`http://localhost:8080/api/query/case/${caseId}/stream`, {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+      const response = await fetch(`${baseUrl}/query/case/${caseId}/stream`, {
         method: 'POST',
         credentials: 'include',
         headers: { 
