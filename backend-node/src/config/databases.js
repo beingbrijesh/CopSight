@@ -14,7 +14,8 @@ export const elasticsearchClient = new Client({
   auth: {
     username: process.env.ELASTICSEARCH_USER || 'elastic',
     password: process.env.ELASTICSEARCH_PASSWORD || 'changeme'
-  }
+  },
+  requestTimeout: 10000
 });
 
 // Neo4j Driver
@@ -32,6 +33,8 @@ export const redisClient = new Redis({
   port: parseInt(process.env.REDIS_PORT || '6379'),
   password: process.env.REDIS_PASSWORD || undefined,
   maxRetriesPerRequest: null,
+  connectTimeout: 10000,
+  enableOfflineQueue: false,
   tls: process.env.REDIS_HOST && process.env.REDIS_HOST.includes('upstash') ? {} : undefined
 });
 
