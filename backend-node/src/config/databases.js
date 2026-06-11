@@ -1,4 +1,4 @@
-import { Client } from '@elastic/elasticsearch';
+import { Client } from '@opensearch-project/opensearch';
 import neo4j from 'neo4j-driver';
 import Redis from 'ioredis';
 import logger from './logger.js';

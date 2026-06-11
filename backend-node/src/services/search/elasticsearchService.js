@@ -9,7 +9,7 @@ export const initializeIndices = async () => {
     const indices = ['copsight-messages', 'copsight-calls', 'copsight-contacts'];
 
     for (const index of indices) {
-      const exists = await elasticsearchClient.indices.exists({ index });
+      const { body: exists } = await elasticsearchClient.indices.exists({ index });
 
       if (!exists) {
         await elasticsearchClient.indices.create({
@@ -88,7 +88,7 @@ export const indexToElasticsearch = async (caseId, parsedData, entities) => {
     }
 
     if (operations.length > 0) {
-      const result = await elasticsearchClient.bulk({ body: operations });
+      const { body: result } = await elasticsearchClient.bulk({ body: operations });
 
       if (result.errors) {
         logger.error('Elasticsearch bulk indexing had errors');
@@ -142,7 +142,7 @@ export const searchElasticsearch = async (caseId, query, filters = {}) => {
       must.push({ term: { phoneNumber: filters.phoneNumber } });
     }
 
-    const result = await elasticsearchClient.search({
+    const { body: result } = await elasticsearchClient.search({
       index: 'ufdr-*',
       body: {
         query: { bool: { must } },
