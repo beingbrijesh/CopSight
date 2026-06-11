@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { authAPI } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 
@@ -20,8 +20,8 @@ export const Login = () => {
   if (isAuthenticated && cliCallback) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4">
-        <div className="bg-blue-600 p-4 rounded-full mb-6 animate-pulse">
-          <Shield className="w-12 h-12 text-white" />
+        <div className="bg-white p-1 rounded-full mb-6 animate-pulse overflow-hidden h-20 w-20 shadow-lg border border-gray-100 flex items-center justify-center">
+          <img src="/logo.jpeg" alt="CopSight Logo" className="h-full w-full object-cover rounded-full" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Authenticating CLI...</h2>
         <p className="text-gray-600">Please wait while we securely connect your session.</p>
@@ -68,8 +68,8 @@ export const Login = () => {
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="flex flex-col items-center mb-8">
-            <div className="bg-blue-600 p-3 rounded-full mb-4">
-              <Shield className="w-8 h-8 text-white" />
+            <div className="bg-white p-1 rounded-full mb-4 overflow-hidden h-24 w-24 shadow-lg border border-gray-100 flex items-center justify-center">
+              <img src="/logo.jpeg" alt="CopSight Logo" className="h-full w-full object-cover rounded-full" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900">CopSight AI</h1>
             <p className="text-gray-600 mt-2">Unified Forensic Data Repository</p>

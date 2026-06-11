@@ -1,4 +1,4 @@
-import { LogOut, Menu, Shield, User, Sparkles } from 'lucide-react';
+import { LogOut, Menu, User, Sparkles } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { authAPI } from '../lib/api';
@@ -58,8 +58,8 @@ export const Navbar = ({ onMenuToggle }: NavbarProps) => {
             <Menu className="h-5 w-5" />
           </button>
 
-          <div className="hidden lg:flex items-center gap-2 h-10 w-10 justify-center rounded-lg bg-gray-900 text-white ml-2">
-            <Shield className="h-4 w-4" />
+          <div className="hidden lg:flex items-center gap-2 h-10 w-10 justify-center rounded-lg bg-gray-900 ml-2 overflow-hidden">
+            <img src="/logo.jpeg" alt="CopSight Logo" className="h-full w-full object-cover" />
           </div>
           <div className="hidden lg:block">
             <p className="text-base font-semibold text-gray-900">CopSight</p>
