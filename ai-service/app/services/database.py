@@ -85,12 +85,18 @@ class DatabaseManager:
             self.neo4j = None
 
         try:
-            self.redis = await aioredis.from_url(
-                f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}",
-                socket_connect_timeout=10,
-                socket_timeout=10,
-                retry_on_timeout=True,
-            )
+            redis_protocol = "rediss" if "upstash" in settings.REDIS_HOST.lower() else "redis"
+            redis_url = f"{redis_protocol}://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}" if getattr(settings, 'REDIS_PASSWORD', None) else f"{redis_protocol}://{settings.REDIS_HOST}:{settings.REDIS_PORT}"
+            
+            kwargs = {
+                "socket_connect_timeout": 10,
+                "socket_timeout": 10,
+                "retry_on_timeout": True,
+            }
+            if redis_protocol == "rediss":
+                kwargs["ssl_cert_reqs"] = None
+
+            self.redis = await aioredis.from_url(redis_url, **kwargs)
             await self.redis.ping()
             logger.info("Redis connected")
         except Exception as e:

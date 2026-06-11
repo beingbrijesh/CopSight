@@ -48,11 +48,16 @@ export const connectDatabase = async () => {
     await sequelize.authenticate();
     logger.info('Database connection established successfully');
 
-    // Sync models in development
-    if (process.env.NODE_ENV === 'development') {
-      // Temporarily disabled due to sync conflicts with self-referential foreign keys
-      // await sequelize.sync();
-      logger.info('Database schema sync skipped');
+    // Sync models (explicitly required for fresh production databases)
+    if (process.env.SYNC_DB === 'true' || process.env.NODE_ENV === 'development') {
+      try {
+        await sequelize.sync({ alter: process.env.SYNC_DB === 'true' });
+        logger.info('Database schema synced successfully');
+      } catch (syncError) {
+        logger.error('Failed to sync database schema:', syncError.message);
+      }
+    } else {
+      logger.info('Database schema sync skipped (set SYNC_DB=true to sync)');
     }
 
     // Ensure critical tables exist (safe idempotent migration)

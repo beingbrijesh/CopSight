@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     # Redis
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6380
+    REDIS_PASSWORD: str | None = None
     
     # Ollama
     OLLAMA_HOST: str = "http://localhost:11434"
@@ -83,7 +84,10 @@ class Settings(BaseSettings):
     
     @property
     def postgres_url(self) -> str:
-        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        base = f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        if "supabase" in self.POSTGRES_HOST.lower():
+            return f"{base}?sslmode=require"
+        return base
     
     class Config:
         env_file = ".env"

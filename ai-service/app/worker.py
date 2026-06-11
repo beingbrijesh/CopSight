@@ -55,6 +55,8 @@ class WorkerSettings:
     redis_settings = RedisSettings(
         host=settings.REDIS_HOST, 
         port=settings.REDIS_PORT,
+        password=settings.REDIS_PASSWORD,
+        ssl="upstash" in settings.REDIS_HOST.lower(),
         conn_timeout=15
     )
     on_startup = startup
