@@ -9,11 +9,26 @@ from typing import List
 class Settings(BaseSettings):
     """Application settings"""
     
+    from pydantic import field_validator
+    
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8005
     ENVIRONMENT: str = "development"
-    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:8080"]
+    CORS_ORIGINS: List[str] | str = ["http://localhost:5173", "http://localhost:8080"]
+    
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: str | List[str]) -> List[str]:
+        if isinstance(v, str):
+            if v.startswith("["):
+                import json
+                try:
+                    return json.loads(v)
+                except Exception:
+                    pass
+            return [i.strip() for i in v.split(",")]
+        return v
     
     # PostgreSQL
     POSTGRES_HOST: str = "localhost"
