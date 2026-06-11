@@ -33,16 +33,16 @@ class UFDRBridgeConfig(BaseModel, frozen=True):
 
 
 class UFDRBridge:
-    """Bridge for injecting forensic sessions into a UFDR project."""
+    """Bridge for injecting forensic sessions into a CopSight AI project."""
 
     def __init__(self, config: UFDRBridgeConfig) -> None:
         """Initialize with config and validate project path."""
         if not config.ufdr_project_path.exists():
-            raise WriteError(f"UFDR project path does not exist: {config.ufdr_project_path}")
+            raise WriteError(f"CopSight AI project path does not exist: {config.ufdr_project_path}")
         self.config = config
 
     def inject_session(self, session: SessionLog, artifacts: list[Artifact]) -> Path:
-        """Build UFDR for a session and update the index."""
+        """Build CopSight AI for a session and update the index."""
         case_dir = self.config.ufdr_project_path / self.config.cases_dir / session.case.case_number
         case_dir.mkdir(parents=True, exist_ok=True)
 

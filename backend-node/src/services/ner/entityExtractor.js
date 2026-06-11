@@ -7,7 +7,7 @@ import logger from '../../config/logger.js';
 
 // Regex patterns for entity extraction
 const patterns = {
-  phone_number: /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g,
+  phone_number: /(?<!\d)(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}(?!\d)/g,
   email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
   crypto_address: {
     bitcoin: /\b[a-zA-Z0-9]{30,}\b/g,
@@ -99,6 +99,16 @@ export const extractEntities = async (parsedData) => {
                 seenEntities.add(key);
               }
             });
+
+            // Extract Persons (Names) from ADB dumps
+            const persons = extractPersons(text);
+            persons.forEach(person => {
+              const key = `person:${person.value.toLowerCase()}`;
+              if (!seenEntities.has(key)) {
+                entities.push(person);
+                seenEntities.add(key);
+              }
+            });
           }
 
           // Extract phone numbers from record fields
@@ -157,7 +167,18 @@ export const extractEntities = async (parsedData) => {
  */
 function extractPhoneNumbers(text) {
   const matches = text.match(patterns.phone_number) || [];
-  return matches.map(phone => classifyPhoneNumber(phone));
+  return matches
+    .filter(phone => {
+      const cleaned = phone.replace(/\D/g, '');
+      // Filter out unix timestamps in ms (13 digits starting with 16 or 17)
+      if (cleaned.length === 13 && (cleaned.startsWith('16') || cleaned.startsWith('17'))) return false;
+      // Filter out unix timestamps in s (10 digits starting with 1)
+      if (cleaned.length === 10 && cleaned.startsWith('1')) return false;
+      // Filter out too short numbers
+      if (cleaned.length < 10) return false;
+      return true;
+    })
+    .map(phone => classifyPhoneNumber(phone));
 }
 
 /**
@@ -303,6 +324,25 @@ function extractIndianIDs(text) {
 }
 
 /**
+ * Extract Persons (Names) from key-value dumps
+ */
+function extractPersons(text) {
+  const entities = [];
+  const nameMatches = text.matchAll(/(?:name|person|contact_name)=([^,]+)/gi);
+  for (const match of nameMatches) {
+    const name = match[1].trim();
+    if (name && name.toLowerCase() !== 'null' && name.length > 2 && isNaN(name)) {
+      entities.push({
+        type: 'person',
+        value: name,
+        confidence: 0.85
+      });
+    }
+  }
+  return entities;
+}
+
+/**
  * Extract entities from a single text string
  */
 export const extractFromText = (text) => {
@@ -314,6 +354,7 @@ export const extractFromText = (text) => {
   entities.push(...extractIPAddresses(text));
   entities.push(...extractURLs(text));
   entities.push(...extractIndianIDs(text));
+  entities.push(...extractPersons(text));
 
   return entities;
 };

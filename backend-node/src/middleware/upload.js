@@ -36,7 +36,7 @@ const storage = multer.diskStorage({
 
 // File filter
 const fileFilter = (req, file, cb) => {
-  // Accept XML, JSON, ZIP, UFD, UFDR, and DFXML files
+  // Accept XML, JSON, ZIP, UFD, CopSight AI, and DFXML files
   const allowedExtensions = ['.xml', '.json', '.zip', '.ufd', '.ufdr', '.dfxml'];
   const ext = path.extname(file.originalname).toLowerCase();
   

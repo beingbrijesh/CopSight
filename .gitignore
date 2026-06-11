@@ -51,15 +51,30 @@ coverage/
 *.pdf
 .DS_Store
 Presentation PPTs
-graphify-out/
-prompts/
+graphify-out/*
+prompts/*
 .graphifyignore
 skills-lock.json
 Makefile
 
 # Forensixd Test Outputs and Data
-test_extraction/
-test_pkg/
+test_extraction/*
+test_pkg/*
 *.ufdr
 *.sqlite3
 viewer.html
+pitch_script.sh
+reset_all_databases_preserve_admin.sh
+reset_data_keep_auth_logs.sh
+how_it_works.sh
+test_readline.py
+.pre-commit-config.yaml
+.coverage
+htmlcov/*
+.ruff_cache/
+.mypy_cache/
+
+# Useless script files
+rename.py
+backend-node/test-*.js
+backend-node/cleanup.js

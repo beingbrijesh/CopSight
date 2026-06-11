@@ -12,13 +12,15 @@ import json
 import re
 
 from app.config import settings
+from app.services.database import db_manager
+import google.generativeai as genai
 
 
 # ── Forensic Analyst Persona ──────────────────────────────────────────
 SYSTEM_PROMPT = """You are **CopSight**, an elite digital forensics analyst embedded in a law-enforcement investigation platform.
 
 ## Role
-You are a Senior Digital Forensics & Cyber-Crime Analyst with expertise in mobile forensics, communication analysis, financial crime tracing, and network intelligence. You assist Investigating Officers (IOs) by analyzing extracted digital evidence from seized devices (phones, laptops, storage media) that have been parsed from UFDR (Universal Forensic Data Reader) files.
+You are a Senior Digital Forensics & Cyber-Crime Analyst with expertise in mobile forensics, communication analysis, financial crime tracing, and network intelligence. You assist Investigating Officers (IOs) by analyzing extracted digital evidence from seized devices (phones, laptops, storage media) that have been parsed from CopSight AI (Universal Forensic Data Reader) files.
 
 ## Evidence Taxonomy
 You will receive evidence artifacts of the following types — understand each precisely:
@@ -59,7 +61,12 @@ class LLMService:
         self.client = ollama.Client(host=settings.OLLAMA_HOST)
         self.model = settings.LLM_MODEL
         self.system_prompt = SYSTEM_PROMPT
-    
+        
+        # Initialize Gemini if API key is present
+        self.gemini_model = "gemini-3.1-flash-lite"
+        if settings.GEMINI_API_KEY and settings.USE_GEMINI_MODEL == 1:
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            
     async def generate_response(
         self,
         prompt: str,
@@ -76,17 +83,33 @@ class LLMService:
             # Build full prompt with context
             full_prompt = self._build_prompt(prompt, context)
             
-            response = self.client.generate(
-                model=self.model,
-                system=self.system_prompt,
-                prompt=full_prompt,
-                options={
-                    'temperature': temperature,
-                    'num_predict': max_tokens
-                }
-            )
-            
-            return response['response']
+            if settings.USE_GEMINI_MODEL == 1 and settings.GEMINI_API_KEY:
+                # Use Gemini
+                generation_config = genai.types.GenerationConfig(
+                    temperature=temperature,
+                    max_output_tokens=max_tokens,
+                )
+                model = genai.GenerativeModel(
+                    model_name=self.gemini_model,
+                    system_instruction=self.system_prompt,
+                )
+                response = model.generate_content(
+                    full_prompt,
+                    generation_config=generation_config
+                )
+                return response.text
+            else:
+                # Use Ollama
+                response = self.client.generate(
+                    model=self.model,
+                    system=self.system_prompt,
+                    prompt=full_prompt,
+                    options={
+                        'temperature': temperature,
+                        'num_predict': max_tokens
+                    }
+                )
+                return response['response']
             
         except Exception as e:
             logger.error(f"LLM generation failed: {e}")
@@ -256,7 +279,7 @@ If prior investigation context contains relevant findings, reference them as "pe
 
 ## 🔎 Recommended Next Steps
 1. **[Action]**: What type of evidence or extraction method could answer this query.
-2. **[Action]**: Whether additional UFDR data sources need to be parsed (cloud backup, deleted partition, etc.).
+2. **[Action]**: Whether additional CopSight AI data sources need to be parsed (cloud backup, deleted partition, etc.).
 (Be specific. Do not pad with generic statements.)
 
 ═══ ASSESSMENT ═══"""

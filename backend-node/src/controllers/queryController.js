@@ -46,7 +46,7 @@ export const createQuery = async (req, res) => {
       } else if (error.message && error.message.includes('ETIMEDOUT')) {
         errorMessage = '⏱️ Request Timeout\n\nThe AI service took too long to respond. This might be because:\n- The service is processing a large dataset\n- The service needs to be restarted\n\nPlease try again or check the AI service logs.';
       } else {
-        errorMessage = '📊 No Data Available\n\nNo forensic data was found to query. This could mean:\n\n• The uploaded UFDR file contains no extractable data (messages, calls, contacts)\n• The file only contains images or other non-queryable content\n• Data processing is still in progress\n\nPlease ensure you upload a valid UFDR export from forensic tools like Cellebrite that contains actual communication data.';
+        errorMessage = '📊 No Data Available\n\nNo forensic data was found to query. This could mean:\n\n• The uploaded UFDR file contains no extractable data (messages, calls, contacts)\n• The file only contains images or other non-queryable content\n• Data processing is still in progress\n\nPlease ensure you upload a valid CopSight AI export from forensic tools like Cellebrite that contains actual communication data.';
       }
 
       // Provide fallback response

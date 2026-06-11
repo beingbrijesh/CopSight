@@ -56,7 +56,7 @@ if (logDirWritable) {
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: logFormat,
-  defaultMeta: { service: 'ufdr-backend' },
+  defaultMeta: { service: 'copsight-backend' },
   transports
 });
 

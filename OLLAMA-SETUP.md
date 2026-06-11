@@ -1,6 +1,6 @@
-# Ollama Installation and Setup Guide for UFDR System
+# Ollama Installation and Setup Guide for CopSight AI
 
-This guide provides step-by-step instructions for installing and configuring Ollama to enable AI-powered features in the UFDR system.
+This guide provides step-by-step instructions for installing and configuring Ollama to enable AI-powered features in the CopSight AI system.
 
 ## 📋 Table of Contents
 1. [What is Ollama?](#what-is-ollama)
@@ -14,7 +14,7 @@ This guide provides step-by-step instructions for installing and configuring Oll
 
 ## 🤖 What is Ollama?
 
-Ollama is a local LLM (Large Language Model) runtime that allows you to run AI models on your own machine without sending data to external APIs. In UFDR, it powers:
+Ollama is a local LLM (Large Language Model) runtime that allows you to run AI models on your own machine without sending data to external APIs. In CopSight AI, it powers:
 - Natural language query processing
 - Evidence-based answer generation
 - Query decomposition and understanding
@@ -66,9 +66,9 @@ ollama --version
 
 ## 📦 Model Setup
 
-### Required Models for UFDR
+### Required Models for CopSight AI
 
-UFDR requires two models:
+CopSight AI requires two models:
 
 1. **nomic-embed-text** - For generating text embeddings (384 dimensions)
 2. **llama3.2** - For natural language understanding and answer generation

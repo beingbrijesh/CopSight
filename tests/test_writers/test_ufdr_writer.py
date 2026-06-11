@@ -23,7 +23,7 @@ def device():
 @pytest.fixture
 def case(device):
     return CaseMetadata(
-        case_number="UFDR-001",
+        case_number="CopSight AI-001",
         court_order_ref="CO-001",
         examiner_id="EX-001",
         jurisdiction="TEST",
@@ -87,7 +87,7 @@ def test_report_xml_contains_case_number(tmp_path, session, artifact):
     UFDRWriter(out, session).build([artifact])
     with zipfile.ZipFile(str(out)) as z:
         content = z.read("report.xml").decode()
-    assert "UFDR-001" in content
+    assert "CopSight AI-001" in content
 
 
 def test_index_xml_contains_artifact_id(tmp_path, session, artifact):

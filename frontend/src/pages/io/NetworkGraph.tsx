@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ForceGraph3D from 'react-force-graph-3d';
+import ForceGraph2D from 'react-force-graph-2d';
 import * as THREE from 'three';
 import { Search, Loader2, RefreshCw, AlertTriangle, ExternalLink, FolderOpen } from 'lucide-react';
 
@@ -67,6 +68,20 @@ const NODE_PALETTE: Record<string, string> = {
   Default:     '#9ca3af',   // light gray
 };
 
+const LINK_PALETTE: Record<string, string> = {
+  HAS_ENTITY: 'rgba(148, 163, 184, 0.4)', // faint slate for structural links
+  TRANSACTED_WITH: 'rgba(52, 211, 153, 0.8)', // emerald
+  TRANSACTION: 'rgba(52, 211, 153, 0.8)', // emerald
+  COMMUNICATED_WITH: 'rgba(244, 114, 182, 0.8)', // pink
+  COMMUNICATION: 'rgba(244, 114, 182, 0.8)', // pink
+  ASSOCIATED_WITH: 'rgba(96, 165, 250, 0.8)', // blue
+  ASSOCIATION: 'rgba(96, 165, 250, 0.8)', // blue
+  OWNS: 'rgba(251, 191, 36, 0.8)', // amber
+  FAMILY: 'rgba(250, 204, 21, 0.8)', // yellow
+  CROSS_CASE_LINK: 'rgba(139, 92, 246, 0.8)', // purple
+  Default: 'rgba(209, 213, 219, 0.6)' // gray-300
+};
+
 const SVG_MAP: Record<string, string> = {
   PhoneNumber: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>`,
   Contact: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
@@ -80,8 +95,8 @@ const SVG_MAP: Record<string, string> = {
 
 const iconCache = new Map<string, THREE.SpriteMaterial>();
 
-function getSpriteMaterial(type: string, color: string) {
-  const cacheKey = `${type}-${color}`;
+function getSpriteMaterial(type: string, color: string, badgeCount: number = 0) {
+  const cacheKey = `${type}-${color}-${badgeCount}`;
   if (!iconCache.has(cacheKey)) {
     const size = 128;
     const canvas = document.createElement('canvas');
@@ -113,6 +128,22 @@ function getSpriteMaterial(type: string, color: string) {
     img.onload = () => {
       // Draw SVG perfectly centered within the 128x128 canvas
       ctx.drawImage(img, (size - 64) / 2, (size - 64) / 2, 64, 64);
+      
+      if (badgeCount > 0) {
+        // Draw a small red circle badge at the top-right
+        ctx.beginPath();
+        ctx.arc(size - 24, 24, 20, 0, 2 * Math.PI, false);
+        ctx.fillStyle = '#ef4444';
+        ctx.fill();
+        // Draw text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const text = badgeCount > 99 ? '99+' : badgeCount.toString();
+        ctx.fillText(text, size - 24, 24);
+      }
+      
       texture.needsUpdate = true; // Tell WebGL to re-render the generated material map
     };
   }
@@ -235,12 +266,19 @@ export const NetworkGraph = () => {
     text: string; 
     status: 'thinking' | 'streaming' | 'done' | 'error';
     evidence: any[];
+    rawEvents?: any[];
   }>>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Track anomalous edges
   const [anomalySet, setAnomalySet] = useState<Set<string>>(new Set());
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
+
+  // 2D Modal states
+  const [modalGraphData, setModalGraphData] = useState<GraphData | null>(null);
+  const [modalNode, setModalNode] = useState<GraphNode | null>(null);
+  const fg2dRef = useRef<any>(null);
+  const [contextMenu, setContextMenu] = useState<{ visible: boolean, x: number, y: number, node: GraphNode | null }>({ visible: false, x: 0, y: 0, node: null });
 
   // ── Responsive canvas size
   useEffect(() => {
@@ -261,6 +299,29 @@ export const NetworkGraph = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [aiHistory]);
+
+
+  // ── Configure Force Layout to prevent clutter for 3D graph
+  useEffect(() => {
+    if (fgRef.current) {
+      // Increase repulsion to spread nodes out (default is usually ~ -30)
+      fgRef.current.d3Force('charge').strength(-400);
+      // Increase ideal link distance
+      fgRef.current.d3Force('link').distance(150);
+      // Re-heat the simulation so it applies the new forces immediately
+      fgRef.current.d3ReheatSimulation();
+    }
+  }, [data]);
+
+  // ── Configure Force Layout for 2D Modal to prevent clutter
+  useEffect(() => {
+    if (fg2dRef.current && modalGraphData) {
+      // Very strong repulsion for the 2D view since the screen is flat
+      fg2dRef.current.d3Force('charge').strength(-800);
+      fg2dRef.current.d3Force('link').distance(150);
+      fg2dRef.current.d3ReheatSimulation();
+    }
+  }, [modalGraphData]);
 
   // ── Fetch graph data
   const fetchData = useCallback(async () => {
@@ -318,7 +379,8 @@ export const NetworkGraph = () => {
       properties: node.properties || {},
       text: '',
       status: 'thinking',
-      evidence: []
+      evidence: [],
+      rawEvents: []
     }]);
 
     const updateCurrent = (updater: (item: any) => any) => {
@@ -332,6 +394,15 @@ export const NetworkGraph = () => {
     };
 
     try {
+      // First fetch the raw events
+      const eventCount = typeof node.properties?.event_count === 'object' ? node.properties.event_count.low : (node.properties?.event_count || 0);
+      if (eventCount > 0 && node.type !== 'Case') {
+        const eventsRes = await api.get(`/graph/network/${caseId}/node/${node.id}/events`);
+        if (eventsRes.data.success) {
+          updateCurrent(prev => ({ ...prev, rawEvents: eventsRes.data.data }));
+        }
+      }
+
       const response = await fetch(`http://localhost:8080/api/query/case/${caseId}/stream`, {
         method: 'POST',
         credentials: 'include',
@@ -416,19 +487,41 @@ export const NetworkGraph = () => {
 
     const gNode = node as GraphNode;
 
-    // Center camera on node
-    if (fgRef.current) {
-      fgRef.current.cameraPosition(
-        { x: (gNode.x || 0) + 80, y: (gNode.y || 0) + 30, z: (gNode.z || 0) + 80 },
-        { x: gNode.x || 0, y: gNode.y || 0, z: gNode.z || 0 },
-        1200
-      );
-    }
+    // Filter data to only include the clicked node and its immediate neighbors
+    const localNodes = new Set<number>();
+    localNodes.add(gNode.id);
+    
+    const localEdges = data.edges.filter((e: any) => {
+      const srcId = getId(e.source);
+      const tgtId = getId(e.target);
+      if (srcId === gNode.id) { localNodes.add(tgtId); return true; }
+      if (tgtId === gNode.id) { localNodes.add(srcId); return true; }
+      return false;
+    });
 
-    // Expand neighbors + stream AI
-    await expandNode(gNode);
-    await streamAiEvidence(gNode);
-  }, [expandNode, streamAiEvidence, handleRightClick]);
+    const filteredNodes = data.nodes.filter(n => localNodes.has(n.id));
+    
+    setModalNode(gNode);
+    setModalGraphData({ nodes: filteredNodes, edges: localEdges, anomalies: data.anomalies });
+    setContextMenu({ visible: false, x: 0, y: 0, node: null });
+
+  }, [data, handleRightClick]);
+
+  const handleModalNodeClick = useCallback((node: any, event: MouseEvent) => {
+    setContextMenu({
+      visible: true,
+      x: event.clientX,
+      y: event.clientY,
+      node: node as GraphNode
+    });
+  }, []);
+
+  // Click anywhere else to close context menu
+  useEffect(() => {
+    const handleClick = () => setContextMenu(prev => ({ ...prev, visible: false }));
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, []);
 
   const getLinkWidth = useCallback((link: any) => {
     const srcId = getId(link.source);
@@ -443,21 +536,25 @@ export const NetworkGraph = () => {
     const tgtId = getId(link.target);
     const isAnomalous = anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`);
     
-    if (link.type === 'CROSS_CASE_LINK') return 'rgba(139, 92, 246, 0.8)'; // Purple for cross-case links
+    if (isAnomalous) return 'rgba(239, 68, 68, 0.9)'; // red for anomalous cycles
     
-    return isAnomalous
-      ? 'rgba(239, 68, 68, 0.9)'
-      : 'rgba(255, 255, 255, 0.6)'; // bright white/silver for non-anomalies
+    const upperType = (link.type || '').toUpperCase();
+    return LINK_PALETTE[upperType] || LINK_PALETTE.Default;
   }, [anomalySet]);
 
 
   const getThreeObject = useCallback((node: any) => {
     const type = node.type || 'Default';
     const isCurrentCase = node.type === 'Case' && node.properties?.id === parseInt(caseId || '');
+    const eventCount = typeof node.properties?.event_count === 'object' ? node.properties.event_count.low : (node.properties?.event_count || 0);
     
-    // Determine color (highlight active case)
-    const color = isCurrentCase ? '#8b5cf6' : getNodeColor(node); 
-    const material = getSpriteMaterial(type, color);
+    // Determine color (highlight active case, or red if it has events)
+    let color = isCurrentCase ? '#8b5cf6' : getNodeColor(node); 
+    if (eventCount > 0 && !isCurrentCase) {
+      color = '#ef4444'; // Red for nodes with events
+    }
+    
+    const material = getSpriteMaterial(type, color, eventCount);
     const sprite = new THREE.Sprite(material);
     
     // Scale: Cases are larger than entities. Active case is largest.
@@ -589,10 +686,19 @@ export const NetworkGraph = () => {
                     return (anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`)) ? 4 : 0;
                   }}
                   linkDirectionalParticleColor={(l: any) => {
-                    if (l.type === 'CROSS_CASE_LINK') return '#a78bfa'; // light purple
                     const srcId = getId(l.source);
                     const tgtId = getId(l.target);
-                    return (anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`)) ? '#ef4444' : '#6b7280';
+                    if (anomalySet.has(`${srcId}-${tgtId}`) || anomalySet.has(`${tgtId}-${srcId}`)) return '#ef4444'; // solid red
+                    
+                    // Return the hex color extracted from the rgba string in the palette, or a default
+                    const upperType = (l.type || '').toUpperCase();
+                    const rgbaStr = LINK_PALETTE[upperType] || LINK_PALETTE.Default;
+                    // Extract rgb values and convert to hex for the particle
+                    const rgbMatch = rgbaStr.match(/\d+/g);
+                    if (rgbMatch && rgbMatch.length >= 3) {
+                      return `#${((1 << 24) + (parseInt(rgbMatch[0]) << 16) + (parseInt(rgbMatch[1]) << 8) + parseInt(rgbMatch[2])).toString(16).slice(1)}`;
+                    }
+                    return '#ffffff';
                   }}
                   linkDirectionalParticleSpeed={0.006}
                   onNodeClick={handleNodeClick}
@@ -674,14 +780,154 @@ export const NetworkGraph = () => {
                            </div>
                         )}
                       </div>
+
+                      {/* Raw Events Section */}
+                      {item.rawEvents && item.rawEvents.length > 0 && (
+                        <div className="mt-4 pt-3 border-t border-gray-700/50">
+                          <div className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Raw Extracted Events ({item.rawEvents.length})</div>
+                          <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                            {item.rawEvents.map((ev: any, i: number) => (
+                              <div key={i} className="bg-gray-900/50 rounded-md p-2 border border-gray-800 flex flex-col gap-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-900/30 px-1.5 py-0.5 rounded">{ev.eventType}</span>
+                                  {ev.timestamp && <span className="text-[10px] text-gray-500">{new Date(ev.timestamp).toLocaleString()}</span>}
+                                </div>
+                                <div className="text-xs text-gray-300">
+                                  <span className="text-gray-500">With:</span> {ev.neighborName} <span className="text-gray-600 text-[10px]">({ev.neighborType})</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
                 <div ref={chatEndRef} className="h-1" />
               </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 2D Local Graph Modal ── */}
+      {modalGraphData && modalNode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-8" onClick={(e) => {
+           if (e.target === e.currentTarget) setModalGraphData(null);
+        }}>
+          <div className="bg-gray-950 border border-gray-700 rounded-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden relative shadow-2xl">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/80">
+              <div>
+                <h3 className="text-xl font-black text-white flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full ring-2 ring-white/20" style={{ backgroundColor: getNodeColor(modalNode) }} />
+                  {modalNode.label} <span className="text-sm font-bold text-gray-500 bg-gray-800 px-2 py-0.5 rounded-md">{modalNode.type}</span>
+                </h3>
+                <p className="text-sm text-blue-400 mt-1 font-medium">Showing 1-hop local connections. Click any node to analyze.</p>
+              </div>
+              <button onClick={() => setModalGraphData(null)} className="px-4 py-2 text-sm font-bold text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition">
+                Close Focus View
+              </button>
+            </div>
+            
+            {/* Modal Canvas */}
+            <div className="flex-1 relative bg-[#030712] flex items-center justify-center" onClick={(e) => {
+               if (contextMenu.visible) setContextMenu(prev => ({ ...prev, visible: false }));
+            }}>
+              <ForceGraph2D
+                ref={fg2dRef}
+                width={Math.min(window.innerWidth - 64, 1152)}
+                height={window.innerHeight * 0.85 - 80}
+                graphData={{ nodes: modalGraphData.nodes, links: modalGraphData.edges }}
+                nodeLabel={(n: any) => `${(n as GraphNode).label}\nType: ${(n as GraphNode).type}`}
+                nodeRelSize={8}
+                nodeCanvasObject={(node: any, ctx, globalScale) => {
+                  const label = node.label;
+                  const fontSize = 12 / globalScale;
+                  ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+
+                  ctx.fillStyle = getNodeColor(node as GraphNode);
+                  ctx.beginPath();
+                  ctx.arc(node.x, node.y, 8, 0, 2 * Math.PI, false);
+                  ctx.fill();
+
+                  // Highlight central node
+                  if (node.id === modalNode.id) {
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2.5 / globalScale;
+                    ctx.stroke();
+                    
+                    // Add a subtle glow for central node
+                    ctx.shadowColor = getNodeColor(node as GraphNode);
+                    ctx.shadowBlur = 15;
+                    ctx.fill();
+                    ctx.shadowBlur = 0; // reset
+                  }
+
+                  ctx.textAlign = 'center';
+                  ctx.textBaseline = 'middle';
+                  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                  ctx.fillText(label, node.x, node.y + 14 + fontSize);
+                }}
+                linkColor={(l: any) => {
+                    const upperType = (l.type || '').toUpperCase();
+                    return LINK_PALETTE[upperType] || LINK_PALETTE.Default;
+                }}
+                linkWidth={(l: any) => Math.max(1, Math.sqrt(l.weight || 1))}
+                linkDirectionalArrowLength={3.5}
+                linkDirectionalArrowRelPos={1}
+                onNodeClick={handleModalNodeClick}
+                onNodeRightClick={(node: any, e: MouseEvent) => {
+                    e.preventDefault();
+                    handleModalNodeClick(node, e);
+                }}
+                d3VelocityDecay={0.3}
+              />
+
+              {/* Fixed Context Menu */}
+              {contextMenu.visible && contextMenu.node && (
+                <div 
+                  className="fixed z-[100] bg-gray-900 border border-gray-700 shadow-2xl rounded-xl py-1.5 w-56 text-sm overflow-hidden"
+                  style={{ top: contextMenu.y, left: contextMenu.x }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="px-3 py-2 border-b border-gray-800 text-xs font-black uppercase text-gray-500 tracking-wider truncate">
+                    {contextMenu.node.type}
+                  </div>
+                  <div className="px-3 py-2 border-b border-gray-800 text-sm font-bold text-white truncate">
+                    {contextMenu.node.label}
+                  </div>
+                  <div className="p-1">
+                    <button 
+                      className="w-full text-left px-3 py-2.5 text-blue-400 hover:bg-gray-800 rounded-lg flex items-center gap-3 font-bold transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setContextMenu({ visible: false, x: 0, y: 0, node: null });
+                        setModalGraphData(null); 
+                        streamAiEvidence(contextMenu.node!);
+                        expandNode(contextMenu.node!);
+                      }}
+                    >
+                      <Search className="w-4 h-4" />
+                      Get AI Summary
+                    </button>
+                    <button 
+                      className="w-full text-left px-3 py-2.5 text-gray-300 hover:bg-gray-800 rounded-lg flex items-center gap-3 font-medium transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setContextMenu({ visible: false, x: 0, y: 0, node: null });
+                        handleRightClick(contextMenu.node!, e as any);
+                      }}
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Search Database
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
+      )}
 
         {/* Stats footer */}
         <div className="flex gap-4 text-xs text-gray-500 pb-2">

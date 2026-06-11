@@ -104,13 +104,14 @@ class DatabaseManager:
             self.chroma_collection = None
         else:
             try:
-                self.chroma_client = chromadb.PersistentClient(  # type: ignore[union-attr]
-                    path=settings.CHROMA_PERSIST_DIR,
+                self.chroma_client = chromadb.HttpClient(  # type: ignore[union-attr]
+                    host=settings.CHROMA_HOST,
+                    port=settings.CHROMA_PORT,
                     settings=ChromaSettings(anonymized_telemetry=False),  # type: ignore[misc]
                 )
                 self.chroma_collection = self.chroma_client.get_or_create_collection(
-                    name="ufdr_embeddings",
-                    metadata={"description": "UFDR forensic data embeddings"},
+                    name="copsight_embeddings",
+                    metadata={"description": "CopSight AI forensic data embeddings"},
                 )
                 count = self.chroma_collection.count()
                 logger.info(f"ChromaDB connected, collection count: {count}")

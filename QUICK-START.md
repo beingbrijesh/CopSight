@@ -1,4 +1,4 @@
-# UFDR System - Quick Start Guide
+# CopSight AI - Quick Start Guide
 
 **Get the system running in 5 minutes!**
 
@@ -8,7 +8,7 @@
 
 ### Step 1: Start Databases
 ```bash
-cd /Users/beingbrijesh/Desktop/Projects/UFDR
+cd /Users/beingbrijesh/Desktop/Projects/CopSight AI
 ./START-ALL.sh
 ```
 
@@ -160,7 +160,7 @@ npm run dev
 | Frontend | http://localhost:5173 | admin/admin123 |
 | Backend API | http://localhost:8080 | - |
 | Kibana | http://localhost:5601 | - |
-| Neo4j Browser | http://localhost:7474 | neo4j/ufdr_password |
+| Neo4j Browser | http://localhost:7474 | neo4j/copsight_password |
 | AI Service | http://localhost:8005 | - |
 
 ---
@@ -259,4 +259,4 @@ docker-compose down
 **All Features**: ✅ Working  
 **Documentation**: ✅ Complete
 
-**Enjoy using the UFDR System!** 🎉
+**Enjoy using the CopSight AI!** 🎉

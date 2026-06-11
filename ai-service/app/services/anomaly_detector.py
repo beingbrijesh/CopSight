@@ -658,7 +658,7 @@ class AnomalyDetector:
 
     def _build_xgb_features(self, record: Dict[str, Any]) -> np.ndarray:
         """
-        Map a UFDR communication record to the 41-feature vector expected by
+        Map a CopSight AI communication record to the 41-feature vector expected by
         the XGBoost scaler. Missing network features are initialized to their 
         training median (center_) to ensure they remain neutral.
         """
@@ -692,7 +692,7 @@ class AnomalyDetector:
 
     def _build_dnn_features(self, record: Dict[str, Any]) -> Tuple[np.ndarray, int]:
         """
-        Map a UFDR communication record to the 23 continuous features 
+        Map a CopSight AI communication record to the 23 continuous features 
         expected by the DNN scaler, setting missing fields to the training median.
         """
         if self.model_bundle.dnn_scaler is not None and hasattr(self.model_bundle.dnn_scaler, 'center_'):
@@ -731,7 +731,7 @@ class AnomalyDetector:
 
     def _build_lstm_features(self, record: Dict[str, Any]) -> np.ndarray:
         """
-        Map a UFDR communication record to the 18-feature vector expected by
+        Map a CopSight AI communication record to the 18-feature vector expected by
         the LSTM Autoencoder scaler.
         """
         if self.model_bundle.lstm_scaler is not None and hasattr(self.model_bundle.lstm_scaler, 'center_'):

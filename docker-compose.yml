@@ -2,22 +2,22 @@ services:
   # Database Services
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: ufdr-elasticsearch
+    container_name: copsight-elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "9201:9200"
+      - "9301:9300"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     networks:
-      - ufdr-network
+      - copsight-network
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.0
-    container_name: ufdr-kibana
+    container_name: copsight-kibana
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     ports:
@@ -25,55 +25,55 @@ services:
     depends_on:
       - elasticsearch
     networks:
-      - ufdr-network
+      - copsight-network
 
   postgresql:
     image: postgres:15
-    container_name: ufdr-postgres
+    container_name: copsight-postgres
     environment:
-      POSTGRES_DB: ufdr_db
-      POSTGRES_USER: ufdr_user
-      POSTGRES_PASSWORD: ufdr_password
+      POSTGRES_DB: copsight_db
+      POSTGRES_USER: copsight_user
+      POSTGRES_PASSWORD: copsight_password
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend-node/database/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - ufdr-network
+      - copsight-network
 
   neo4j:
     image: neo4j:5.13
-    container_name: ufdr-neo4j
+    container_name: copsight-neo4j
     environment:
-      NEO4J_AUTH: neo4j/ufdr_password
+      NEO4J_AUTH: neo4j/copsight_password
       NEO4J_PLUGINS: '["apoc"]'
     ports:
-      - "7474:7474"
-      - "7687:7687"
+      - "7475:7474"
+      - "7688:7687"
     volumes:
       - neo4j_data:/data
     networks:
-      - ufdr-network
+      - copsight-network
 
   redis:
     image: redis:7-alpine
-    container_name: ufdr-redis
+    container_name: copsight-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     networks:
-      - ufdr-network
+      - copsight-network
   chroma:
     image: chromadb/chroma
-    container_name: ufdr-chroma
+    container_name: copsight-chroma
     ports:
       - "8006:8000"
     volumes:
       - chroma_data:/chroma/chroma
     networks:
-      - ufdr-network  
+      - copsight-network  
 
 
 volumes:
@@ -84,5 +84,5 @@ volumes:
   chroma_data:
 
 networks:
-  ufdr-network:
+  copsight-network:
     driver: bridge

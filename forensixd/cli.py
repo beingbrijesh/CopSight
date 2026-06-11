@@ -51,9 +51,58 @@ def acquire(output_dir, level, ufdr_config):
     device = devices[0]
     console.print(f"[green]Found:[/green] {device.platform.value} — {device.device_id}")
 
+    # Step 1.5: Mandatory Real-Time Streaming Setup
+    from forensixd.constants import STREAM_URL
+    # Fallback to localhost if not compiled with a secret
+    stream_url = "http://localhost:8000" if STREAM_URL == "INJECTED_STREAM_URL" else STREAM_URL
+
+    api_stream_writer = None
+    selected_case = None
+    
+    try:
+        from forensixd.core.auth_manager import authenticate_via_browser, get_assigned_cases, prompt_case_selection
+        from forensixd.writers.api_stream_writer import ApiStreamWriter
+        
+        console.print(f"[cyan]Connecting to server at: {stream_url}[/cyan]")
+        token = authenticate_via_browser()
+        cases = get_assigned_cases(stream_url, token)
+        selected_case = prompt_case_selection(cases)
+        if not selected_case:
+            console.print("[red]Authentication aborted. No case selected.[/red]")
+            sys.exit(1)
+        case_id = selected_case.get("id")
+        if not case_id:
+            console.print("[red]Error: Selected case has no ID.[/red]")
+            sys.exit(1)
+        
+        # Using hash of device_id or simple lookup if we have a real DB device ID,
+        # For now just use 1 or hash of string device id
+        internal_device_id = 1
+        api_stream_writer = ApiStreamWriter(stream_url, token, int(case_id), internal_device_id)
+    except Exception as e:
+        console.print(f"[red]Authentication or server connection failed:[/red] {e}")
+        console.print("[red]Extraction cannot proceed without server connection.[/red]")
+        sys.exit(1)
+
     # Step 2: authorization
     try:
-        case = AuthorizationManager.capture_interactively(device)
+        if api_stream_writer and selected_case:
+            from forensixd.core.models import CaseMetadata, ConsentType
+            from datetime import datetime, timezone
+            import getpass
+            
+            case = CaseMetadata(
+                case_number=selected_case.get("caseNumber", "UNKNOWN"),
+                court_order_ref=str(selected_case.get("id", "STREAM_MODE")),
+                examiner_id=getpass.getuser() or "io_user",
+                jurisdiction="Backend UI",
+                consent_type=ConsentType.COURT_ORDER,
+                authorized_at=datetime.now(timezone.utc),
+                device=device,
+                notes=selected_case.get("title", "Streamed acquisition")
+            )
+        else:
+            case = AuthorizationManager.capture_interactively(device)
     except (AuthorizationError, ForensixdError) as e:
         console.print(f"[red]Authorization failed:[/red] {e}")
         sys.exit(1)
@@ -73,13 +122,22 @@ def acquire(output_dir, level, ufdr_config):
     artifacts = []
     ext_level = ExtractionLevel(level.upper())
     with ForensicSession(case, Path(output_dir)) as session:
+        console.print("\n[bold]Configuration[/bold]")
+        console.print(f"  Output Dir: [green]{session.output_dir.absolute()}[/green]")
+        console.print(f"  Session ID: [cyan]{session.session_id}[/cyan]")
+        console.print(f"  Extraction Level: [yellow]{level.upper()}[/yellow]\n")
+        
         extractor.connect(device)
         with Progress(SpinnerColumn(), TextColumn("{task.description}")) as p:
             t = p.add_task("Extracting...", total=None)
             for a in extractor.extract(session, ext_level):
                 artifacts.append(a)
+                if api_stream_writer:
+                    api_stream_writer.append_artifact(a)
                 p.update(t, description=f"Extracted {len(artifacts)} artifacts")
         extractor.disconnect()
+        if api_stream_writer:
+            api_stream_writer.finalize()
         log = session.close()
 
     # Step 5: write outputs
@@ -102,11 +160,11 @@ def acquire(output_dir, level, ufdr_config):
         try:
             from forensixd.integration.ufdr_bridge import UFDRBridge, UFDRBridgeConfig
             UFDRBridge(UFDRBridgeConfig.from_yaml(Path(ufdr_config))).inject_session(log, artifacts)
-            console.print("[green]Injected into UFDR project.[/green]")
+            console.print("[green]Injected into CopSight AI project.[/green]")
         except FileNotFoundError as e:
             console.print(f"[red]Error:[/red] {e}")
         except ForensixdError as e:
-            console.print(f"[yellow]UFDR warning:[/yellow] {e}")
+            console.print(f"[yellow]CopSight AI warning:[/yellow] {e}")
         except Exception as e:
             console.print(f"[red]Error:[/red] {e}")
 
@@ -116,7 +174,7 @@ def acquire(output_dir, level, ufdr_config):
     tbl.add_column("Value")
     tbl.add_row("Artifacts", str(len(artifacts)))
     tbl.add_row("DFXML", str(dfxml))
-    tbl.add_row("UFDR", str(ufdr))
+    tbl.add_row("CopSight AI", str(ufdr))
     tbl.add_row("Report", str(html))
     tbl.add_row("Root Hash", (log.root_hash or "")[:24]+"...")
     console.print(tbl)
@@ -174,7 +232,7 @@ def interactive_mode():
             if choice == "1":
                 out_dir = Prompt.ask("Output directory", default="./cases")
                 level = Prompt.ask("Extraction level", choices=["logical", "file_system", "physical"], default="logical")
-                ufdr_config = Prompt.ask("UFDR config path (optional, press Enter to skip)", default="")
+                ufdr_config = Prompt.ask("CopSight AI config path (optional, press Enter to skip)", default="")
                 
                 args = ["acquire", "--output-dir", out_dir, "--level", level]
                 if ufdr_config.strip():

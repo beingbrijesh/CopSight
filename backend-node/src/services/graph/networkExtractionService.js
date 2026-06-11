@@ -114,16 +114,16 @@ class NetworkExtractionService {
       const filteredEdges = edges.filter(e => e.type === 'CROSS_CASE_LINK' || e.weight >= min);
 
       // Update frequencies
-      filteredEdges.forEach(e => {
-        const src = nodes.find(n => n.id === e.source);
-        const tgt = nodes.find(n => n.id === e.target);
-        if (src) src.frequency += e.weight;
-        if (tgt) tgt.frequency += e.weight;
-      });
-
-      // Drop isolated nodes (frequency 1 means no connections in this view)
-      // Exception: Keep the requested Case node even if it has no visible links yet
-      const finalNodes = nodes.filter(n => n.frequency > 1 || (n.type === 'Case' && n.properties.id === parseInt(caseId)));
+      const finalNodes = nodes.map(n => {
+        let freq = 0;
+        filteredEdges.forEach(e => {
+          if (e.source === n.id || e.target === n.id) {
+            freq += e.weight;
+          }
+        });
+        n.frequency = freq;
+        return n;
+      }).filter(n => n.frequency > 0 || (n.type === 'Case' && n.properties.id === parseInt(caseId)));
 
       // --- Cycle Detection via Neo4j Cypher (1-minute timeout) ---
       const anomalies = await this.detectCyclesViaCypher(finalNodes.map(n => n.id), session);
@@ -261,6 +261,54 @@ class NetworkExtractionService {
     } catch (error) {
       logger.error('getNeighbors error:', error);
       return { nodes: [], edges: [] };
+    } finally {
+      await session.close();
+    }
+  }
+
+  /**
+   * Fetch all raw ingestion events (relationships) for a specific node in a case.
+   */
+  async getNodeEvents(nodeId, caseId) {
+    const session = neo4jDriver.session();
+    try {
+      const cypher = `
+        MATCH (n)-[r]-(neighbor)
+        WHERE id(n) = $nodeId AND r.case_id = $caseId
+        RETURN 
+          id(r) AS eventId,
+          type(r) AS eventType,
+          properties(r) AS properties,
+          id(neighbor) AS neighborId,
+          labels(neighbor)[0] AS neighborType,
+          neighbor.name AS neighborName,
+          neighbor.number AS neighborNumber,
+          neighbor.account_number AS neighborAccount,
+          neighbor.id AS neighborAadhar,
+          r.timestamp AS timestamp
+        ORDER BY r.timestamp DESC
+      `;
+      const result = await session.run(cypher, { nodeId: parseInt(nodeId), caseId: parseInt(caseId) });
+      
+      const events = result.records.map(r => {
+        const neighborName = r.get('neighborName') || r.get('neighborNumber') || r.get('neighborAccount') || r.get('neighborAadhar') || 'Unknown';
+        return {
+          eventId: r.get('eventId').toNumber(),
+          eventType: r.get('eventType'),
+          properties: r.get('properties'),
+          neighborId: r.get('neighborId').toNumber(),
+          neighborType: r.get('neighborType'),
+          neighborName: neighborName,
+          timestamp: r.get('timestamp') || null
+        };
+      });
+
+      logger.info(`Fetched ${events.length} events for node ${nodeId}`);
+      return events;
+
+    } catch (error) {
+      logger.error('getNodeEvents error:', error);
+      return [];
     } finally {
       await session.close();
     }

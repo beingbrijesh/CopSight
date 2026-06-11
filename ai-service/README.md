@@ -1,4 +1,4 @@
-# UFDR AI Service
+# CopSight AI AI Service
 
 Python-based AI service for natural language query processing, RAG pipeline, and forensic analysis.
 

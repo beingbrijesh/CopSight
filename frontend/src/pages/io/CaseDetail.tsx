@@ -358,7 +358,7 @@ export const CaseDetail = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Upload UFDR File</h2>
+          <h2 className="text-lg font-semibold mb-4">Upload CopSight AI File</h2>
           
           {/* Success Message */}
           {uploadSuccess && (
@@ -375,7 +375,7 @@ export const CaseDetail = () => {
                 {uploadError.includes('Failed to upload file') ?
                   'Please check your internet connection and try again.' :
                   uploadError.includes('Invalid file type') ?
-                  'Only UFDR, XML, JSON, ZIP, UFD, and DFXML files are supported.' :
+                  'Only CopSight AI, XML, JSON, ZIP, UFD, and DFXML files are supported.' :
                   'Please check the file format and try again.'}
               </p>
             </div>
@@ -384,7 +384,7 @@ export const CaseDetail = () => {
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
             <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 mb-4">
-              {uploading ? `Uploading... ${uploadProgress}%` : 'Upload UFDR/XML file for processing'}
+              {uploading ? `Uploading... ${uploadProgress}%` : 'Upload CopSight/XML file for processing'}
             </p>
             {uploading && (
               <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
@@ -525,7 +525,7 @@ export const CaseDetail = () => {
                   <div className="text-sm text-red-700 bg-red-100 p-3 rounded mt-2">
                     <p className="font-medium mb-1">Common issues:</p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li>File must be a valid UFDR/Cellebrite XML export</li>
+                      <li>File must be a valid CopSight/Cellebrite XML export</li>
                       <li>Ensure the file is not corrupted</li>
                       <li>Check that you're uploading the correct file format (.xml, .ufdr)</li>
                     </ul>
@@ -561,7 +561,7 @@ export const CaseDetail = () => {
                     <div className="flex items-center gap-2">
                       <Activity className="w-4 h-4 text-blue-600" />
                       <span className="font-medium text-gray-900">
-                        {job.jobType === 'parse_ufdr' ? 'Parsing UFDR File' : job.jobType}
+                        {job.jobType === 'parse_ufdr' ? 'Parsing CopSight AI File' : job.jobType}
                       </span>
                     </div>
                     <span className="text-sm text-gray-600">

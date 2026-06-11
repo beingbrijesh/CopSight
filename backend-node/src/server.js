@@ -28,6 +28,7 @@ import { testDatabaseConnections, closeDatabaseConnections } from './config/data
 import { initializeIndices } from './services/search/elasticsearchService.js';
 import logger from './config/logger.js';
 import './workers/processingWorker.js'; // Start background worker
+import './workers/streamWorker.js'; // Start stream background worker
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
@@ -44,6 +45,7 @@ import performanceRoutes from './routes/performanceRoutes.js';
 import graphRoutes from './routes/graphRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import analysisRoutes from './routes/analysisRoutes.js';
+import ingestRoutes from './routes/ingestRoutes.js';
 
 // Import middleware
 import { apiRateLimit, authRateLimit, searchRateLimit, uploadRateLimit, aiRateLimit } from './middleware/rateLimit.js';
@@ -77,7 +79,7 @@ if (process.env.NODE_ENV === 'development') {
 app.get('/health', (req, res) => {
   res.json({
     success: true,
-    message: 'UFDR API Gateway is running',
+    message: 'CopSight AI API Gateway is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV
   });
@@ -102,6 +104,7 @@ app.use('/api/performance', apiRateLimit, performanceMiddleware, performanceRout
 app.use('/api/graph', apiRateLimit, performanceMiddleware, graphRoutes);
 app.use('/api/notifications', apiRateLimit, performanceMiddleware, notificationRoutes);
 app.use('/api/analysis', aiRateLimit, performanceMiddleware, analysisRoutes);
+app.use('/api/ingest', apiRateLimit, performanceMiddleware, ingestRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -139,7 +142,7 @@ const startServer = async () => {
 
     // Start listening
     app.listen(PORT, () => {
-      logger.info(`🚀 UFDR API Gateway running on port ${PORT}`);
+      logger.info(`🚀 CopSight AI API Gateway running on port ${PORT}`);
       logger.info(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
       logger.info(`🔗 Health check: http://localhost:${PORT}/health`);
       logger.info('📊 Database Status:');

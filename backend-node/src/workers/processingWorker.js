@@ -166,14 +166,14 @@ try {
         // Continue processing even if indexing fails
       }
 
-      // Step 6: Build knowledge graph in Neo4j
-      logger.info('Building knowledge graph...');
+      // Step 6: Build knowledge graph in Neo4j (DISABLED: Now handled by Python AI Service GraphMapper)
+      logger.info('Building knowledge graph via AI service...');
       await ProcessingJob.update({ progress: 95 }, { where: { id: jobId } });
       job.progress(95);
 
       try {
-        await buildKnowledgeGraph(parseInt(caseId), parsedData, allEntities.flat());
-        logger.info('Knowledge graph building completed');
+        // await buildKnowledgeGraph(parseInt(caseId), parsedData, allEntities.flat());
+        logger.info('Knowledge graph building delegated to Python ARQ worker');
       } catch (error) {
         logger.error('Knowledge graph building failed:', error);
         // Continue processing even if graph building fails

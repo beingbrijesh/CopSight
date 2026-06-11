@@ -5,8 +5,8 @@ import path from 'path';
 import logger from '../../config/logger.js';
 
 /**
- * UFDR/Cellebrite XML Parser
- * Parses forensic data from UFDR and Cellebrite XML files
+ * CopSight/Cellebrite XML Parser
+ * Parses forensic data from CopSight AI and Cellebrite XML files
  */
 class UFDRParser {
   constructor() {
@@ -163,7 +163,7 @@ class UFDRParser {
       // Check if content is actually XML
       const trimmedContent = xmlContent.trim();
       if (!trimmedContent.startsWith('<?xml') && !trimmedContent.startsWith('<')) {
-        throw new Error('Invalid UFDR file format. File must contain valid XML. Please ensure you are uploading a proper UFDR/XML export file.');
+        throw new Error('Invalid UFDR file format. File must contain valid XML. Please ensure you are uploading a proper CopSight/XML export file.');
       }
 
       // Sanitize XML to fix common forensic tool bugs (e.g., redundant closing tags)
@@ -187,7 +187,7 @@ class UFDRParser {
 
       // Provide more helpful error messages
       if (error.message.includes('Non-whitespace before first tag')) {
-        throw new Error('Invalid UFDR file format. The file does not appear to be valid XML. Please upload a proper UFDR/Cellebrite XML export file.');
+        throw new Error('Invalid UFDR file format. The file does not appear to be valid XML. Please upload a proper CopSight/Cellebrite XML export file.');
       }
 
       throw new Error(`Failed to parse UFDR file: ${error.message}`);
@@ -364,11 +364,11 @@ class UFDRParser {
   extractDeviceInfo(parsedData) {
     try {
       // Handle UFDR XML structure
-      const ufdr = parsedData['ufdr:UFDR'] || parsedData.UFDR || parsedData;
+      const ufdr = parsedData['ufdr:CopSight AI'] || parsedData.CopSight AI || parsedData;
       const device = ufdr['ufdr:device'] || ufdr.device || ufdr['ufdr:network'] || ufdr.network || {};
       const deviceInfo = device['ufdr:deviceInfo'] || device.deviceInfo || ufdr['ufdr:metadata'] || ufdr.metadata || {};
 
-      // If we have actual UFDR device info, use it
+      // If we have actual CopSight AI device info, use it
       if (deviceInfo['ufdr:manufacturer'] || deviceInfo.manufacturer) {
         return {
           deviceName: deviceInfo['ufdr:model'] || deviceInfo.model || 'Unknown Device',
@@ -434,7 +434,7 @@ class UFDRParser {
 
       // Debug logging
       logger.debug('Extracting data sources from:', {
-        hasUFDR: !!parsedData['ufdr:UFDR'],
+        hasUFDR: !!parsedData['ufdr:CopSight AI'],
         hasProject: !!parsedData.project,
         hasRoot: !!parsedData.root,
         rootKeys: Object.keys(root || {}),
@@ -443,15 +443,15 @@ class UFDRParser {
       });
 
       // Handle UFDR XML structure first
-      const ufdr = parsedData['ufdr:UFDR'] || parsedData.UFDR || parsedData;
+      const ufdr = parsedData['ufdr:CopSight AI'] || parsedData.CopSight AI || parsedData;
       if (ufdr['ufdr:device'] || ufdr.device) {
         logger.info('Detected UFDR XML structure, extracting from ufdr:device');
         return this.extractCellebriteDataSources(ufdr);
       }
 
-      // Handle UFDR Network Traffic structure
+      // Handle CopSight AI Network Traffic structure
       if (ufdr['ufdr:network'] || ufdr.network) {
-        logger.info('Detected UFDR Network Traffic structure, extracting from ufdr:network');
+        logger.info('Detected CopSight AI Network Traffic structure, extracting from ufdr:network');
         return this.extractNetworkDataSources(ufdr);
       }
 
@@ -613,7 +613,7 @@ class UFDRParser {
       return emailMessages;
 
     } catch (error) {
-      logger.error('Error extracting emails from UFDR:', error);
+      logger.error('Error extracting emails from CopSight AI:', error);
       return [];
     }
   }
@@ -706,7 +706,7 @@ class UFDRParser {
     const messages = [];
 
     try {
-      // Handle the UFDR structure: smsMessages['ufdr:message'] is an array
+      // Handle the CopSight AI structure: smsMessages['ufdr:message'] is an array
       const messageArray = this.normalizeArray(smsMessages['ufdr:message'] || smsMessages.message || smsMessages);
 
       for (let i = 0; i < messageArray.length; i++) {
@@ -727,7 +727,7 @@ class UFDRParser {
       return messages;
 
     } catch (error) {
-      logger.error('Error extracting SMS from UFDR:', error);
+      logger.error('Error extracting SMS from CopSight AI:', error);
       return [];
     }
   }
@@ -739,7 +739,7 @@ class UFDRParser {
     const calls = [];
 
     try {
-      // Handle the UFDR structure: callLogs['ufdr:call'] is an array
+      // Handle the CopSight AI structure: callLogs['ufdr:call'] is an array
       const callArray = this.normalizeArray(callLogs['ufdr:call'] || callLogs.call || callLogs);
 
       for (let i = 0; i < callArray.length; i++) {
@@ -760,13 +760,13 @@ class UFDRParser {
       return calls;
 
     } catch (error) {
-      logger.error('Error extracting calls from UFDR:', error);
+      logger.error('Error extracting calls from CopSight AI:', error);
       return [];
     }
   }
 
   /**
-   * Extract data sources from UFDR Network Traffic
+   * Extract data sources from CopSight AI Network Traffic
    */
   extractNetworkDataSources(ufdr) {
     const sources = [];

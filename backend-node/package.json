@@ -1,7 +1,7 @@
 {
-  "name": "ufdr-backend",
+  "name": "copsight-backend",
   "version": "1.0.0",
-  "description": "UFDR System - Node.js Backend with RBAC and Case Management",
+  "description": "CopSight AI - Node.js Backend with RBAC and Case Management",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
@@ -21,7 +21,7 @@
     "rbac",
     "case-management"
   ],
-  "author": "UFDR Team",
+  "author": "CopSight AI Team",
   "license": "MIT",
   "dependencies": {
     "@elastic/elasticsearch": "^8.11.0",

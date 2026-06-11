@@ -349,7 +349,16 @@ class AndroidExtractor(AbstractExtractor):
         )
         prompt_allow_deny("Manual App Backups Required", backup_instructions)
 
+        extract_media = prompt_allow_deny(
+            "Media Extraction",
+            "Do you want to extract large media files (photos, videos, audio, stickers, etc.)?\n\n"
+            "Select 'No' to save time and storage space, extracting ONLY meaningful text data (SMS, Calls, Contacts, Chat logs)."
+        )
+
         for remote_path, artifact_type in _LOGICAL_PATHS:
+            if not extract_media and artifact_type == ArtifactType.MEDIA:
+                continue
+            
             while True:
                 try:
                     local_dest = adb_pull_dir / Path(remote_path).name
@@ -367,6 +376,13 @@ class AndroidExtractor(AbstractExtractor):
                             files = [local_dest]
                             
                         for file_path in files:
+                            # Filter media files if requested
+                            if not extract_media and file_path.suffix.lower() in [
+                                '.jpg', '.jpeg', '.png', '.mp4', '.mp3', '.ogg', '.tgs', '.webp', '.gif', '.nomedia', '.opus', '.wav'
+                            ]:
+                                file_path.unlink(missing_ok=True)
+                                continue
+
                             hashes = HashEngine.hash_file(file_path)
                             artifact = Artifact(
                                 artifact_type=artifact_type,
@@ -459,6 +475,48 @@ class AndroidExtractor(AbstractExtractor):
                 )
                 session.register_artifact(artifact)
                 yield artifact
+
+        # 3. Extract native Content Providers (SMS, Call Logs, Contacts)
+        _logger.info("Extracting native Android content providers (SMS, Call Logs, Contacts)")
+        providers = {
+            "sms": "content://sms/",
+            "call_logs": "content://call_log/calls",
+            "contacts": "content://contacts/phones"
+        }
+        
+        for name, uri in providers.items():
+            try:
+                dest_file = adb_pull_dir / f"{name}.csv"
+                _logger.info(f"Querying {uri} to {dest_file}")
+                
+                query_cmd = ["adb", *adb_target_args, "shell", "content", "query", "--uri", uri]
+                query_proc = subprocess.run(query_cmd, capture_output=True, text=True)
+                
+                if query_proc.returncode == 0 and query_proc.stdout.strip() and "No result found" not in query_proc.stdout:
+                    dest_file.write_text(query_proc.stdout, encoding='utf-8')
+                    
+                    artifact_t = ArtifactType.MESSAGE
+                    if name == "call_logs":
+                        artifact_t = ArtifactType.CALL_LOG
+                    elif name == "contacts":
+                        artifact_t = ArtifactType.CONTACT
+                        
+                    hashes = HashEngine.hash_file(dest_file)
+                    artifact = Artifact(
+                        artifact_type=artifact_t,
+                        source_app="adb_content_provider",
+                        source_path=str(dest_file),
+                        acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+                        hashes=hashes,
+                        data={"method": "adb_shell_content", "uri": uri},
+                        device=self._device,
+                    )
+                    session.register_artifact(artifact)
+                    yield artifact
+                else:
+                    _logger.info(f"No data returned for {uri} or query failed: {query_proc.stderr}")
+            except Exception as exc:
+                _logger.warning(f"Failed to query {uri}: {exc}", exc_info=True)
 
     def _fs_extract(self, session: ForensicSession) -> Iterator[Artifact]:
         """Yield artefacts from protected application-data paths (root required).

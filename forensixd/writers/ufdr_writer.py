@@ -12,7 +12,7 @@ __all__ = ["UFDRWriter"]
 
 class UFDRWriter:
     """
-    Writes digital forensic artifacts to a UFDR (Universal Forensic Device Report) archive.
+    Writes digital forensic artifacts to a CopSight AI (Universal Forensic Device Report) archive.
     """
 
     def __init__(self, output_path: Union[str, Path], session: SessionLog) -> None:
@@ -20,7 +20,7 @@ class UFDRWriter:
         Initialize the UFDRWriter.
 
         Args:
-            output_path: The path where the UFDR archive will be created.
+            output_path: The path where the CopSight AI archive will be created.
             session: The forensic session log containing case and device metadata.
         """
         self.output_path = Path(output_path)
@@ -30,13 +30,13 @@ class UFDRWriter:
 
     def build(self, artifacts: List[Artifact]) -> Path:
         """
-        Build the UFDR archive containing the report, index, and artifact files.
+        Build the CopSight AI archive containing the report, index, and artifact files.
 
         Args:
-            artifacts: The list of artifacts to include in the UFDR archive.
+            artifacts: The list of artifacts to include in the CopSight AI archive.
 
         Returns:
-            The path to the generated UFDR archive.
+            The path to the generated CopSight AI archive.
 
         Raises:
             WriteError: If the archive cannot be created.
@@ -49,11 +49,11 @@ class UFDRWriter:
                 self._write_artifact_files(zf, artifacts)
             return self.output_path
         except Exception as e:
-            raise WriteError(f"Failed to build UFDR archive at {self.output_path}: {e}") from e
+            raise WriteError(f"Failed to build CopSight AI archive at {self.output_path}: {e}") from e
 
     def _write_report_xml(self, zf: zipfile.ZipFile, artifacts: List[Artifact]) -> None:
         """
-        Write the report.xml file to the UFDR archive.
+        Write the report.xml file to the CopSight AI archive.
 
         Args:
             zf: The open zipfile object.
@@ -61,7 +61,7 @@ class UFDRWriter:
         """
         from forensixd.parsers.base import ParserRegistry
 
-        root = etree.Element("UFDR")
+        root = etree.Element("CopSight AI")
         
         device = etree.SubElement(root, "device")
 
@@ -123,7 +123,7 @@ class UFDRWriter:
                             etree.SubElement(call_el, "duration").text = str(rec.fields.get("duration") or "0")
                             etree.SubElement(call_el, "timestamp").text = str(rec.fields.get("timestamp") or "")
                 except Exception:
-                    # Silently ignore parsing errors during UFDR generation
+                    # Silently ignore parsing errors during CopSight AI generation
                     pass
 
         tree_bytes = etree.tostring(root, pretty_print=True, xml_declaration=True, encoding="UTF-8")
@@ -131,7 +131,7 @@ class UFDRWriter:
 
     def _write_index_xml(self, zf: zipfile.ZipFile, artifacts: List[Artifact]) -> None:
         """
-        Write the index.xml file to the UFDR archive.
+        Write the index.xml file to the CopSight AI archive.
 
         Args:
             zf: The open zipfile object.
@@ -168,7 +168,7 @@ class UFDRWriter:
 
     def _write_artifact_files(self, zf: zipfile.ZipFile, artifacts: List[Artifact]) -> None:
         """
-        Write the actual artifact files to the UFDR archive.
+        Write the actual artifact files to the CopSight AI archive.
 
         Args:
             zf: The open zipfile object.

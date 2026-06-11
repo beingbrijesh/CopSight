@@ -268,7 +268,9 @@ class RAGPipeline:
             
             # Search ChromaDB with native case_id filter — avoids fetching all docs
             logger.info(f"Executing ChromaDB query for case_id={case_id}...")
-            results = db_manager.chroma_collection.query(
+            import asyncio
+            results = await asyncio.to_thread(
+                db_manager.chroma_collection.query,
                 query_embeddings=[query_embedding],
                 n_results=50,
                 where={"case_id": case_id},
@@ -579,8 +581,10 @@ class RAGPipeline:
                 logger.info(f"Generating embeddings for {len(documents)} documents")
                 embeddings = await embedding_service.generate_embeddings(documents)
                 
-                # Index to ChromaDB with pre-computed embeddings
-                db_manager.chroma_collection.add(
+                # Index to ChromaDB with pre-computed embeddings using a thread pool to avoid blocking the event loop
+                import asyncio
+                await asyncio.to_thread(
+                    db_manager.chroma_collection.add,
                     ids=ids,
                     documents=documents,
                     metadatas=metadatas,

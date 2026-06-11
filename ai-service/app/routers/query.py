@@ -438,6 +438,41 @@ async def get_query_history(case_id: int, limit: int = 20):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/graph/entity/{entity_id}/events")
+async def get_entity_events(entity_id: str, limit: int = 50):
+    """
+    Fetch all events (transactions, communications, locations) tied to a specific graph entity.
+    Used for interactive drill-down when a user clicks a red node in the UI.
+    """
+    try:
+        from app.services.database import db_manager
+        
+        if not db_manager.neo4j:
+            raise HTTPException(status_code=503, detail="Graph database unavailable")
+            
+        async with db_manager.neo4j.session() as session:
+            # Query Neo4j to find all relationships where this entity is source or target
+            cypher = """
+                MATCH (n)-[r]-(m)
+                WHERE n.primary_id = $entity_id OR n.number = $entity_id OR n.account_number = $entity_id OR n.id = $entity_id
+                RETURN type(r) as event_type, r.timestamp as timestamp, labels(m) as related_labels, 
+                       coalesce(m.name, m.number, m.account_number, m.id) as related_entity
+                ORDER BY r.timestamp DESC
+                LIMIT $limit
+            """
+            result = await session.run(cypher, entity_id=entity_id, limit=limit)
+            records = await result.data()
+            
+            return {
+                "entity_id": entity_id,
+                "events": records,
+                "total_events": len(records)
+            }
+            
+    except Exception as e:
+        logger.error(f"Failed to fetch entity events: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/{query_id}")
 async def get_query_result(query_id: int):
     """Get a specific query result"""

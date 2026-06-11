@@ -1,4 +1,4 @@
-# UFDR System - System Architecture Diagram
+# CopSight AI - System Architecture Diagram
 
 ## High-Level System Architecture (Mermaid)
 

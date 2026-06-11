@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserList } from './pages/admin/UserList';
@@ -15,9 +15,21 @@ import { AppShell } from './components/AppShell';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { EvidenceDetailPanel } from './components/EvidenceDetailPanel';
 import { useAuthStore } from './store/authStore';
+import { useEffect } from 'react';
 
-function App() {
-  const { isAuthenticated, user } = useAuthStore();
+function RouteController() {
+  const { isAuthenticated, user, token } = useAuthStore();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      const urlParams = new URLSearchParams(location.search);
+      const cliCallback = urlParams.get('cli_callback');
+      if (cliCallback) {
+        window.location.href = `${cliCallback}?token=${encodeURIComponent(token)}`;
+      }
+    }
+  }, [isAuthenticated, token, location.search]);
 
   const getDefaultRoute = () => {
     if (!isAuthenticated) return '/login';
@@ -28,11 +40,13 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
+    <>
       <Routes>
         <Route path="/login" element={
-          isAuthenticated ? <Navigate to={getDefaultRoute()} replace /> : <Login />
-        } />
+        (isAuthenticated && !new URLSearchParams(location.search).has('cli_callback')) 
+          ? <Navigate to={getDefaultRoute()} replace /> 
+          : <Login />
+      } />
         
         <Route element={
           <ProtectedRoute allowedRoles={['admin']}>
@@ -78,6 +92,14 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <EvidenceDetailPanel />
+    </>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <RouteController />
     </BrowserRouter>
   );
 }

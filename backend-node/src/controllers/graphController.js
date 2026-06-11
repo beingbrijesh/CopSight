@@ -73,3 +73,36 @@ export const getNodeNeighbors = async (req, res) => {
     });
   }
 };
+
+/**
+ * Get all raw events for a specific node in a case for drill-down.
+ */
+export const getNodeEvents = async (req, res) => {
+  try {
+    const { caseId, nodeId } = req.params;
+
+    // Validate case exists
+    const caseRecord = await Case.findByPk(caseId);
+    if (!caseRecord) {
+      return res.status(404).json({
+        success: false,
+        message: 'Case not found'
+      });
+    }
+
+    const events = await networkExtractionService.getNodeEvents(nodeId, caseId);
+
+    res.json({
+      success: true,
+      message: 'Node events fetched successfully',
+      data: events
+    });
+
+  } catch (error) {
+    logger.error('Error fetching node events:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch node events'
+    });
+  }
+};

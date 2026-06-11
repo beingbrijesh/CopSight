@@ -1,5 +1,5 @@
 import express from 'express';
-import { getNetworkGraph, getNodeNeighbors } from '../controllers/graphController.js';
+import { getNetworkGraph, getNodeNeighbors, getNodeEvents } from '../controllers/graphController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -28,6 +28,18 @@ router.get(
   authenticate,
   authorize(...GRAPH_ROLES),
   getNodeNeighbors
+);
+
+/**
+ * @route GET /api/graph/network/:caseId/node/:nodeId/events
+ * @desc Get all raw ingestion events for a specific graph node
+ * @access Private
+ */
+router.get(
+  '/network/:caseId/node/:nodeId/events',
+  authenticate,
+  authorize(...GRAPH_ROLES),
+  getNodeEvents
 );
 
 export default router;

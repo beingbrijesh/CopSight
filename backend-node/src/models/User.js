@@ -62,6 +62,11 @@ const User = sequelize.define('User', {
     type: DataTypes.DATE,
     field: 'last_login'
   },
+  requiresPasswordChange: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    field: 'requires_password_change'
+  },
   passwordChangedAt: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

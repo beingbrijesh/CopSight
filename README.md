@@ -1,13 +1,13 @@
 # CopSight AI - A Universal Forensic Data Analysis Platform
 
-A comprehensive digital forensics platform for law enforcement agencies to analyze mobile device data extracted from UFDR (Universal Forensic Data Reader) files. The system provides natural language query capabilities, multi-database search, network visualization, and professional report generation.
+A comprehensive digital forensics platform for law enforcement agencies to analyze mobile device data extracted from CopSight AI (Universal Forensic Data Reader) files. The system provides natural language query capabilities, multi-database search, network visualization, and professional report generation.
 
 ## 🎯 Key Features
 
 ### Core Functionality
 - **Multi-Role Authentication**: JWT-based auth with Admin, Investigating Officer, and Supervisor roles
 - **Case Management**: Create, assign, and track investigation cases with status workflow
-- **UFDR File Processing**: Parse XML/JSON UFDR files with background job processing
+- **CopSight AI File Processing**: Parse XML/JSON UFDR files with background job processing
 - **Entity Extraction**: Automatic extraction of phone numbers, emails, crypto addresses, IDs, URLs
 - **Multi-Database Architecture**: PostgreSQL, Elasticsearch, Neo4j, Redis for comprehensive data analysis
 
@@ -80,7 +80,7 @@ A comprehensive digital forensics platform for law enforcement agencies to analy
 #### 1. Clone and Setup
 ```bash
 git clone <repository-url>
-cd UFDR
+cd CopSight AI
 ```
 
 #### 2. Start Database Services
@@ -158,7 +158,7 @@ ollama pull llama3.2          # For query processing
 | **Backend API** | http://localhost:8080 | - |
 | **AI Service** | http://localhost:8005 | - |
 | **Kibana** | http://localhost:5601 | - |
-| **Neo4j Browser** | http://localhost:7474 | neo4j / ufdr_password |
+| **Neo4j Browser** | http://localhost:7474 | neo4j / copsight_password |
 
 ## 📖 Usage Guide
 
@@ -181,7 +181,7 @@ ollama pull llama3.2          # For query processing
 ### Investigating Officer Workflow
 
 1. **View Assigned Cases** (IO Dashboard)
-2. **Upload UFDR File** (Case Detail → Upload Data)
+2. **Upload CopSight AI File** (Case Detail → Upload Data)
    - Supported formats: XML, JSON
    - File is processed in background
    - Monitor processing status
@@ -204,7 +204,7 @@ ollama pull llama3.2          # For query processing
 ## 🗂️ Project Structure
 
 ```
-UFDR/
+CopSight/
 ├── frontend/                    # React + TypeScript Frontend
 │   ├── src/
 │   │   ├── pages/              # 11 page components
@@ -391,9 +391,9 @@ UFDR/
 14. **cross_case_links** - Links between related cases
 
 ### Elasticsearch Indices (3)
-- **ufdr-messages** - SMS, WhatsApp, Telegram messages
-- **ufdr-calls** - Call logs with duration and direction
-- **ufdr-contacts** - Contact information
+- **copsight-messages** - SMS, WhatsApp, Telegram messages
+- **copsight-calls** - Call logs with duration and direction
+- **copsight-contacts** - Contact information
 
 ### Neo4j Graph Schema
 - **Nodes**: Case, Device, PhoneNumber, Contact, Entity
@@ -439,8 +439,8 @@ docker ps
 docker-compose restart
 
 # Check specific service
-docker logs ufdr-postgres
-docker logs ufdr-elasticsearch
+docker logs copsight-postgres
+docker logs copsight-elasticsearch
 ```
 
 ### Frontend Build Error
@@ -516,9 +516,9 @@ NODE_ENV=development
 # Database
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=ufdr_db
-DB_USER=ufdr_user
-DB_PASSWORD=ufdr_password
+DB_NAME=copsight_db
+DB_USER=copsight_user
+DB_PASSWORD=copsight_password
 
 # JWT
 JWT_SECRET=your-secret-key-change-in-production
@@ -528,7 +528,7 @@ JWT_EXPIRES_IN=24h
 ELASTICSEARCH_URL=http://localhost:9200
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
-NEO4J_PASSWORD=ufdr_password
+NEO4J_PASSWORD=copsight_password
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
@@ -546,9 +546,9 @@ ENVIRONMENT=development
 # Databases
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
-POSTGRES_DB=ufdr_db
-POSTGRES_USER=ufdr_user
-POSTGRES_PASSWORD=ufdr_password
+POSTGRES_DB=copsight_db
+POSTGRES_USER=copsight_user
+POSTGRES_PASSWORD=copsight_password
 
 # Ollama
 OLLAMA_HOST=http://localhost:11434

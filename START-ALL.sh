@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 UFDR System Startup Script"
+echo "🚀 CopSight AI Startup Script"
 echo "=============================="
 echo ""
 
@@ -43,7 +43,7 @@ else
     echo -e "${YELLOW}⚠ Elasticsearch not responding${NC}"
 fi
 
-if docker exec ufdr-redis redis-cli ping 2>/dev/null | grep -q PONG; then
+if docker exec copsight-redis redis-cli ping 2>/dev/null | grep -q PONG; then
     echo -e "${GREEN}✓ Redis ready${NC}"
 else
     echo -e "${YELLOW}⚠ Redis not responding${NC}"

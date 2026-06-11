@@ -278,7 +278,7 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-gray-500">
             <p>No network data available</p>
-            <p className="text-sm mt-1">Upload UFDR data to visualize connections</p>
+            <p className="text-sm mt-1">Upload CopSight AI data to visualize connections</p>
           </div>
         </div>
       )}

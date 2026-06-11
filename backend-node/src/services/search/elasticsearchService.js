@@ -6,7 +6,7 @@ import logger from '../../config/logger.js';
  */
 export const initializeIndices = async () => {
   try {
-    const indices = ['ufdr-messages', 'ufdr-calls', 'ufdr-contacts'];
+    const indices = ['copsight-messages', 'copsight-calls', 'copsight-contacts'];
 
     for (const index of indices) {
       const exists = await elasticsearchClient.indices.exists({ index });
@@ -46,7 +46,7 @@ export const initializeIndices = async () => {
 };
 
 /**
- * Index parsed UFDR data to Elasticsearch
+ * Index parsed CopSight AI data to Elasticsearch
  */
 export const indexToElasticsearch = async (caseId, parsedData, entities) => {
   try {
@@ -177,13 +177,13 @@ export const searchElasticsearch = async (caseId, query, filters = {}) => {
  */
 const getIndexName = (sourceType) => {
   if (sourceType === 'sms' || sourceType === 'whatsapp' || sourceType === 'telegram') {
-    return 'ufdr-messages';
+    return 'copsight-messages';
   } else if (sourceType === 'call_log') {
-    return 'ufdr-calls';
+    return 'copsight-calls';
   } else if (sourceType === 'contacts') {
-    return 'ufdr-contacts';
+    return 'copsight-contacts';
   }
-  return 'ufdr-messages';
+  return 'copsight-messages';
 };
 
 export default {

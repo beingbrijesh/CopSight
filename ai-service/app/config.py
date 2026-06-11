@@ -17,28 +17,29 @@ class Settings(BaseSettings):
     
     # PostgreSQL
     POSTGRES_HOST: str = "localhost"
-    POSTGRES_PORT: int = 5432
-    POSTGRES_DB: str = "ufdr_db"
-    POSTGRES_USER: str = "ufdr_user"
-    POSTGRES_PASSWORD: str = "ufdr_password"
+    POSTGRES_PORT: int = 5433
+    POSTGRES_DB: str = "copsight_db"
+    POSTGRES_USER: str = "copsight_user"
+    POSTGRES_PASSWORD: str = "copsight_password"
     
     # Elasticsearch
-    ELASTICSEARCH_URL: str = "http://localhost:9200"
+    ELASTICSEARCH_URL: str = "http://localhost:9201"
     ELASTICSEARCH_USER: str = "elastic"
     ELASTICSEARCH_PASSWORD: str = "changeme"
     
     # Neo4j
-    NEO4J_URI: str = "bolt://localhost:7687"
+    NEO4J_URI: str = "bolt://localhost:7688"
     NEO4J_USER: str = "neo4j"
-    NEO4J_PASSWORD: str = "ufdr_password"
+    NEO4J_PASSWORD: str = "copsight_password"
     
     # ChromaDB
-    CHROMA_PERSIST_DIR: str = "./chroma_data"
+    CHROMA_HOST: str = "localhost"
+    CHROMA_PORT: int = 8006
     CHROMA_TELEMETRY_DISABLED: bool = True
     
     # Redis
     REDIS_HOST: str = "localhost"
-    REDIS_PORT: int = 6379
+    REDIS_PORT: int = 6380
     
     # Ollama
     OLLAMA_HOST: str = "http://localhost:11434"
@@ -47,6 +48,17 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "llama3.2"
     LLM_TEMPERATURE: float = 0.7
     LLM_MAX_TOKENS: int = 2000
+    
+    # External APIs (Auto-Detected)
+    OPENAI_API_KEY: str | None = None
+    GEMINI_API_KEY: str | None = None
+    USE_GEMINI_MODEL: int = 0
+    
+    # AWS S3 Storage (Hybrid On-Prem/Cloud)
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
+    AWS_S3_BUCKET: str | None = None
+    AWS_REGION: str = "us-east-1"
     
     # Model Configuration
     MAX_TOKENS: int = 4096
