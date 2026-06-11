@@ -107,6 +107,7 @@ class DatabaseManager:
                 self.chroma_client = chromadb.HttpClient(  # type: ignore[union-attr]
                     host=settings.CHROMA_HOST,
                     port=settings.CHROMA_PORT,
+                    ssl=(settings.CHROMA_PORT == 443),
                     settings=ChromaSettings(anonymized_telemetry=False),  # type: ignore[misc]
                 )
                 self.chroma_collection = self.chroma_client.get_or_create_collection(
