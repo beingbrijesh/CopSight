@@ -1,3 +1,12 @@
+---
+title: CopSight AI Service
+emoji: 👮
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
 # CopSight AI AI Service
 
 Python-based AI service for natural language query processing, RAG pipeline, and forensic analysis.
