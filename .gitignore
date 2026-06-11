@@ -17,8 +17,12 @@ logs/
 npm-debug.log*
 
 # Uploads
+backend-node/uploads/*
+!backend-node/uploads/.gitkeep
 uploads/*
 !uploads/.gitkeep
+
+LandingPage/
 
 # IDE
 .vscode/

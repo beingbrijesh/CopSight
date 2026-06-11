@@ -41,6 +41,40 @@ export const getNetworkGraph = async (req, res) => {
 };
 
 /**
+ * Stream extended multi-hop graph data and cycle anomalies via Server-Sent Events (SSE)
+ */
+export const streamExtendedGraph = async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const { min_interaction_threshold } = req.query;
+
+    const caseRecord = await Case.findByPk(caseId);
+    if (!caseRecord) {
+      return res.status(404).json({ success: false, message: 'Case not found' });
+    }
+
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const filters = { min_interaction_threshold: min_interaction_threshold || 1 };
+
+    await networkExtractionService.streamExtendedGraph(caseId, filters, res);
+  } catch (error) {
+    logger.error('Error streaming extended graph:', error);
+    // If headers already sent, write an error event and close
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: 'Failed to stream graph' });
+    } else {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
+  }
+};
+
+/**
  * Get neighbors of a specific node for on-click graph expansion.
  * Powers the "Click to Explore" feature in the 3D graph.
  */

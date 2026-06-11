@@ -22,7 +22,7 @@ echo ""
 
 # Start databases
 echo "📊 Starting database services..."
-docker-compose up -d postgresql elasticsearch redis neo4j
+docker-compose up -d postgresql elasticsearch redis neo4j chroma
 
 echo "⏳ Waiting for databases to be ready (15 seconds)..."
 sleep 15

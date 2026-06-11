@@ -344,6 +344,70 @@ export const NetworkGraph = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // ── Stream Extended Background Graph
+  useEffect(() => {
+    if (loading || error) return; // Only start SSE after initial load succeeds
+    
+    const token = localStorage.getItem('token');
+    const eventSource = new EventSource(
+      `http://localhost:5001/api/graph/network/${caseId}/extended?min_interaction_threshold=${threshold}&token=${token}`
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        
+        if (payload.type === 'status') {
+          // You could optionally show a small toast or indicator here
+          console.log('[Graph Stream]', payload.message);
+        } else if (payload.type === 'extended_graph') {
+          setData(prev => {
+            const existingNodeIds = new Set(prev.nodes.map(n => n.id));
+            const existingEdgeIds = new Set(prev.edges.map(e => (e as any).id));
+            
+            const newNodes = payload.nodes.filter((n: any) => !existingNodeIds.has(n.id));
+            const newEdges = payload.edges.filter((e: any) => !existingEdgeIds.has(e.id));
+            
+            if (newNodes.length === 0 && newEdges.length === 0) return prev;
+            
+            return {
+              nodes: [...prev.nodes, ...newNodes],
+              edges: [...prev.edges, ...newEdges],
+              anomalies: prev.anomalies
+            };
+          });
+        } else if (payload.type === 'anomalies') {
+          setData(prev => ({
+            ...prev,
+            anomalies: [...prev.anomalies, ...payload.anomalies]
+          }));
+          setAnomalySet(prev => {
+            const newSet = new Set(prev);
+            payload.anomalies.forEach((path: number[]) => {
+              for (let i = 0; i < path.length - 1; i++) {
+                newSet.add(`${path[i]}-${path[i + 1]}`);
+                newSet.add(`${path[i + 1]}-${path[i]}`);
+              }
+            });
+            return newSet;
+          });
+        } else if (payload.type === 'error' || payload.type === 'done') {
+          eventSource.close();
+        }
+      } catch {
+        console.error('SSE Parsing Error');
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [caseId, threshold, loading, error]);
+
   // ── On-click dynamic neighbor expansion
   const expandNode = useCallback(async (node: GraphNode) => {
     if (expandedNodes.has(node.id)) return; // already expanded
@@ -830,7 +894,7 @@ export const NetworkGraph = () => {
             </div>
             
             {/* Modal Canvas */}
-            <div className="flex-1 relative bg-[#030712] flex items-center justify-center" onClick={(e) => {
+            <div className="flex-1 relative bg-[#030712] flex items-center justify-center" onClick={() => {
                if (contextMenu.visible) setContextMenu(prev => ({ ...prev, visible: false }));
             }}>
               <ForceGraph2D

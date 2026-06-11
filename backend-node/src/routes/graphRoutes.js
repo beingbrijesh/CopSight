@@ -8,7 +8,7 @@ const GRAPH_ROLES = ['admin', 'supervisor', 'investigating_officer'];
 
 /**
  * @route GET /api/graph/network/:caseId
- * @desc Get the full network graph visualization data for a case
+ * @desc Get the primary 1-hop network graph visualization data for a case
  * @access Private
  */
 router.get(
@@ -16,6 +16,19 @@ router.get(
   authenticate,
   authorize(...GRAPH_ROLES),
   getNetworkGraph
+);
+
+/**
+ * @route GET /api/graph/network/:caseId/extended
+ * @desc Stream extended graph paths (2-4 hops) and cycle detection via SSE
+ * @access Private
+ */
+import { streamExtendedGraph } from '../controllers/graphController.js';
+router.get(
+  '/network/:caseId/extended',
+  authenticate,
+  authorize(...GRAPH_ROLES),
+  streamExtendedGraph
 );
 
 /**

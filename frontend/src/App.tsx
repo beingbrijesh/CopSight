@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
+import { Unauthorized } from './pages/Unauthorized';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserList } from './pages/admin/UserList';
 import { CaseList } from './pages/admin/CaseList';
@@ -87,7 +89,8 @@ function RouteController() {
           <Route path="/supervisor/case/:caseId/network" element={<NetworkGraph />} />
         </Route>
         
-        <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
+        <Route path="/" element={<Landing />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
         
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

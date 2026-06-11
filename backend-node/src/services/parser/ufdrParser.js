@@ -364,7 +364,7 @@ class UFDRParser {
   extractDeviceInfo(parsedData) {
     try {
       // Handle UFDR XML structure
-      const ufdr = parsedData['ufdr:CopSight AI'] || parsedData.CopSight AI || parsedData;
+      const ufdr = parsedData['ufdr:UFDR'] || parsedData.UFDR || parsedData;
       const device = ufdr['ufdr:device'] || ufdr.device || ufdr['ufdr:network'] || ufdr.network || {};
       const deviceInfo = device['ufdr:deviceInfo'] || device.deviceInfo || ufdr['ufdr:metadata'] || ufdr.metadata || {};
 
@@ -434,7 +434,7 @@ class UFDRParser {
 
       // Debug logging
       logger.debug('Extracting data sources from:', {
-        hasUFDR: !!parsedData['ufdr:CopSight AI'],
+        hasUFDR: !!parsedData['ufdr:UFDR'],
         hasProject: !!parsedData.project,
         hasRoot: !!parsedData.root,
         rootKeys: Object.keys(root || {}),
@@ -443,7 +443,7 @@ class UFDRParser {
       });
 
       // Handle UFDR XML structure first
-      const ufdr = parsedData['ufdr:CopSight AI'] || parsedData.CopSight AI || parsedData;
+      const ufdr = parsedData['ufdr:UFDR'] || parsedData.UFDR || parsedData;
       if (ufdr['ufdr:device'] || ufdr.device) {
         logger.info('Detected UFDR XML structure, extracting from ufdr:device');
         return this.extractCellebriteDataSources(ufdr);
