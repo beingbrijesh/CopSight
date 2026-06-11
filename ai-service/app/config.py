@@ -85,6 +85,9 @@ class Settings(BaseSettings):
     
     @property
     def postgres_url(self) -> str:
+        if self.POSTGRES_HOST.startswith("postgresql://") or self.POSTGRES_HOST.startswith("postgres://"):
+            return self.POSTGRES_HOST
+            
         import urllib.parse
         encoded_password = urllib.parse.quote_plus(self.POSTGRES_PASSWORD) if self.POSTGRES_PASSWORD else ""
         base = f"postgresql://{self.POSTGRES_USER}:{encoded_password}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
