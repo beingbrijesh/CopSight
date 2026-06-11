@@ -60,11 +60,18 @@ class DatabaseManager:
             self.postgres = None
 
         try:
+            # If the URL already contains credentials (like Bonsai https://user:pass@host),
+            # providing basic_auth with default "elastic/changeme" will override and fail.
+            es_kwargs = {
+                "request_timeout": 30,
+                "max_retries": 3,
+            }
+            if "@" not in settings.ELASTICSEARCH_URL and settings.ELASTICSEARCH_USER and settings.ELASTICSEARCH_PASSWORD:
+                es_kwargs["basic_auth"] = (settings.ELASTICSEARCH_USER, settings.ELASTICSEARCH_PASSWORD)
+
             self.elasticsearch = AsyncElasticsearch(
                 [settings.ELASTICSEARCH_URL],
-                basic_auth=(settings.ELASTICSEARCH_USER, settings.ELASTICSEARCH_PASSWORD),
-                request_timeout=30,
-                max_retries=3,
+                **es_kwargs
             )
             await self.elasticsearch.info()
             logger.info("Elasticsearch connected")
@@ -85,8 +92,13 @@ class DatabaseManager:
             self.neo4j = None
 
         try:
-            redis_protocol = "rediss" if "upstash" in settings.REDIS_HOST.lower() else "redis"
-            redis_url = f"{redis_protocol}://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}" if getattr(settings, 'REDIS_PASSWORD', None) else f"{redis_protocol}://{settings.REDIS_HOST}:{settings.REDIS_PORT}"
+            if settings.REDIS_URL:
+                redis_url = settings.REDIS_URL
+            else:
+                import urllib.parse
+                encoded_redis_pass = urllib.parse.quote_plus(settings.REDIS_PASSWORD) if settings.REDIS_PASSWORD else None
+                redis_protocol = "rediss" if "upstash" in settings.REDIS_HOST.lower() else "redis"
+                redis_url = f"{redis_protocol}://:{encoded_redis_pass}@{settings.REDIS_HOST}:{settings.REDIS_PORT}" if encoded_redis_pass else f"{redis_protocol}://{settings.REDIS_HOST}:{settings.REDIS_PORT}"
             
             kwargs = {
                 "socket_connect_timeout": 10,

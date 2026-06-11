@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     CHROMA_TELEMETRY_DISABLED: bool = True
     
     # Redis
+    REDIS_URL: str | None = None
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6380
     REDIS_PASSWORD: str | None = None
@@ -84,7 +85,9 @@ class Settings(BaseSettings):
     
     @property
     def postgres_url(self) -> str:
-        base = f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        import urllib.parse
+        encoded_password = urllib.parse.quote_plus(self.POSTGRES_PASSWORD) if self.POSTGRES_PASSWORD else ""
+        base = f"postgresql://{self.POSTGRES_USER}:{encoded_password}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         if "supabase" in self.POSTGRES_HOST.lower():
             return f"{base}?sslmode=require"
         return base

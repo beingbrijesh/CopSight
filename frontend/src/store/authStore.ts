@@ -9,6 +9,7 @@ interface User {
   badgeNumber?: string;
   rank?: string;
   unit?: string;
+  requiresPasswordChange?: boolean;
 }
 
 interface AuthState {

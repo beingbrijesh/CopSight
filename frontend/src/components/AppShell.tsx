@@ -12,6 +12,7 @@ import {
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Navbar } from './Navbar';
+import { ChangePasswordModal } from './ChangePasswordModal';
 
 type NavItem = {
   label: string;
@@ -112,6 +113,7 @@ export const AppShell = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ChangePasswordModal />
       <Navbar onMenuToggle={() => setSidebarOpen((open) => !open)} />
 
       <div className="flex">
