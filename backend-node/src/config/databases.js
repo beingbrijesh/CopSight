@@ -4,8 +4,13 @@ import Redis from 'ioredis';
 import logger from './logger.js';
 
 // Elasticsearch Client
+let esUrl = process.env.ELASTICSEARCH_URL || 'http://localhost:9200';
+if (esUrl !== 'http://localhost:9200' && !esUrl.startsWith('http')) {
+  esUrl = `https://${esUrl}`;
+}
+
 export const elasticsearchClient = new Client({
-  node: process.env.ELASTICSEARCH_URL || 'http://localhost:9200',
+  node: esUrl,
   auth: {
     username: process.env.ELASTICSEARCH_USER || 'elastic',
     password: process.env.ELASTICSEARCH_PASSWORD || 'changeme'

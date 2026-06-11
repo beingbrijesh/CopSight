@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Clock, Search } from 'lucide-react';
+import { Clock, Search } from 'lucide-react';
 import { queryAPI } from '../lib/api';
 
 interface QueryHistoryProps {
@@ -11,7 +11,7 @@ interface QueryHistoryProps {
 export const QueryHistory = ({ caseId, onSelectQuery, refreshTrigger }: QueryHistoryProps) => {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(true);
+
 
   useEffect(() => {
     const loadHistory = async () => {
