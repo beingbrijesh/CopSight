@@ -52,9 +52,10 @@ def acquire(output_dir, level, ufdr_config):
     console.print(f"[green]Found:[/green] {device.platform.value} — {device.device_id}")
 
     # Step 1.5: Mandatory Real-Time Streaming Setup
-    from forensixd.constants import STREAM_URL
+    from forensixd.constants import STREAM_URL, LOGIN_URL
     # Fallback to localhost if not compiled with a secret
     stream_url = "http://localhost:8000" if STREAM_URL == "INJECTED_STREAM_URL" else STREAM_URL
+    login_url = "http://localhost:5173/login" if LOGIN_URL == "INJECTED_LOGIN_URL" else LOGIN_URL
 
     api_stream_writer = None
     selected_case = None
@@ -64,7 +65,7 @@ def acquire(output_dir, level, ufdr_config):
         from forensixd.writers.api_stream_writer import ApiStreamWriter
         
         console.print(f"[cyan]Connecting to server at: {stream_url}[/cyan]")
-        token = authenticate_via_browser()
+        token = authenticate_via_browser(login_url=login_url)
         cases = get_assigned_cases(stream_url, token)
         selected_case = prompt_case_selection(cases)
         if not selected_case:

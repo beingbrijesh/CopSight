@@ -51,9 +51,10 @@ jobs:
     - name: Inject Production URL
       shell: bash
       run: |
-        python -c "import os; f = 'forensixd/constants.py'; content = open(f).read(); open(f, 'w').write(content.replace('INJECTED_STREAM_URL', os.environ.get('PROD_SERVER_URL', '')))"
+        python -c "import os; f = 'forensixd/constants.py'; content = open(f).read().replace('INJECTED_STREAM_URL', os.environ.get('PROD_SERVER_URL', '')).replace('INJECTED_LOGIN_URL', os.environ.get('PROD_FRONTEND_URL', '')); open(f, 'w').write(content)"
       env:
         PROD_SERVER_URL: ${{ secrets.PROD_SERVER_URL }}
+        PROD_FRONTEND_URL: ${{ secrets.PROD_FRONTEND_URL }}
 
     - name: Build with PyInstaller
       shell: bash
@@ -65,6 +66,8 @@ jobs:
           --hidden-import Registry \
           --hidden-import pycparser.yacctab \
           --hidden-import pycparser.lextab \
+          --hidden-import requests \
+          --collect-all forensixd \
           --collect-all Crypto \
           --collect-all jinja2 \
           --collect-all xhtml2pdf \

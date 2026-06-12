@@ -11,9 +11,8 @@ console = Console()
 class ApiStreamWriter:
     def __init__(self, stream_url: str, token: str, case_id: int, device_id: int, batch_size: int = 50):
         self.stream_url = stream_url.rstrip('/')
-        if not self.stream_url.endswith('/api'):
-            # It's better to expect base_url
-            pass
+        if self.stream_url.endswith('/api'):
+            self.stream_url = self.stream_url[:-4]
             
         self.token = token
         self.case_id = case_id

@@ -1,5 +1,6 @@
 import streamQueue from '../queues/streamQueue.js';
 import { extractEntities } from '../services/ner/entityExtractor.js';
+import { indexToElasticsearch } from '../services/search/elasticsearchService.js';
 import { indexToAIService } from '../services/search/aiService.js';
 import EntityTag from '../models/EntityTag.js';
 import Device from '../models/Device.js';
@@ -96,6 +97,13 @@ streamQueue.process(async (job) => {
     }));
     
     const parsedData = { dataSources };
+    
+    try {
+      await indexToElasticsearch(parseInt(caseId), parsedData, allEntities);
+      logger.info('Elasticsearch indexing for stream completed');
+    } catch (error) {
+      logger.error('Elasticsearch indexing for stream failed:', error);
+    }
     
     await indexToAIService(parseInt(caseId), parsedData, allEntities);
     
