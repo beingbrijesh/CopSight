@@ -279,6 +279,7 @@ export const NetworkGraph = () => {
   const [modalNode, setModalNode] = useState<GraphNode | null>(null);
   const fg2dRef = useRef<any>(null);
   const [contextMenu, setContextMenu] = useState<{ visible: boolean, x: number, y: number, node: GraphNode | null }>({ visible: false, x: 0, y: 0, node: null });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // ── Responsive canvas size
   useEffect(() => {
@@ -437,6 +438,7 @@ export const NetworkGraph = () => {
 
   // ── SSE stream AI evidence for selected node
   const streamAiEvidence = useCallback(async (node: GraphNode) => {
+    setIsSidebarOpen(true);
     setAiHistory(prev => [...prev, {
       nodeId: node.id,
       label: node.label,
@@ -670,7 +672,7 @@ export const NetworkGraph = () => {
           </div>
         </div>
 
-        <div className="flex flex-1 gap-4 overflow-hidden mb-4 min-h-0">
+        <div className="flex flex-col md:flex-row flex-1 gap-4 overflow-hidden mb-4 min-h-0">
           {/* ── 3D Graph Canvas */}
           <div className="flex-1 bg-gray-950 rounded-xl border border-gray-800 relative overflow-hidden" ref={containerRef}>
             {/* Legend */}
@@ -778,11 +780,19 @@ export const NetworkGraph = () => {
           </div>
 
           {/* ── AI Evidence Sidebar */}
-          <div className="w-96 bg-gray-900 rounded-xl border border-gray-800 flex flex-col overflow-hidden min-h-0">
-            <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-2">
-              <Search className="w-4 h-4 text-purple-400" />
-              <h2 className="text-sm font-bold text-white">AI Intelligence Panel</h2>
-            </div>
+          {isSidebarOpen && (
+            <div className="w-full md:w-96 flex-shrink-0 bg-gray-900 rounded-xl border border-gray-800 flex flex-col overflow-hidden min-h-0 relative">
+              <button 
+                onClick={() => setIsSidebarOpen(false)}
+                className="absolute top-3 right-3 text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-full w-6 h-6 flex items-center justify-center transition z-10"
+                title="Close AI Assistant"
+              >
+                ✕
+              </button>
+              <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-2 pr-10">
+                <Search className="w-4 h-4 text-purple-400" />
+                <h2 className="text-sm font-bold text-white">AI Intelligence Panel</h2>
+              </div>
 
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gray-950/20">
               <div className="space-y-6">
@@ -871,9 +881,10 @@ export const NetworkGraph = () => {
                 )}
                 <div ref={chatEndRef} className="h-1" />
               </div>
+            </div>
           </div>
+          )}
         </div>
-      </div>
 
       {/* ── 2D Local Graph Modal ── */}
       {modalGraphData && modalNode && (
