@@ -26,7 +26,7 @@ export const ViewCaseModal = ({ caseData, onClose }: ViewCaseModalProps) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b bg-gray-50 rounded-t-xl">
           <div className="flex items-center gap-3">
@@ -34,8 +34,8 @@ export const ViewCaseModal = ({ caseData, onClose }: ViewCaseModalProps) => {
               <FileText className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Case Details</h2>
-              <p className="text-sm text-gray-500">#{c.caseNumber}</p>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">Case Details</h2>
+              <p className="text-sm text-gray-500 dark:text-slate-500">#{c.caseNumber}</p>
             </div>
           </div>
           <button
@@ -50,7 +50,7 @@ export const ViewCaseModal = ({ caseData, onClose }: ViewCaseModalProps) => {
         <div className="p-6 space-y-6">
           {/* Title and Badges */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{c.title}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{c.title}</h3>
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={`px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -94,11 +94,11 @@ export const ViewCaseModal = ({ caseData, onClose }: ViewCaseModalProps) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Assigned Officer
                 </p>
-                <p className="text-sm font-medium text-gray-900 mt-0.5">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
                   {c.assignedOfficer?.fullName || 'Unassigned'}
                 </p>
                 {c.assignedOfficer?.badgeNumber && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-slate-500">
                     Badge: {c.assignedOfficer.badgeNumber}
                   </p>
                 )}
@@ -109,7 +109,7 @@ export const ViewCaseModal = ({ caseData, onClose }: ViewCaseModalProps) => {
               <Building className="w-4 h-4 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</p>
-                <p className="text-sm font-medium text-gray-900 mt-0.5">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
                   {c.unit || 'N/A'}
                 </p>
               </div>
@@ -121,7 +121,7 @@ export const ViewCaseModal = ({ caseData, onClose }: ViewCaseModalProps) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Supervisor
                 </p>
-                <p className="text-sm font-medium text-gray-900 mt-0.5">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
                   {c.supervisor?.fullName || 'N/A'}
                 </p>
               </div>
@@ -133,7 +133,7 @@ export const ViewCaseModal = ({ caseData, onClose }: ViewCaseModalProps) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Created
                 </p>
-                <p className="text-sm font-medium text-gray-900 mt-0.5">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
                   {new Date(c.created_at).toLocaleDateString('en-IN', {
                     day: '2-digit',
                     month: 'short',
@@ -150,7 +150,7 @@ export const ViewCaseModal = ({ caseData, onClose }: ViewCaseModalProps) => {
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Last Updated
                   </p>
-                  <p className="text-sm font-medium text-gray-900 mt-0.5">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
                     {new Date(c.updated_at).toLocaleDateString('en-IN', {
                       day: '2-digit',
                       month: 'short',

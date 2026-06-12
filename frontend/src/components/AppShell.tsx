@@ -8,6 +8,7 @@ import {
   MessageSquareText,
   Users,
   ArrowLeft,
+  Fingerprint,
 } from 'lucide-react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -82,8 +83,8 @@ export const AppShell = () => {
       return (
         <div
           key={item.label}
-          className={`flex items-center gap-3 rounded-lg py-2 text-sm text-gray-400 ${sidebarOpen ? 'px-3' : 'justify-center px-0'}`}
-          title={!sidebarOpen ? item.label : undefined}
+          className={`flex items-center gap-3 rounded-xl py-2.5 text-sm text-gray-400 dark:text-slate-600 cursor-not-allowed ${sidebarOpen ? 'px-3' : 'justify-center px-0'}`}
+          title={!sidebarOpen ? `${item.label} (open a case first)` : undefined}
         >
           <Icon className="h-5 w-5 flex-shrink-0" />
           {sidebarOpen && <span>{item.label}</span>}
@@ -98,10 +99,10 @@ export const AppShell = () => {
         onClick={() => {
           if (window.innerWidth < 1024) setSidebarOpen(false);
         }}
-        className={`flex items-center gap-3 rounded-lg py-2 text-sm transition ${
+        className={`flex items-center gap-3 rounded-xl py-2.5 text-sm font-medium transition-all duration-200 ${
           isActive
-            ? 'bg-gray-900 text-white'
-            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+            : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800/80 hover:text-gray-900 dark:hover:text-white'
         } ${sidebarOpen ? 'px-3' : 'justify-center px-0'}`}
         title={!sidebarOpen ? item.label : undefined}
       >
@@ -112,23 +113,24 @@ export const AppShell = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-transparent">
       <ChangePasswordModal />
       <Navbar onMenuToggle={() => setSidebarOpen((open) => !open)} />
 
       <div className="flex">
         <aside
-          className={`fixed inset-y-0 left-0 top-16 z-30 border-r border-gray-200 bg-white transition-all duration-300 ${
+          className={`fixed inset-y-0 left-0 top-16 z-30 border-r border-gray-200 dark:border-white/10 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl transition-all duration-300 ${
             sidebarOpen ? 'w-64 translate-x-0' : 'w-16 -translate-x-full lg:translate-x-0'
           }`}
         >
           <div className="flex h-full flex-col">
-            <div className={`flex items-center border-b border-gray-100 py-3 ${sidebarOpen ? 'px-4 justify-between' : 'justify-center'}`}>
-              {sidebarOpen && <span className="text-sm font-medium text-gray-900">Navigation</span>}
+            {/* Sidebar toggle header */}
+            <div className={`flex items-center border-b border-gray-100 dark:border-white/10 py-3 ${sidebarOpen ? 'px-4 justify-between' : 'justify-center'}`}>
+              {sidebarOpen && <span className="text-sm font-semibold text-gray-900 dark:text-white">Navigation</span>}
               <button
                 type="button"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="hidden rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 lg:block"
+                className="hidden rounded-xl p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white lg:block"
                 title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
               >
                 {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4 rotate-180" />}
@@ -136,52 +138,67 @@ export const AppShell = () => {
               <button
                 type="button"
                 onClick={() => setSidebarOpen(false)}
-                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 lg:hidden"
+                className="rounded-xl p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white lg:hidden"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
             </div>
 
-            <nav className={`flex-1 space-y-2 py-4 ${sidebarOpen ? 'px-3' : 'px-2'}`}>
+            {/* Back button — distinct from nav items */}
+            <div className={`border-b border-gray-100 dark:border-white/10 py-2 ${sidebarOpen ? 'px-3' : 'px-2'}`}>
               <button
                 onClick={() => navigate(-1)}
-                className={`w-full flex items-center gap-3 rounded-lg py-2 text-sm transition text-gray-600 hover:bg-gray-100 hover:text-gray-900 ${sidebarOpen ? 'px-3' : 'justify-center px-0'}`}
+                className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm transition-all duration-200 text-gray-500 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-700 dark:hover:text-slate-300 ${sidebarOpen ? 'px-3' : 'justify-center px-0'}`}
                 title="Go back"
               >
-                <ArrowLeft className="h-5 w-5 flex-shrink-0" />
-                {sidebarOpen && <span>Back</span>}
+                <ArrowLeft className="h-4 w-4 flex-shrink-0" />
+                {sidebarOpen && <span className="text-xs font-medium">Back</span>}
               </button>
+            </div>
+
+            {/* Nav items */}
+            <nav className={`flex-1 space-y-1 py-4 ${sidebarOpen ? 'px-3' : 'px-2'}`}>
               {navItems.map(renderNavItem)}
             </nav>
 
+            {/* Case context footer */}
             {user?.role !== 'admin' && (
-              <div className={`border-t border-gray-100 py-4 ${sidebarOpen ? 'px-4' : 'px-2 flex justify-center'}`}>
+              <div className={`border-t border-gray-100 dark:border-white/10 py-4 ${sidebarOpen ? 'px-4' : 'px-2 flex justify-center'}`}>
                 {sidebarOpen ? (
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/50 p-3">
                     {hasCaseContext ? (
                       <>
-                        <p className="text-xs uppercase tracking-wide text-gray-500">Active case</p>
-                        <p className="mt-1 text-sm font-medium text-gray-900">Case #{caseId}</p>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                          <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-slate-500">Active case</p>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">Case #{caseId}</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-slate-500">
                           Query, bookmark, and report links follow the open case context.
                         </p>
                       </>
                     ) : (
                       <>
-                        <p className="text-xs uppercase tracking-wide text-gray-500">Case context</p>
-                        <p className="mt-1 text-sm font-medium text-gray-900">Open a case first</p>
-                        <p className="mt-1 text-xs text-gray-500">
-                          Queries, bookmarks, and reports unlock after you open a case from the cases list.
+                        <div className="flex items-center gap-2 mb-1">
+                          <Fingerprint className="w-3.5 h-3.5 text-gray-400 dark:text-slate-600" />
+                          <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-slate-500">No case open</p>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-slate-500">
+                          Open a case from the list to unlock queries, bookmarks, and reports.
                         </p>
                       </>
                     )}
                   </div>
                 ) : (
                   <div 
-                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-500"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/50"
                     title={hasCaseContext ? `Active Case #${caseId}` : 'No case selected'}
                   >
-                    <FolderOpen className="h-5 w-5" />
+                    {hasCaseContext ? (
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+                    ) : (
+                      <Fingerprint className="h-4 w-4 text-gray-400 dark:text-slate-600" />
+                    )}
                   </div>
                 )}
               </div>
@@ -193,7 +210,7 @@ export const AppShell = () => {
           <button
             type="button"
             aria-label="Close navigation"
-            className="fixed inset-0 top-16 z-20 bg-gray-900/20 lg:hidden"
+            className="fixed inset-0 top-16 z-20 bg-gray-900/20 dark:bg-white/5 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}

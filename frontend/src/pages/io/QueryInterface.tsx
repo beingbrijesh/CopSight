@@ -103,12 +103,12 @@ export const QueryInterface = () => {
   return (
     <div className={`mx-auto grid max-w-7xl gap-6 transition-all duration-300 ${rightPanelOpen ? 'xl:grid-cols-[minmax(0,1fr)_360px]' : 'xl:grid-cols-[minmax(0,1fr)_64px]'}`}>
       {/* ── Main chat panel ── */}
-      <section className="flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden" style={{ height: 'calc(100vh - 8rem)', minHeight: '36rem' }}>
+      <section className="flex flex-col rounded-2xl border border-gray-200 dark:border-white/10 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl shadow-sm dark:shadow-none overflow-hidden" style={{ height: 'calc(100vh - 8rem)', minHeight: '36rem' }}>
         {/* Header - Only show when no messages */}
         {messages.length === 0 && (
-          <div className="flex-shrink-0 border-b border-gray-200 px-6 py-5">
+          <div className="flex-shrink-0 border-b border-gray-200 dark:border-white/10 px-6 py-5">
             <div>
-              <p className="mt-1 text-sm text-gray-500 font-medium">
+              <p className="mt-1 text-sm text-gray-500 dark:text-slate-500 font-medium">
                 Ask follow-up questions naturally and keep the full case conversation in one place.
               </p>
             </div>
@@ -121,7 +121,7 @@ export const QueryInterface = () => {
                   type="button"
                   onClick={() => setQuery(example)}
                   disabled={loading}
-                  className="whitespace-nowrap rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="whitespace-nowrap rounded-full border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 text-sm text-gray-600 dark:text-slate-400 transition hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {example}
                 </button>
@@ -133,10 +133,10 @@ export const QueryInterface = () => {
         {/* ── Messages area — scrolls internally ── */}
         <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 custom-scrollbar">
           {messages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 px-6 text-center">
-              <Sparkles className="mb-4 h-10 w-10 text-gray-300" />
-              <h2 className="text-lg font-semibold text-gray-900">Start the conversation</h2>
-              <p className="mt-2 max-w-md text-sm text-gray-500">
+            <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-blue-200 dark:border-blue-500/30 bg-gradient-to-br from-blue-50 dark:from-blue-500/10 to-indigo-50 dark:to-indigo-500/10 px-6 text-center shadow-sm">
+              <Sparkles className="mb-4 h-12 w-12 text-blue-500 dark:text-blue-400" />
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Start the conversation</h2>
+              <p className="mt-2 max-w-md text-sm text-gray-600 dark:text-slate-400">
                 Ask about communications, entities, timelines, or suspicious patterns. Each query
                 stays in the chat until you clear it.
               </p>
@@ -154,8 +154,8 @@ export const QueryInterface = () => {
                     <div
                       className={`rounded-2xl px-4 py-3 shadow-sm w-full ${
                         message.role === 'user'
-                          ? 'bg-gray-900 text-white'
-                          : 'border border-gray-200 bg-white text-gray-800'
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                          : 'border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-200'
                       }`}
                     >
                       {message.role === 'user' ? (
@@ -166,7 +166,7 @@ export const QueryInterface = () => {
                         </div>
                       )}
                     </div>
-                    <div className="mt-2 flex items-center gap-2 px-1 text-xs text-gray-400">
+                    <div className="mt-2 flex items-center gap-2 px-1 text-xs text-gray-400 dark:text-slate-500">
                       <span>{message.role === 'user' ? 'You' : 'CopSight AI'}</span>
                       <span>•</span>
                       <span>{formatTimestamp(message.timestamp)}</span>
@@ -177,8 +177,8 @@ export const QueryInterface = () => {
 
               {loading && (
                 <div className="flex justify-start">
-                  <div className="max-w-sm rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <div className="max-w-sm rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-800 px-4 py-3 shadow-sm">
+                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>CopSight is analyzing the case...</span>
                     </div>
@@ -191,20 +191,20 @@ export const QueryInterface = () => {
         </div>
 
         {/* ── Input bar — pinned to bottom ── */}
-        <div className="flex-shrink-0 border-t border-gray-200 px-6 py-4">
+        <div className="flex-shrink-0 border-t border-gray-200 dark:border-white/10 px-6 py-4">
           <form onSubmit={handleSubmit} className="flex gap-3">
             <input
               type="text"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Ask about this case..."
-              className="flex-1 rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-500"
+              className="flex-1 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 px-4 py-3 text-sm text-gray-900 dark:text-white outline-none transition focus:border-blue-500 dark:focus:border-blue-500 placeholder:text-gray-400 dark:placeholder:text-slate-500"
               disabled={loading}
             />
             <button
               type="submit"
               disabled={loading || !query.trim()}
-              className="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-medium text-white transition hover:shadow-lg hover:shadow-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Send
@@ -215,16 +215,16 @@ export const QueryInterface = () => {
 
       {/* ── Right side panel — independently scrollable ── */}
       <aside
-        className={`flex flex-col gap-4 overflow-hidden transition-all duration-300 border border-gray-200 rounded-lg bg-white shadow-sm ${rightPanelOpen ? 'p-4' : 'items-center py-4'}`}
+        className={`flex flex-col gap-4 overflow-hidden transition-all duration-300 border border-gray-200 dark:border-white/10 rounded-2xl glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl shadow-sm dark:shadow-none ${rightPanelOpen ? 'p-4' : 'items-center py-4'}`}
         style={{ maxHeight: 'calc(100vh - 8rem)' }}
       >
         {rightPanelOpen ? (
           <div className="flex h-full flex-col">
             {/* Header */}
             <div className="flex w-full items-center justify-between border-b border-gray-100 pb-3 mb-4">
-              <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+              <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 {activeRightTab === 'history' ? (
-                  <><Clock3 className="h-4 w-4 text-gray-500" /> Query History</>
+                  <><Clock3 className="h-4 w-4 text-gray-500 dark:text-slate-400" /> Query History</>
                 ) : (
                   <><Sparkles className="h-4 w-4 text-blue-500" /> Latest Response</>
                 )}
@@ -234,7 +234,7 @@ export const QueryInterface = () => {
                 <button
                   type="button"
                   onClick={() => clearConversation(caseKey)}
-                  className="rounded-lg p-2 text-red-500 hover:bg-red-50 transition"
+                  className="rounded-lg p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
                   title="Clear chat"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -242,7 +242,7 @@ export const QueryInterface = () => {
                 <button
                   type="button"
                   onClick={() => setActiveRightTab(null)}
-                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 transition"
+                  className="rounded-lg p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
                   title="Collapse sidebar"
                 >
                   <ChevronRight className="h-5 w-5" />
@@ -259,16 +259,16 @@ export const QueryInterface = () => {
               {activeRightTab === 'response' && (
                 latestResult ? (
                   <div className="flex flex-col gap-4">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-slate-500">
                       Confidence {Math.round((latestResult.confidence || 0) * 100)}% • {latestResult.evidence.length} evidence items
                     </p>
                     <QueryResults results={latestResult} />
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-8 text-center mt-4">
-                    <Clock3 className="mx-auto h-8 w-8 text-gray-300 mb-3" />
-                    <h3 className="text-sm font-semibold text-gray-700">Ready for results</h3>
-                    <p className="mt-1 text-xs text-gray-500">
+                  <div className="rounded-2xl border border-dashed border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-800/30 p-8 text-center mt-4">
+                    <Clock3 className="mx-auto h-8 w-8 text-gray-400 dark:text-slate-500 mb-3" />
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Ready for results</h3>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
                       Submit a query to see the detailed response and evidence.
                     </p>
                   </div>
@@ -281,17 +281,17 @@ export const QueryInterface = () => {
           <div className="flex flex-col items-center gap-4 w-full">
             <button
               onClick={() => setActiveRightTab(latestResult ? 'response' : 'history')}
-              className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition mb-2"
+              className="rounded-lg p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white transition mb-2"
               title="Expand sidebar"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
             
-            <div className="h-px w-8 bg-gray-200 my-1" />
+            <div className="h-px w-8 bg-gray-200 dark:bg-slate-700 my-1" />
 
             <button
               onClick={() => clearConversation(caseKey)}
-              className="group relative flex h-10 w-10 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-300"
+              className="group relative flex h-10 w-10 items-center justify-center rounded-lg text-red-500 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-300"
             >
               <Trash2 className="h-5 w-5" />
               <span className="absolute right-full mr-2 hidden whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white group-hover:block z-50">
@@ -301,7 +301,7 @@ export const QueryInterface = () => {
 
             <button
               onClick={() => setActiveRightTab('history')}
-              className="group relative flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-300"
+              className="group relative flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 dark:text-slate-400 transition hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-300"
             >
               <Clock3 className="h-5 w-5" />
               <span className="absolute right-full mr-2 hidden whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white group-hover:block z-50">
@@ -312,7 +312,7 @@ export const QueryInterface = () => {
             {latestResult && (
               <button
                 onClick={() => setActiveRightTab('response')}
-                className="group relative flex h-10 w-10 items-center justify-center rounded-lg text-blue-600 transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                className="group relative flex h-10 w-10 items-center justify-center rounded-lg text-blue-600 dark:text-blue-400 transition hover:bg-blue-50 dark:hover:bg-blue-500/10 focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 <Sparkles className="h-5 w-5" />
                 <span className="absolute right-full mr-2 hidden whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white group-hover:block z-50">

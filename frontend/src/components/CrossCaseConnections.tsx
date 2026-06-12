@@ -95,11 +95,11 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
 
   const getStrengthColor = (strength: string) => {
     switch (strength) {
-      case 'critical': return 'text-red-700 bg-red-100 border-red-200';
-      case 'strong': return 'text-orange-700 bg-orange-100 border-orange-200';
-      case 'medium': return 'text-yellow-700 bg-yellow-100 border-yellow-200';
-      case 'weak': return 'text-blue-700 bg-blue-100 border-blue-200';
-      default: return 'text-gray-700 bg-gray-100 border-gray-200';
+      case 'critical': return 'text-red-700 bg-red-100 dark:bg-red-900/40 border-red-200 dark:border-red-500/30';
+      case 'strong': return 'text-orange-700 bg-orange-100 dark:bg-orange-900/40 border-orange-200 dark:border-orange-500/30';
+      case 'medium': return 'text-yellow-700 bg-yellow-100 dark:bg-yellow-900/40 border-yellow-200 dark:border-yellow-500/30';
+      case 'weak': return 'text-blue-700 bg-blue-100 dark:bg-blue-900/40 border-blue-200 dark:border-blue-500/30';
+      default: return 'text-gray-700 dark:text-slate-200 bg-gray-100 dark:bg-slate-700/50 border-gray-200 dark:border-white/10';
     }
   };
 
@@ -115,28 +115,28 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-gray-200 dark:border-white/10 p-6">
         <div className="flex flex-col items-center justify-center py-12">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-          <span className="mt-4 text-gray-500 font-medium">Scanning for cross-case links...</span>
+          <span className="mt-4 text-gray-500 dark:text-slate-400 font-medium">Scanning for cross-case links...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[500px] flex flex-col">
-      <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex-shrink-0">
+    <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-gray-200 dark:border-white/10 overflow-hidden h-[500px] flex flex-col">
+      <div className="px-6 py-5 border-b border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-100 rounded-lg">
+            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg">
               <Network className="w-5 h-5 text-indigo-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Cross-Case Intelligence
               </h3>
-              <p className="text-xs text-gray-500">Detecting relationships across the repository</p>
+              <p className="text-xs text-gray-500 dark:text-slate-500">Detecting relationships across the repository</p>
             </div>
             <span className="ml-2 bg-indigo-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
               {connections.length}
@@ -148,7 +148,7 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
               disabled={analyzing}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm ${
                 analyzing 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                ? 'bg-gray-100 dark:bg-slate-700/50 text-gray-400 dark:text-slate-500 cursor-not-allowed' 
                 : 'bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95'
               }`}
             >
@@ -157,7 +157,7 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
             </button>
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 dark:border-white/10 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:bg-white/5 transition-all"
             >
               <Eye className="w-4 h-4" />
               {showDetails ? 'Condensed View' : 'Full Reports'}
@@ -168,7 +168,7 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
 
       <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700">
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center gap-3 text-red-700">
             <AlertTriangle className="w-5 h-5 flex-shrink-0" />
             <p className="text-sm font-medium">{error}</p>
           </div>
@@ -176,18 +176,18 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
 
 
         {connections.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-            <Network className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h4 className="text-xl font-bold text-gray-900 mb-2">
+          <div className="text-center py-12 bg-gray-50 dark:bg-white/5 rounded-xl border-2 border-dashed border-gray-200 dark:border-white/10">
+            <Network className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
+            <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
               No Latent Connections Found
             </h4>
-            <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+            <p className="text-gray-500 dark:text-slate-400 mb-6 max-w-sm mx-auto">
               Our AI engine hasn't detected any significant overlaps with other cases in the current repository.
             </p>
             <button
               onClick={handleAnalyze}
               disabled={analyzing}
-              className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 disabled:opacity-50"
+              className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50 disabled:opacity-50"
             >
               {analyzing ? 'Processing Dataset...' : 'Trigger Automated Analysis'}
             </button>
@@ -200,11 +200,11 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
                 className={`group border rounded-xl overflow-hidden transition-all duration-300 ${
                   expandedIndex === index 
                   ? 'border-indigo-300 ring-2 ring-indigo-50 shadow-md' 
-                  : 'border-gray-200 hover:border-indigo-200 hover:shadow-sm'
+                  : 'border-gray-200 dark:border-white/10 hover:border-indigo-200 dark:border-indigo-500/30 hover:shadow-sm'
                 }`}
               >
                 <div 
-                  className="p-5 cursor-pointer bg-white"
+                  className="p-5 cursor-pointer glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl"
                   onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
                 >
                   <div className="flex items-start justify-between">
@@ -219,21 +219,21 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
                         </div>
                       </div>
 
-                      <h4 className="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                      <h4 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 transition-colors">
                         Case {connection.caseNumber}: {connection.title}
                       </h4>
 
                       <div className="mt-4 flex flex-wrap items-center gap-y-2 gap-x-6 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                          <Link className="w-4 h-4 text-gray-400" />
-                          <span className="font-semibold text-gray-900">{connection.linkType}</span>
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-slate-300 bg-gray-50 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-white/10">
+                          <Link className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+                          <span className="font-semibold text-gray-900 dark:text-white">{connection.linkType}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Users className="w-4 h-4 text-gray-400" />
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400">
+                          <Users className="w-4 h-4 text-gray-400 dark:text-slate-500" />
                           <span>Linked via <strong>{connection.entityType}</strong></span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="w-24 h-2 bg-gray-100 dark:bg-slate-700/50 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-indigo-500 rounded-full" 
                               style={{ width: `${connection.confidence * 100}%` }}
@@ -244,7 +244,7 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
                       </div>
                     </div>
                     <div className="ml-4">
-                      <div className={`p-2 rounded-lg transition-colors ${expandedIndex === index ? 'bg-indigo-50 text-indigo-600' : 'text-gray-400 group-hover:bg-gray-50'}`}>
+                      <div className={`p-2 rounded-lg transition-colors ${expandedIndex === index ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'text-gray-400 dark:text-slate-500 group-hover:bg-gray-50 dark:bg-white/5'}`}>
                         <Eye className="w-5 h-5" />
                       </div>
                     </div>
@@ -252,15 +252,15 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
                 </div>
 
                 {(expandedIndex === index || showDetails) && (
-                  <div className="border-t border-indigo-100 bg-indigo-50/20 p-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="border-t border-indigo-100 dark:border-indigo-500/20 bg-indigo-50 dark:bg-indigo-900/20 p-5 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       <div className="lg:col-span-2 space-y-4">
-                        <div className="bg-white rounded-xl p-5 border border-indigo-200 shadow-sm">
+                        <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl p-5 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
                           <div className="flex items-center gap-2 mb-4 text-indigo-700">
                             <Network className="w-5 h-5" />
                             <h5 className="font-bold">AI Detailed Forensic Analysis</h5>
                           </div>
-                          <p className="text-gray-700 leading-relaxed text-sm whitespace-pre-wrap">
+                          <p className="text-gray-700 dark:text-slate-200 leading-relaxed text-sm whitespace-pre-wrap">
                             {connection.metadata?.aiAnalysis?.analysis || 
                              `This connection was established based on the shared ${connection.entityType}: "${connection.entityValue}". 
                              The high overlap suggests potential involvement in the same investigative thread.`}
@@ -268,15 +268,15 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
                         </div>
                         
                         {connection.metadata?.aiAnalysis?.citations && connection.metadata.aiAnalysis.citations.length > 0 && (
-                          <div className="bg-white rounded-xl p-5 border border-indigo-100">
-                            <h5 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                          <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl p-5 border border-indigo-100 dark:border-indigo-500/20">
+                            <h5 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                               <span className="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
                               Ground of Evidences
                             </h5>
                             <ul className="space-y-2">
                               {connection.metadata.aiAnalysis.citations.map((cite, i) => (
-                                <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
-                                  <span className="flex-shrink-0 w-5 h-5 bg-indigo-50 rounded text-indigo-600 flex items-center justify-center font-bold text-[10px]">
+                                <li key={i} className="flex items-start gap-3 text-sm text-gray-600 dark:text-slate-400">
+                                  <span className="flex-shrink-0 w-5 h-5 bg-indigo-50 dark:bg-indigo-900/20 rounded text-indigo-600 flex items-center justify-center font-bold text-[10px]">
                                     {i + 1}
                                   </span>
                                   {cite}
@@ -288,29 +288,29 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
                       </div>
 
                       <div className="space-y-4">
-                        <div className="bg-white rounded-xl p-5 border border-gray-200">
-                          <h5 className="font-bold text-gray-900 mb-4">Connection Details</h5>
+                        <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl p-5 border border-gray-200 dark:border-white/10">
+                          <h5 className="font-bold text-gray-900 dark:text-white mb-4">Connection Details</h5>
                           <div className="space-y-3 text-sm">
                             <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                              <span className="text-gray-500">Shared Entity</span>
-                              <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-indigo-600 font-bold">
+                              <span className="text-gray-500 dark:text-slate-500">Shared Entity</span>
+                              <span className="font-mono bg-gray-100 dark:bg-slate-700/50 px-2 py-0.5 rounded text-indigo-600 font-bold">
                                 {connection.entityValue}
                               </span>
                             </div>
                             <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                              <span className="text-gray-500">Match Type</span>
-                              <span className="font-medium text-gray-900">{connection.metadata?.matchType || 'Direct Match'}</span>
+                              <span className="text-gray-500 dark:text-slate-500">Match Type</span>
+                              <span className="font-medium text-gray-900 dark:text-white">{connection.metadata?.matchType || 'Direct Match'}</span>
                             </div>
                             {connection.metadata?.frequency && (
                               <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                                <span className="text-gray-500">Interaction Frequency</span>
+                                <span className="text-gray-500 dark:text-slate-500">Interaction Frequency</span>
                                 <span className="font-bold text-indigo-600">{connection.metadata.frequency} events</span>
                               </div>
                             )}
                             {connection.metadata?.lastSeen && (
                               <div className="flex justify-between items-center py-2">
-                                <span className="text-gray-500">Last Interaction</span>
-                                <span className="font-medium text-gray-900">
+                                <span className="text-gray-500 dark:text-slate-500">Last Interaction</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
                                   {new Date(connection.metadata.lastSeen).toLocaleDateString()}
                                 </span>
                               </div>
@@ -319,9 +319,9 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
                         </div>
 
                         <div className={`rounded-xl p-5 border shadow-sm ${
-                          connection.metadata?.aiAnalysis?.risk_level === 'critical' ? 'bg-red-50 border-red-100' :
-                          connection.metadata?.aiAnalysis?.risk_level === 'high' ? 'bg-orange-50 border-orange-100' :
-                          'bg-indigo-50 border-indigo-100'
+                          connection.metadata?.aiAnalysis?.risk_level === 'critical' ? 'bg-red-50 dark:bg-red-900/20 border-red-100' :
+                          connection.metadata?.aiAnalysis?.risk_level === 'high' ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-100' :
+                          'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-500/20'
                         }`}>
                           <h5 className={`font-bold mb-2 flex items-center gap-2 ${
                             connection.metadata?.aiAnalysis?.risk_level === 'critical' ? 'text-red-700' :
@@ -348,8 +348,8 @@ export const CrossCaseConnections = ({ caseId }: CrossCaseConnectionsProps) => {
           </div>
         )}
 
-        <div className="mt-8 pt-6 border-t border-gray-100">
-          <div className="flex flex-wrap items-center justify-between gap-4 text-xs font-semibold text-gray-400 uppercase tracking-tighter">
+        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-white/10">
+          <div className="flex flex-wrap items-center justify-between gap-4 text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-tighter">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
               Live Link Database Active

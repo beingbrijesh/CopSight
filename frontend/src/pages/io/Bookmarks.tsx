@@ -64,13 +64,13 @@ export const Bookmarks = () => {
       <div className="mx-auto max-w-7xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-gray-600 font-medium">
+            <p className="text-gray-600 dark:text-slate-400 font-medium">
               {filteredBookmarks.length} bookmarks saved
             </p>
           </div>
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition shadow-sm"
           >
             <Download className="w-4 h-4" />
             Export All
@@ -78,22 +78,22 @@ export const Bookmarks = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 p-4 mb-6">
           <div className="flex items-center gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-500" />
               <input
                 type="text"
                 placeholder="Search bookmarks..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 dark:placeholder:text-slate-500"
               />
             </div>
             <select
               value={tagFilter}
               onChange={(e) => setTagFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">All Tags</option>
               {allTags.map(tag => (
@@ -105,52 +105,52 @@ export const Bookmarks = () => {
 
         {/* Bookmarks List */}
         {loading ? (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
+          <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-600 mt-4">Loading bookmarks...</p>
+            <p className="text-gray-600 dark:text-slate-400 mt-4">Loading bookmarks...</p>
           </div>
         ) : filteredBookmarks.length > 0 ? (
           <div className="space-y-4">
             {filteredBookmarks.map((bookmark) => (
-              <div key={bookmark.id} className="bg-white rounded-lg shadow hover:shadow-md transition p-6">
+              <div key={bookmark.id} className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 hover:shadow-md dark:hover:shadow-none transition p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-start gap-3">
                     <Star className="w-5 h-5 text-yellow-500 mt-1 flex-shrink-0" fill="currentColor" />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium text-gray-700 capitalize">
+                        <span className="text-sm font-medium text-gray-700 dark:text-slate-300 capitalize">
                           {bookmark.evidenceType || 'Evidence'}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-slate-500">
                           {new Date(bookmark.createdAt || bookmark.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       
                       {bookmark.content && (
-                        <p className="text-gray-800 mb-3">{bookmark.content}</p>
+                        <p className="text-gray-800 dark:text-slate-200 mb-3">{bookmark.content}</p>
                       )}
 
                       {bookmark.notes && (
-                        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-3">
-                          <p className="text-sm text-gray-700">
+                        <div className="bg-yellow-50 dark:bg-yellow-500/10 border-l-4 border-yellow-400 dark:border-yellow-500 p-3 mb-3">
+                          <p className="text-sm text-gray-700 dark:text-slate-300">
                             <span className="font-medium">Note:</span> {bookmark.notes}
                           </p>
                         </div>
                       )}
 
                       {/* Citation Block */}
-                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3">
+                      <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-white/10 rounded-xl p-3 mb-3">
                         <div className="flex items-center gap-1 mb-1">
-                          <FileText className="w-3 h-3 text-slate-400" />
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Citation</span>
+                          <FileText className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Citation</span>
                         </div>
-                        <div className="text-xs text-slate-600 space-y-0.5">
+                        <div className="text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
                           {bookmark.source && (
-                            <div>Source: <span className="font-medium text-slate-800">{bookmark.source}</span></div>
+                            <div>Source: <span className="font-medium text-slate-800 dark:text-slate-200">{bookmark.source}</span></div>
                           )}
-                          <div>Case: <span className="font-medium text-slate-800">#{caseId}</span></div>
+                          <div>Case: <span className="font-medium text-slate-800 dark:text-slate-200">#{caseId}</span></div>
                           {bookmark.evidenceId && (
-                            <div>Evidence ID: <span className="font-mono text-slate-800">{bookmark.evidenceId}</span></div>
+                            <div>Evidence ID: <span className="font-mono text-slate-800 dark:text-slate-200">{bookmark.evidenceId}</span></div>
                           )}
                         </div>
                       </div>
@@ -181,7 +181,7 @@ export const Bookmarks = () => {
                           {bookmark.tags.map((tag: string, idx: number) => (
                             <span
                               key={idx}
-                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                              className="px-2 py-1 bg-blue-100 dark:bg-blue-500/10 text-blue-800 dark:text-blue-300 text-xs rounded-full"
                             >
                               {tag}
                             </span>
@@ -190,7 +190,7 @@ export const Bookmarks = () => {
                       )}
 
                       {bookmark.metadata && (
-                        <div className="mt-3 text-xs text-gray-500 space-y-1">
+                        <div className="mt-3 text-xs text-gray-500 dark:text-slate-500 space-y-1">
                           {bookmark.metadata.phoneNumber && (
                             <div>Phone: {bookmark.metadata.phoneNumber}</div>
                           )}
@@ -207,7 +207,7 @@ export const Bookmarks = () => {
 
                   <button
                     onClick={() => handleDelete(bookmark.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                    className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition"
                     title="Delete bookmark"
                   >
                     <Trash2 className="w-5 h-5" />
@@ -217,12 +217,12 @@ export const Bookmarks = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <Bookmark className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-blue-200 dark:border-blue-500/30 bg-gradient-to-br from-blue-50 dark:from-blue-500/10 to-indigo-50 dark:to-indigo-500/10 p-16 text-center shadow-sm">
+            <Bookmark className="w-16 h-16 text-blue-400 dark:text-blue-500 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               No bookmarks yet
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-slate-400 max-w-sm">
               {searchTerm || tagFilter
                 ? 'No bookmarks match your filters'
                 : 'Bookmark important evidence while analyzing the case'}

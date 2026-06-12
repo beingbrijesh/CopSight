@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { FileText, Download, Clock, CheckCircle, Settings } from 'lucide-react';
+import { FileBarChart, Download, Clock, CheckCircle2, SlidersHorizontal, Loader2 } from 'lucide-react';
 import { api } from '../../lib/api';
 
 export const ReportGenerator = () => {
@@ -26,15 +26,12 @@ export const ReportGenerator = () => {
 
   const loadData = async () => {
     try {
-      // Load case data
       const caseResponse = await api.get(`/cases/${caseId}`);
       setCaseData(caseResponse.data.data?.case);
 
-      // Load templates
       const templatesResponse = await api.get('/reports/templates');
       setTemplates(templatesResponse.data.data?.templates || []);
 
-      // Load report history
       const historyResponse = await api.get(`/reports/case/${caseId}/history`);
       setReportHistory(historyResponse.data.data?.reports || []);
     } catch (error) {
@@ -51,7 +48,6 @@ export const ReportGenerator = () => {
         { responseType: 'blob' }
       );
 
-      // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -60,7 +56,6 @@ export const ReportGenerator = () => {
       link.click();
       link.remove();
 
-      // Reload history
       loadData();
     } catch (error) {
       console.error('Failed to generate report:', error);
@@ -85,182 +80,142 @@ export const ReportGenerator = () => {
     }
   };
 
+  const sectionOptions = [
+    { key: 'includeEvidence', label: 'Evidence Summary', desc: 'Include extracted evidence and data sources', checked: options.includeEvidence },
+    { key: 'includeTimeline', label: 'Event Timeline', desc: 'Chronological list of all events', checked: options.includeTimeline },
+    { key: 'includeQueries', label: 'Analysis Queries', desc: 'Include executed queries and results', checked: options.includeQueries },
+    { key: 'includeBookmarks', label: 'Bookmarked Evidence', desc: 'Include all bookmarked items with notes', checked: options.includeBookmarks },
+    { key: 'includeGraph', label: 'Network Graph', desc: 'Include communication network visualization', checked: options.includeGraph },
+  ];
+
   return (
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-6">
-          <p className="text-gray-600 font-medium">
-            Create a comprehensive PDF report for case {caseData?.caseNumber}
-          </p>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <div>
+        <p className="text-sm text-gray-500 dark:text-slate-500 font-medium">
+          Create a comprehensive PDF report for case {caseData?.caseNumber}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Report Configuration */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Template Selection */}
+          <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 p-6">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <SlidersHorizontal className="w-5 h-5 text-indigo-500" />
+              Report Template
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {templates.map(template => (
+                <div
+                  key={template.id}
+                  onClick={() => handleTemplateChange(template.id)}
+                  className={`p-4 border-2 rounded-xl cursor-pointer transition-all card-hover-lift ${
+                    selectedTemplate === template.id
+                      ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-500/10'
+                      : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-transparent'
+                  }`}
+                >
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{template.name}</h3>
+                  <p className="text-sm text-gray-500 dark:text-slate-400 mb-2">{template.description}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {template.sections.map((section: string) => (
+                      <span
+                        key={section}
+                        className="px-2 py-0.5 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 text-xs rounded-full"
+                      >
+                        {section}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Custom Options */}
+          <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 p-6">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+              Report Sections
+            </h2>
+            
+            <div className="space-y-2">
+              {sectionOptions.map(({ key, label, desc, checked }) => (
+                <label key={key} className="flex items-center gap-3 p-3 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition">
+                  <div className="relative flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => setOptions({ ...options, [key]: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white text-sm">{label}</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-500">{desc}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Generate Button */}
+          <button
+            onClick={handleGenerateReport}
+            disabled={generating}
+            className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-2xl hover:shadow-lg hover:shadow-emerald-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base font-semibold"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Generating Report...
+              </>
+            ) : (
+              <>
+                <Download className="w-5 h-5" />
+                Generate PDF Report
+              </>
+            )}
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Report Configuration */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Template Selection */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                Report Template
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {templates.map(template => (
-                  <div
-                    key={template.id}
-                    onClick={() => handleTemplateChange(template.id)}
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition ${
-                      selectedTemplate === template.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{template.description}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {template.sections.map((section: string) => (
-                        <span
-                          key={section}
-                          className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded"
-                        >
-                          {section}
-                        </span>
-                      ))}
+        {/* Report History */}
+        <div className="lg:col-span-1">
+          <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 p-6 sticky top-24">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-gray-400 dark:text-slate-500" />
+              Report History
+            </h2>
+
+            {reportHistory.length > 0 ? (
+              <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
+                {reportHistory.map((report, idx) => (
+                  <div key={idx} className="p-3 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition">
+                    <div className="flex items-start justify-between mb-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
+                      <span className="text-xs text-gray-500 dark:text-slate-500">
+                        {new Date(report.createdAt || report.created_at).toLocaleDateString()}
+                      </span>
                     </div>
+                    <p className="text-sm text-gray-700 dark:text-slate-300 mb-0.5">
+                      Generated by {report.User?.name || 'Unknown'}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-slate-500">
+                      {new Date(report.createdAt || report.created_at).toLocaleTimeString()}
+                    </p>
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Custom Options */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Report Sections
-              </h2>
-              
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={options.includeEvidence}
-                    onChange={(e) => setOptions({ ...options, includeEvidence: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-900">Evidence Summary</div>
-                    <div className="text-sm text-gray-600">Include extracted evidence and data sources</div>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={options.includeTimeline}
-                    onChange={(e) => setOptions({ ...options, includeTimeline: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-900">Event Timeline</div>
-                    <div className="text-sm text-gray-600">Chronological list of all events</div>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={options.includeQueries}
-                    onChange={(e) => setOptions({ ...options, includeQueries: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-900">Analysis Queries</div>
-                    <div className="text-sm text-gray-600">Include executed queries and results</div>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={options.includeBookmarks}
-                    onChange={(e) => setOptions({ ...options, includeBookmarks: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-900">Bookmarked Evidence</div>
-                    <div className="text-sm text-gray-600">Include all bookmarked items with notes</div>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={options.includeGraph}
-                    onChange={(e) => setOptions({ ...options, includeGraph: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-900">Network Graph</div>
-                    <div className="text-sm text-gray-600">Include communication network visualization</div>
-                  </div>
-                </label>
+            ) : (
+              <div className="text-center py-8 text-gray-500 dark:text-slate-500">
+                <FileBarChart className="w-10 h-10 text-gray-300 dark:text-slate-600 mx-auto mb-3" />
+                <p className="text-sm">No reports generated yet</p>
               </div>
-            </div>
-
-            {/* Generate Button */}
-            <button
-              onClick={handleGenerateReport}
-              disabled={generating}
-              className="w-full py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg font-semibold"
-            >
-              {generating ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Generating Report...
-                </>
-              ) : (
-                <>
-                  <Download className="w-5 h-5" />
-                  Generate PDF Report
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Report History */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6 sticky top-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                Report History
-              </h2>
-
-              {reportHistory.length > 0 ? (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {reportHistory.map((report, idx) => (
-                    <div key={idx} className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div className="flex items-start justify-between mb-2">
-                        <CheckCircle className="w-4 h-4 text-green-600 mt-0.5" />
-                        <span className="text-xs text-gray-500">
-                          {new Date(report.createdAt || report.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-700 mb-1">
-                        Generated by {report.User?.name || 'Unknown'}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(report.createdAt || report.created_at).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm">No reports generated yet</p>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>
+    </div>
   );
 };

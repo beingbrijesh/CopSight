@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ZoomIn, ZoomOut, Maximize2, Download } from 'lucide-react';
+import { useThemeStore } from '../store/themeStore';
 
 interface Node {
   id: string;
@@ -29,6 +30,7 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const { isDarkMode } = useThemeStore();
 
   // Simple force-directed layout
   const [nodePositions, setNodePositions] = useState<Map<string, { x: number; y: number }>>(new Map());
@@ -66,7 +68,7 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
     ctx.scale(zoom, zoom);
 
     // Draw edges
-    ctx.strokeStyle = '#cbd5e1';
+    ctx.strokeStyle = isDarkMode ? '#64748b' : '#cbd5e1';
     ctx.lineWidth = 2;
     edges.forEach(edge => {
       const sourcePos = nodePositions.get(edge.source);
@@ -108,14 +110,14 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
       }
 
       // Draw label
-      ctx.fillStyle = '#1f2937';
+      ctx.fillStyle = isDarkMode ? '#f8fafc' : '#1f2937';
       ctx.font = '12px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(node.label.substring(0, 15), pos.x, pos.y + 35);
     });
 
     ctx.restore();
-  }, [nodes, edges, nodePositions, zoom, pan, selectedNode]);
+  }, [nodes, edges, nodePositions, zoom, pan, selectedNode, isDarkMode]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -178,33 +180,33 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
   };
 
   return (
-    <div className="relative bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className="relative glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-lg dark:shadow-none border border-gray-100 dark:border-white/10 overflow-hidden">
       {/* Controls */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         <button
           onClick={handleZoomIn}
-          className="p-2 bg-white rounded-lg shadow hover:bg-gray-50 transition"
+          className="p-2 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 hover:bg-gray-50 transition"
           title="Zoom In"
         >
           <ZoomIn className="w-5 h-5" />
         </button>
         <button
           onClick={handleZoomOut}
-          className="p-2 bg-white rounded-lg shadow hover:bg-gray-50 transition"
+          className="p-2 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 hover:bg-gray-50 transition"
           title="Zoom Out"
         >
           <ZoomOut className="w-5 h-5" />
         </button>
         <button
           onClick={handleReset}
-          className="p-2 bg-white rounded-lg shadow hover:bg-gray-50 transition"
+          className="p-2 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 hover:bg-gray-50 transition"
           title="Reset View"
         >
           <Maximize2 className="w-5 h-5" />
         </button>
         <button
           onClick={handleExport}
-          className="p-2 bg-white rounded-lg shadow hover:bg-gray-50 transition"
+          className="p-2 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 hover:bg-gray-50 transition"
           title="Export Image"
         >
           <Download className="w-5 h-5" />
@@ -212,8 +214,8 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
       </div>
 
       {/* Legend */}
-      <div className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow p-4">
-        <h4 className="text-sm font-semibold text-gray-900 mb-2">Legend</h4>
+      <div className="absolute top-4 left-4 z-10 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 p-4">
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Legend</h4>
         <div className="space-y-2 text-xs">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-blue-500"></div>
@@ -252,20 +254,20 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
 
       {/* Selected Node Info */}
       {selectedNode && (
-        <div className="absolute bottom-4 left-4 right-4 bg-white rounded-lg shadow-lg p-4">
+        <div className="absolute bottom-4 left-4 right-4 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-lg dark:shadow-none border border-gray-100 dark:border-white/10 p-4">
           <div className="flex items-start justify-between">
             <div>
-              <h4 className="font-semibold text-gray-900">{selectedNode.label}</h4>
+              <h4 className="font-semibold text-gray-900 dark:text-white dark:text-white">{selectedNode.label}</h4>
               <p className="text-sm text-gray-600 capitalize">Type: {selectedNode.type}</p>
               {selectedNode.isForeign !== undefined && (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-slate-400">
                   {selectedNode.isForeign ? 'Foreign Number' : 'Local Number'}
                 </p>
               )}
             </div>
             <button
               onClick={() => setSelectedNode(null)}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 dark:text-slate-400"
             >
               ×
             </button>
@@ -275,10 +277,12 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
 
       {/* Empty State */}
       {nodes.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <p>No network data available</p>
-            <p className="text-sm mt-1">Upload CopSight AI data to visualize connections</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-slate-900/50 backdrop-blur-sm z-20">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-blue-200 dark:border-blue-500/30 bg-gradient-to-br from-blue-50 dark:from-blue-500/10 to-indigo-50 dark:to-indigo-500/10 p-12 text-center shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No network data available</h3>
+            <p className="text-sm text-gray-600 dark:text-slate-400 max-w-sm">
+              Upload CopSight AI data to visualize communication networks and entity connections.
+            </p>
           </div>
         </div>
       )}

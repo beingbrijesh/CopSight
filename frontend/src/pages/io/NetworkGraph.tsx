@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { Search, Loader2, RefreshCw, AlertTriangle, ExternalLink, FolderOpen } from 'lucide-react';
 
 import { api } from '../../lib/api';
+import { useThemeStore } from '../../store/themeStore';
 // ──────────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────────
@@ -180,35 +181,35 @@ const IntelligenceRenderer = ({ text }: { text: string }) => {
       });
     };
 
-    applyRegex(crimeRegex, "text-red-300 font-bold bg-red-900/40 px-1 rounded mx-0.5");
-    applyRegex(financeRegex, "text-emerald-400 font-bold bg-emerald-900/40 px-1 rounded mx-0.5");
-    applyRegex(commsRegex, "text-blue-300 font-bold bg-blue-900/40 px-1 rounded mx-0.5");
+    applyRegex(crimeRegex, "text-red-700 dark:text-red-300 font-bold bg-red-100 dark:bg-red-900/40 px-1 rounded mx-0.5");
+    applyRegex(financeRegex, "text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-100 dark:bg-emerald-900/40 px-1 rounded mx-0.5");
+    applyRegex(commsRegex, "text-blue-700 dark:text-blue-300 font-bold bg-blue-100 dark:bg-blue-900/40 px-1 rounded mx-0.5");
 
-    return <span className={isBold ? "font-extrabold text-white" : ""}>{components}</span>;
+    return <span className={isBold ? "font-extrabold text-slate-900 dark:text-white" : ""}>{components}</span>;
   };
 
   const parseLine = (line: string, index: number) => {
     // 1. Headers
     if (line.startsWith('## ')) {
-      return <h2 key={index} className="text-sm font-bold text-blue-400 mt-4 mb-2 border-b border-gray-800 pb-1 flex items-center gap-2">
+      return <h2 key={index} className="text-sm font-bold text-blue-400 mt-4 mb-2 border-b border-slate-200 dark:border-white/10 pb-1 flex items-center gap-2">
         {line.replace('## ', '')}
       </h2>;
     }
     if (line.startsWith('# ')) {
-      return <h1 key={index} className="text-base font-extrabold text-white mt-5 mb-3 border-l-4 border-blue-600 pl-3">
+      return <h1 key={index} className="text-base font-extrabold text-slate-900 dark:text-white mt-5 mb-3 border-l-4 border-blue-600 pl-3">
         {line.replace('# ', '')}
       </h1>;
     }
     // 2. Lists
     if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
       const content = line.trim().substring(2);
-      return <div key={index} className="flex gap-2 ml-2 my-1 text-gray-300">
+      return <div key={index} className="flex gap-2 ml-2 my-1 text-slate-700 dark:text-slate-300">
         <div className="w-1.5 h-1.5 rounded-full bg-blue-500/50 mt-1.5 shrink-0" />
         <p className="flex-1">{parseInline(content)}</p>
       </div>;
     }
 
-    return <p key={index} className="my-1 text-gray-300 leading-relaxed">{parseInline(line)}</p>;
+    return <p key={index} className="my-1 text-slate-700 dark:text-slate-300 leading-relaxed">{parseInline(line)}</p>;
   };
 
   const parseInline = (text: string) => {
@@ -256,6 +257,7 @@ export const NetworkGraph = () => {
   const [error, setError] = useState<string | null>(null);
   const [threshold, setThreshold] = useState(1);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const { isDarkMode } = useThemeStore();
 
   // AI sidebar states
   const [aiHistory, setAiHistory] = useState<Array<{ 
@@ -636,69 +638,67 @@ export const NetworkGraph = () => {
 
   // ── Render
   return (
-    <div className="h-[calc(100vh-7rem)] bg-gray-950 flex flex-col text-white overflow-hidden rounded-xl">
+    <div className="h-[calc(100vh-7rem)] bg-gray-50 dark:bg-transparent flex flex-col text-slate-900 dark:text-white overflow-hidden rounded-xl">
 
       <div className="max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col min-h-0">
-        {/* Header */}
-        <div className="flex flex-shrink-0 items-center justify-end mb-4">
+        {/* Unified Header & Controls */}
+        <div className="flex flex-col sm:flex-row flex-shrink-0 items-start sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Visual mapping of entities, communications & anomalies</p>
+          </div>
+          
           <div className="flex items-center gap-3">
             {data.anomalies.length > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-red-900/60 border border-red-500/50 rounded-full text-sm font-bold text-red-300 animate-pulse">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-red-100 dark:bg-red-900/60 border border-red-200 dark:border-red-500/50 rounded-full text-sm font-bold text-red-600 dark:text-red-300 animate-pulse">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 {data.anomalies.length} Circular Transaction{data.anomalies.length > 1 ? 's' : ''} Detected
               </div>
             )}
-            <button onClick={fetchData} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition">
-              <RefreshCw className="w-4 h-4 text-gray-400" />
-            </button>
-          </div>
-        </div>
-
-        {/* Controls bar */}
-        <div className="flex-shrink-0 bg-gray-900/80 border border-gray-800 rounded-xl px-5 py-3 mb-4 flex flex-wrap items-center gap-6">
-          <div>
-            <p className="text-sm font-medium text-gray-300">Visual mapping of entities, communications & anomalies</p>
-          </div>
-
-          <div className="flex items-center gap-3 ml-auto">
-            <label className="text-xs font-medium text-gray-400">
-              Min Interaction Weight: <span className="text-white font-bold">{threshold}</span>
-            </label>
-            <input
-              type="range" min="1" max="50" value={threshold}
-              onChange={(e) => setThreshold(parseInt(e.target.value))}
-              className="w-32 accent-blue-500"
-            />
+            
+            <div className="flex items-center gap-3 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2 shadow-sm">
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                Min Interaction Weight: <span className="text-slate-900 dark:text-white font-bold">{threshold}</span>
+              </label>
+              <input
+                type="range" min="1" max="50" value={threshold}
+                onChange={(e) => setThreshold(parseInt(e.target.value))}
+                className="w-24 md:w-32 accent-blue-500"
+              />
+              <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+              <button onClick={fetchData} className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition" title="Refresh Graph">
+                <RefreshCw className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="flex flex-col md:flex-row flex-1 gap-4 overflow-hidden mb-4 min-h-0">
           {/* ── 3D Graph Canvas */}
-          <div className="flex-1 bg-gray-950 rounded-xl border border-gray-800 relative overflow-hidden" ref={containerRef}>
+          <div className="flex-1 bg-gray-50 dark:bg-transparent rounded-xl border border-slate-200 dark:border-white/10 relative overflow-hidden" ref={containerRef}>
             {/* Legend */}
-            <div className="absolute bottom-4 left-4 bg-gray-900/90 border border-gray-700 p-3 rounded-xl shadow-xl text-xs z-10 backdrop-blur-sm">
-              <p className="font-semibold text-gray-300 mb-2">Legend</p>
+            <div className="absolute bottom-4 left-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-300 dark:border-white/10 p-3 rounded-xl shadow-xl text-xs z-10 backdrop-blur-sm">
+              <p className="font-semibold text-slate-600 dark:text-slate-300 mb-2">Legend</p>
               {Object.entries(NODE_PALETTE).filter(([k]) => k !== 'Default').map(([type, color]) => (
                 <div key={type} className="flex items-center gap-2 mb-1">
                   <div className="w-2.5 h-2.5 rounded-full ring-1 ring-white/20" style={{ backgroundColor: color }} />
-                  <span className="text-gray-400">{type}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{type}</span>
                 </div>
               ))}
-              <div className="mt-2 pt-2 border-t border-gray-700 flex items-center gap-2">
+              <div className="mt-2 pt-2 border-t border-slate-300 dark:border-white/10 flex items-center gap-2">
                 <div className="w-5 h-0.5 bg-red-500" />
                 <span className="text-red-400">Anomalous Cycle</span>
               </div>
             </div>
 
             {/* Hint */}
-            <div className="absolute top-3 left-3 bg-black/60 border border-gray-700 text-gray-300 text-[11px] px-2.5 py-1.5 rounded-lg z-10 backdrop-blur-sm shadow-sm font-medium">
+            <div className="absolute top-3 left-3 bg-white/60 dark:bg-transparent/60 backdrop-blur-md border border-slate-300 dark:border-white/10 text-slate-600 dark:text-slate-300 text-[11px] px-2.5 py-1.5 rounded-lg z-10 backdrop-blur-sm shadow-sm font-medium">
               🖱 Click Node: AI Profile &nbsp;|&nbsp; Right Click (or ⌘/Ctrl+Click): External OSINT Search
             </div>
 
             {loading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-950/90 z-20">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 dark:bg-transparent/90 z-20">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
-                <p className="text-gray-300 text-sm">Extracting Network...</p>
+                <p className="text-slate-600 dark:text-slate-300 text-sm">Extracting Network...</p>
               </div>
             )}
 
@@ -714,7 +714,7 @@ export const NetworkGraph = () => {
 
             {!loading && !error && data.nodes.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center z-10">
-                <p className="text-gray-500 text-sm">No network data found matching criteria.</p>
+                <p className="text-slate-400 dark:text-slate-500 text-sm">No network data found matching criteria.</p>
               </div>
             )}
 
@@ -724,7 +724,7 @@ export const NetworkGraph = () => {
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <AlertTriangle className="w-10 h-10 text-amber-500 mb-3" />
                     <p className="text-amber-400 text-sm">3D renderer encountered an error.</p>
-                    <p className="text-gray-500 text-xs mt-1">Try refreshing the page.</p>
+                    <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">Try refreshing the page.</p>
                   </div>
                 }
               >
@@ -732,7 +732,7 @@ export const NetworkGraph = () => {
                   ref={fgRef}
                   width={dimensions.width}
                   height={dimensions.height}
-                  backgroundColor="#030712"
+                  backgroundColor={isDarkMode ? "#030712" : "#f8fafc"}
                   graphData={{ nodes: data.nodes, links: data.edges }}
                   nodeLabel={(n: any) => `${(n as GraphNode).label}\nType: ${(n as GraphNode).type}\nWeight: ${(n as GraphNode).frequency}`}
                   nodeColor={getNodeColor}
@@ -781,31 +781,31 @@ export const NetworkGraph = () => {
 
           {/* ── AI Evidence Sidebar */}
           {isSidebarOpen && (
-            <div className="w-full md:w-96 flex-shrink-0 bg-gray-900 rounded-xl border border-gray-800 flex flex-col overflow-hidden min-h-0 relative">
+            <div className="w-full md:w-96 flex-shrink-0 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-slate-200 dark:border-white/10 flex flex-col overflow-hidden min-h-0 relative">
               <button 
                 onClick={() => setIsSidebarOpen(false)}
-                className="absolute top-3 right-3 text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-full w-6 h-6 flex items-center justify-center transition z-10"
+                className="absolute top-3 right-3 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:bg-slate-700 rounded-full w-6 h-6 flex items-center justify-center transition z-10"
                 title="Close AI Assistant"
               >
                 ✕
               </button>
-              <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-2 pr-10">
+              <div className="px-4 py-3 border-b border-slate-200 dark:border-white/10 flex items-center gap-2 pr-10">
                 <Search className="w-4 h-4 text-purple-400" />
-                <h2 className="text-sm font-bold text-white">AI Intelligence Panel</h2>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">AI Intelligence Panel</h2>
               </div>
 
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gray-950/20">
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gray-50 dark:bg-transparent/20">
               <div className="space-y-6">
                 {aiHistory.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center py-10">
-                    <div className="w-16 h-16 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center mb-4">
-                      <Search className="w-8 h-8 text-gray-700" />
+                    <div className="w-16 h-16 rounded-full glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 flex items-center justify-center mb-4">
+                      <Search className="w-8 h-8 text-slate-500" />
                     </div>
-                    <p className="text-gray-500 text-sm font-medium">Click any node to begin<br/>AI forensic analysis</p>
+                    <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">Click any node to begin<br/>AI forensic analysis</p>
                   </div>
                 ) : (
                   aiHistory.map((item, idx) => (
-                    <div key={idx} className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-4 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div key={idx} className="bg-slate-200 dark:bg-white/5 border border-slate-300 dark:border-white/10/50 rounded-xl p-4 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-300">
                       {/* View Case File button for Case nodes */}
                       {item.type === 'Case' && item.status === 'done' && (
                         <button
@@ -813,27 +813,27 @@ export const NetworkGraph = () => {
                             const linkedCaseId = item.properties?.id;
                             if (linkedCaseId) navigate(`/io/case/${linkedCaseId}`);
                           }}
-                          className="w-full mb-3 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-900/50 to-indigo-900/50 hover:from-purple-800/60 hover:to-indigo-800/60 border border-purple-500/30 rounded-lg text-purple-300 text-xs font-bold transition-all duration-200 group"
+                          className="w-full mb-3 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-100 dark:from-purple-900/50 to-indigo-100 dark:to-indigo-900/50 hover:from-purple-200 dark:hover:from-purple-800/60 hover:to-indigo-200 dark:hover:to-indigo-800/60 border border-purple-200 dark:border-purple-500/30 rounded-lg text-purple-700 dark:text-purple-300 text-xs font-bold transition-all duration-200 group"
                         >
                           <FolderOpen className="w-3.5 h-3.5" />
                           View Case File
                           <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100 transition" />
                         </button>
                       )}
-                      <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-700/50">
+                      <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-300 dark:border-white/10/50">
                         <div className="flex items-center gap-2">
-                          <div className={`p-1.5 rounded-lg border ${item.type === 'Case' ? 'bg-yellow-900/30 border-yellow-500/20' : 'bg-blue-900/30 border-blue-500/20'}`}>
-                            {item.type === 'Case' ? <FolderOpen className="w-3.5 h-3.5 text-yellow-400" /> : <Search className="w-3.5 h-3.5 text-blue-400" />}
+                          <div className={`p-1.5 rounded-lg border ${item.type === 'Case' ? 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-500/20' : 'bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-500/20'}`}>
+                            {item.type === 'Case' ? <FolderOpen className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" /> : <Search className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{item.type === 'Case' ? 'Cross-Case Intelligence' : 'Investigation Log'}</p>
-                            <p className="text-xs font-bold text-gray-200 truncate max-w-[140px]">{item.label}</p>
+                            <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">{item.type === 'Case' ? 'Cross-Case Intelligence' : 'Investigation Log'}</p>
+                            <p className="text-xs font-bold text-slate-900 dark:text-slate-200 truncate max-w-[140px]">{item.label}</p>
                           </div>
                         </div>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                          item.status === 'done' ? 'bg-emerald-900/40 text-emerald-400' :
-                          item.status === 'error' ? 'bg-red-900/40 text-red-400' :
-                          'bg-blue-900/40 text-blue-400 animate-pulse'
+                          item.status === 'done' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' :
+                          item.status === 'error' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400' :
+                          'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 animate-pulse'
                         }`}>
                           {item.status}
                         </span>
@@ -843,33 +843,33 @@ export const NetworkGraph = () => {
                         <IntelligenceRenderer text={item.text} />
                         
                         {item.status === 'thinking' && !item.text && (
-                          <div className="flex items-center gap-2 py-3 bg-gray-900/50 rounded-lg px-3 border border-gray-800/50">
+                          <div className="flex items-center gap-2 py-3 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl/50 rounded-lg px-3 border border-slate-200 dark:border-white/10/50">
                             <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                            <span className="text-[11px] text-gray-400 italic">Extracting evidence profiles...</span>
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 italic">Extracting evidence profiles...</span>
                           </div>
                         )}
 
                         {item.status === 'streaming' && (
                            <div className="mt-2 flex items-center gap-2">
                               <span className="inline-block w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping" />
-                              <span className="text-[9px] text-gray-500 uppercase font-black tracking-tighter">AI Processing...</span>
+                              <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase font-black tracking-tighter">AI Processing...</span>
                            </div>
                         )}
                       </div>
 
                       {/* Raw Events Section */}
                       {item.rawEvents && item.rawEvents.length > 0 && (
-                        <div className="mt-4 pt-3 border-t border-gray-700/50">
-                          <div className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Raw Extracted Events ({item.rawEvents.length})</div>
+                        <div className="mt-4 pt-3 border-t border-slate-300 dark:border-white/10/50">
+                          <div className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider">Raw Extracted Events ({item.rawEvents.length})</div>
                           <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                             {item.rawEvents.map((ev: any, i: number) => (
-                              <div key={i} className="bg-gray-900/50 rounded-md p-2 border border-gray-800 flex flex-col gap-1">
+                              <div key={i} className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl/50 rounded-md p-2 border border-slate-200 dark:border-white/10 flex flex-col gap-1">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-900/30 px-1.5 py-0.5 rounded">{ev.eventType}</span>
-                                  {ev.timestamp && <span className="text-[10px] text-gray-500">{new Date(ev.timestamp).toLocaleString()}</span>}
+                                  <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">{ev.eventType}</span>
+                                  {ev.timestamp && <span className="text-[10px] text-slate-400 dark:text-slate-500">{new Date(ev.timestamp).toLocaleString()}</span>}
                                 </div>
-                                <div className="text-xs text-gray-300">
-                                  <span className="text-gray-500">With:</span> {ev.neighborName} <span className="text-gray-600 text-[10px]">({ev.neighborType})</span>
+                                <div className="text-xs text-slate-600 dark:text-slate-300">
+                                  <span className="text-slate-500 dark:text-slate-400">With:</span> {ev.neighborName} <span className="text-slate-500 dark:text-slate-400 text-[10px]">({ev.neighborType})</span>
                                 </div>
                               </div>
                             ))}
@@ -891,29 +891,30 @@ export const NetworkGraph = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-8" onClick={(e) => {
            if (e.target === e.currentTarget) setModalGraphData(null);
         }}>
-          <div className="bg-gray-950 border border-gray-700 rounded-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden relative shadow-2xl">
+          <div className="bg-gray-50 dark:bg-transparent border border-slate-300 dark:border-white/10 rounded-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden relative shadow-2xl">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/80">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-white/10 flex justify-between items-center glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl">
               <div>
-                <h3 className="text-xl font-black text-white flex items-center gap-3">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full ring-2 ring-white/20" style={{ backgroundColor: getNodeColor(modalNode) }} />
-                  {modalNode.label} <span className="text-sm font-bold text-gray-500 bg-gray-800 px-2 py-0.5 rounded-md">{modalNode.type}</span>
+                  {modalNode.label} <span className="text-sm font-bold text-slate-400 dark:text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md">{modalNode.type}</span>
                 </h3>
                 <p className="text-sm text-blue-400 mt-1 font-medium">Showing 1-hop local connections. Click any node to analyze.</p>
               </div>
-              <button onClick={() => setModalGraphData(null)} className="px-4 py-2 text-sm font-bold text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition">
+              <button onClick={() => setModalGraphData(null)} className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:bg-slate-700 border border-slate-300 dark:border-white/10 rounded-lg transition">
                 Close Focus View
               </button>
             </div>
             
             {/* Modal Canvas */}
-            <div className="flex-1 relative bg-[#030712] flex items-center justify-center" onClick={() => {
+            <div className="flex-1 relative bg-transparent flex items-center justify-center" onClick={() => {
                if (contextMenu.visible) setContextMenu(prev => ({ ...prev, visible: false }));
             }}>
               <ForceGraph2D
                 ref={fg2dRef}
                 width={Math.min(window.innerWidth - 64, 1152)}
                 height={window.innerHeight * 0.85 - 80}
+                backgroundColor={isDarkMode ? "#000000" : "#f8fafc"}
                 graphData={{ nodes: modalGraphData.nodes, links: modalGraphData.edges }}
                 nodeLabel={(n: any) => `${(n as GraphNode).label}\nType: ${(n as GraphNode).type}`}
                 nodeRelSize={8}
@@ -929,7 +930,7 @@ export const NetworkGraph = () => {
 
                   // Highlight central node
                   if (node.id === modalNode.id) {
-                    ctx.strokeStyle = '#ffffff';
+                    ctx.strokeStyle = isDarkMode ? '#ffffff' : '#1e293b';
                     ctx.lineWidth = 2.5 / globalScale;
                     ctx.stroke();
                     
@@ -942,7 +943,7 @@ export const NetworkGraph = () => {
 
                   ctx.textAlign = 'center';
                   ctx.textBaseline = 'middle';
-                  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                  ctx.fillStyle = isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(15, 23, 42, 0.9)';
                   ctx.fillText(label, node.x, node.y + 14 + fontSize);
                 }}
                 linkColor={(l: any) => {
@@ -963,19 +964,19 @@ export const NetworkGraph = () => {
               {/* Fixed Context Menu */}
               {contextMenu.visible && contextMenu.node && (
                 <div 
-                  className="fixed z-[100] bg-gray-900 border border-gray-700 shadow-2xl rounded-xl py-1.5 w-56 text-sm overflow-hidden"
+                  className="fixed z-[100] glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-2xl rounded-xl py-1.5 w-56 text-sm overflow-hidden"
                   style={{ top: contextMenu.y, left: contextMenu.x }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="px-3 py-2 border-b border-gray-800 text-xs font-black uppercase text-gray-500 tracking-wider truncate">
+                  <div className="px-3 py-2 border-b border-slate-200 dark:border-white/10 text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider truncate">
                     {contextMenu.node.type}
                   </div>
-                  <div className="px-3 py-2 border-b border-gray-800 text-sm font-bold text-white truncate">
+                  <div className="px-3 py-2 border-b border-slate-200 dark:border-white/10 text-sm font-bold text-slate-900 dark:text-white truncate">
                     {contextMenu.node.label}
                   </div>
                   <div className="p-1">
                     <button 
-                      className="w-full text-left px-3 py-2.5 text-blue-400 hover:bg-gray-800 rounded-lg flex items-center gap-3 font-bold transition-colors"
+                      className="w-full text-left px-3 py-2.5 text-blue-400 hover:bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center gap-3 font-bold transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         setContextMenu({ visible: false, x: 0, y: 0, node: null });
@@ -988,7 +989,7 @@ export const NetworkGraph = () => {
                       Get AI Summary
                     </button>
                     <button 
-                      className="w-full text-left px-3 py-2.5 text-gray-300 hover:bg-gray-800 rounded-lg flex items-center gap-3 font-medium transition-colors"
+                      className="w-full text-left px-3 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center gap-3 font-medium transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         setContextMenu({ visible: false, x: 0, y: 0, node: null });
@@ -1007,7 +1008,7 @@ export const NetworkGraph = () => {
       )}
 
         {/* Stats footer */}
-        <div className="flex gap-4 text-xs text-gray-500 pb-2">
+        <div className="flex gap-4 text-xs text-slate-400 dark:text-slate-500 pb-2">
           <span>{data.nodes.length} Nodes</span>
           <span>{data.edges.length} Edges</span>
           <span className={data.anomalies.length > 0 ? 'text-red-400 font-semibold' : ''}>

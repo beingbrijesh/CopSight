@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Eye } from 'lucide-react';
+import { Search, FolderPlus, Eye, Clock, CircleDot } from 'lucide-react';
 import { caseAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { CreateCase } from './CreateCase';
@@ -54,39 +54,41 @@ export const CaseList = () => {
     c.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+
+
   return (
     <div className="mx-auto max-w-7xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-gray-600 font-medium">Manage all investigation cases</p>
+            <p className="text-gray-600 dark:text-slate-400 font-medium">Manage all investigation cases</p>
           </div>
           {isAdmin && (
             <button
               onClick={() => setShowCreateCase(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition shadow-sm font-medium text-sm"
             >
-              <Plus className="w-4 h-4" />
+              <FolderPlus className="w-4 h-4" />
               Create Case
             </button>
           )}
         </div>
 
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-4 border-b flex items-center gap-4">
+        <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10">
+          <div className="p-4 border-b border-gray-200 dark:border-white/10 flex items-center gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-500" />
               <input
                 type="text"
                 placeholder="Search cases..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 dark:placeholder:text-slate-500"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">All Status</option>
               <option value="created">Created</option>
@@ -99,50 +101,58 @@ export const CaseList = () => {
           </div>
 
           {loading ? (
-            <div className="p-8 text-center text-gray-500">Loading cases...</div>
+            <div className="p-8 text-center text-gray-500 dark:text-slate-500">Loading cases...</div>
           ) : filteredCases.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">No cases found</div>
+            <div className="p-12 text-center">
+              <FolderPlus className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No cases found</h3>
+              <p className="text-sm text-gray-500 dark:text-slate-500">Try adjusting your search or filters.</p>
+            </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y divide-gray-100 dark:divide-slate-800/50">
               {filteredCases.map((c: any) => (
-                <div key={c.id} className="p-6 hover:bg-gray-50 transition">
+                <div key={c.id} className="p-5 hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition group">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-gray-900">{c.title}</h3>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          c.status === 'active' ? 'bg-green-100 text-green-800' :
-                          c.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                          c.status === 'ready_for_analysis' ? 'bg-purple-100 text-purple-800' :
-                          c.status === 'closed' ? 'bg-gray-100 text-gray-800' :
-                          'bg-yellow-100 text-yellow-800'
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1.5">
+                        <h3 className="font-semibold text-gray-900 dark:text-white truncate">{c.title}</h3>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
+                          c.status === 'active' ? 'bg-green-100 dark:bg-emerald-500/10 text-green-800 dark:text-emerald-300' :
+                          c.status === 'processing' ? 'bg-blue-100 dark:bg-blue-500/10 text-blue-800 dark:text-blue-300' :
+                          c.status === 'ready_for_analysis' ? 'bg-purple-100 dark:bg-purple-500/10 text-purple-800 dark:text-purple-300' :
+                          c.status === 'closed' ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-300' :
+                          'bg-yellow-100 dark:bg-yellow-500/10 text-yellow-800 dark:text-yellow-300'
                         }`}>
                           {c.status.replace('_', ' ')}
                         </span>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          c.priority === 'critical' ? 'bg-red-100 text-red-800' :
-                          c.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                          c.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {c.priority}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0" title={`${c.priority} priority`}>
+                          <CircleDot className={`w-3 h-3 ${
+                            c.priority === 'critical' ? 'text-red-500' :
+                            c.priority === 'high' ? 'text-orange-500' :
+                            c.priority === 'medium' ? 'text-blue-500' :
+                            'text-gray-400 dark:text-slate-500'
+                          }`} />
+                          <span className="text-xs text-gray-500 dark:text-slate-500 capitalize">{c.priority}</span>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600 mb-3">{c.description}</p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <p className="text-sm text-gray-600 dark:text-slate-400 mb-2.5 line-clamp-1">{c.description}</p>
+                      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-slate-500">
                         <span className="font-medium">#{c.caseNumber}</span>
                         <span>•</span>
                         <span>Assigned: {c.assignedOfficer?.fullName || 'Unassigned'}</span>
                         <span>•</span>
                         <span>Unit: {c.unit || 'N/A'}</span>
                         <span>•</span>
-                        <span>Created: {new Date(c.created_at).toLocaleDateString()}</span>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{new Date(c.created_at).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric' })}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 ml-4 shrink-0">
                       <button 
                         onClick={() => setSelectedCase(c)}
-                        className="flex items-center gap-2 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition text-sm font-medium"
+                        className="flex items-center gap-2 px-3 py-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition text-sm font-medium"
                       >
                         <Eye className="w-4 h-4" />
                         View
@@ -151,7 +161,7 @@ export const CaseList = () => {
                       {isSupervisor && c.status === 'created' && (
                         <button 
                           onClick={() => setReviewCase(c)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-indigo-600 hover:bg-indigo-50 border border-indigo-200 rounded-lg transition text-sm font-medium bg-white shadow-sm"
+                          className="flex items-center gap-2 px-3 py-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-lg transition text-sm font-medium bg-white dark:bg-slate-800 shadow-sm"
                         >
                           Review
                         </button>

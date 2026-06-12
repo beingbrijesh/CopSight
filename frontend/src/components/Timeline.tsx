@@ -81,7 +81,7 @@ export const Timeline = ({ events, onEventClick }: TimelineProps) => {
   }, {} as Record<string, TimelineEvent[]>);
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl dark:bg-white/5 rounded-2xl shadow-lg dark:shadow-none border border-gray-100 dark:border-white/10 overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -96,7 +96,7 @@ export const Timeline = ({ events, onEventClick }: TimelineProps) => {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="px-3 py-2 bg-white rounded-lg text-sm focus:ring-2 focus:ring-blue-300"
+              className="px-3 py-2 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-lg text-sm focus:ring-2 focus:ring-blue-300"
             >
               <option value="all">All Types</option>
               <option value="sms">SMS</option>
@@ -111,7 +111,7 @@ export const Timeline = ({ events, onEventClick }: TimelineProps) => {
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value as any)}
-              className="px-3 py-2 bg-white rounded-lg text-sm focus:ring-2 focus:ring-blue-300"
+              className="px-3 py-2 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-lg text-sm focus:ring-2 focus:ring-blue-300"
             >
               <option value="all">All Time</option>
               <option value="day">Last 24 Hours</option>
@@ -130,12 +130,12 @@ export const Timeline = ({ events, onEventClick }: TimelineProps) => {
               <div key={date}>
                 {/* Date Header */}
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-slate-300">
                     <Calendar className="w-4 h-4" />
                     {date}
                   </div>
                   <div className="flex-1 h-px bg-gray-200"></div>
-                  <span className="text-xs text-gray-500">{dateEvents.length} events</span>
+                  <span className="text-xs text-gray-500 dark:text-slate-500">{dateEvents.length} events</span>
                 </div>
 
                 {/* Events for this date */}
@@ -153,21 +153,21 @@ export const Timeline = ({ events, onEventClick }: TimelineProps) => {
                       <div className={`absolute -left-6 top-2 w-4 h-4 rounded-full ${getEventColor(event.type)} ring-4 ring-white`}></div>
 
                       {/* Event card */}
-                      <div className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition group-hover:bg-white">
+                      <div className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition group-hover:glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl dark:bg-white/5">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <div className={`p-2 rounded-lg ${getEventColor(event.type)} text-white`}>
                               {getEventIcon(event.type)}
                             </div>
                             <div>
-                              <div className="font-medium text-gray-900 capitalize">{event.type}</div>
-                              <div className="text-xs text-gray-500">
+                              <div className="font-medium text-gray-900 dark:text-white capitalize">{event.type}</div>
+                              <div className="text-xs text-gray-500 dark:text-slate-500">
                                 {new Date(event.timestamp).toLocaleTimeString()}
                               </div>
                             </div>
                           </div>
                           {event.phoneNumber && (
-                            <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded">
+                            <span className="text-xs text-gray-600 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl px-2 py-1 rounded">
                               {event.phoneNumber}
                             </span>
                           )}
@@ -176,7 +176,7 @@ export const Timeline = ({ events, onEventClick }: TimelineProps) => {
                         <p className="text-sm text-gray-700 line-clamp-2">{event.content}</p>
 
                         {event.metadata && (
-                          <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                          <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-slate-500">
                             {event.metadata.duration && (
                               <span>Duration: {event.metadata.duration}s</span>
                             )}
@@ -193,7 +193,7 @@ export const Timeline = ({ events, onEventClick }: TimelineProps) => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-500 dark:text-slate-500">
             <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p>No events found</p>
             <p className="text-sm mt-1">Try adjusting the filters</p>
@@ -203,18 +203,18 @@ export const Timeline = ({ events, onEventClick }: TimelineProps) => {
 
       {/* Summary Footer */}
       {filteredEvents.length > 0 && (
-        <div className="border-t px-6 py-4 bg-gray-50">
+        <div className="border-t px-6 py-4 bg-gray-50 dark:bg-slate-800/60">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-6">
               <div>
-                <span className="text-gray-600">First Event:</span>
-                <span className="ml-2 font-medium text-gray-900">
+                <span className="text-gray-600 dark:text-slate-400">First Event:</span>
+                <span className="ml-2 font-medium text-gray-900 dark:text-white dark:text-white">
                   {new Date(filteredEvents[filteredEvents.length - 1].timestamp).toLocaleDateString()}
                 </span>
               </div>
               <div>
-                <span className="text-gray-600">Last Event:</span>
-                <span className="ml-2 font-medium text-gray-900">
+                <span className="text-gray-600 dark:text-slate-400">Last Event:</span>
+                <span className="ml-2 font-medium text-gray-900 dark:text-white dark:text-white">
                   {new Date(filteredEvents[0].timestamp).toLocaleDateString()}
                 </span>
               </div>

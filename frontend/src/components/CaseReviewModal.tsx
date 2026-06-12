@@ -39,8 +39,8 @@ export const CaseReviewModal = ({ caseData, onClose, onSuccess }: CaseReviewModa
   return (
     <div className="fixed inset-0 bg-gray-900/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">Review Case Assignment</h2>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-white/10">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Review Case Assignment</h2>
           <button
             onClick={onClose}
             disabled={loading}
@@ -64,19 +64,19 @@ export const CaseReviewModal = ({ caseData, onClose, onSuccess }: CaseReviewModa
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-gray-500">Case Number</label>
-                    <p className="font-medium text-gray-900">{caseData.caseNumber}</p>
+                    <label className="text-xs text-gray-500 dark:text-slate-500">Case Number</label>
+                    <p className="font-medium text-gray-900 dark:text-white">{caseData.caseNumber}</p>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500">Priority</label>
-                    <p className="font-medium capitalize text-gray-900">{caseData.priority}</p>
+                    <label className="text-xs text-gray-500 dark:text-slate-500">Priority</label>
+                    <p className="font-medium capitalize text-gray-900 dark:text-white">{caseData.priority}</p>
                   </div>
                   <div className="col-span-2">
-                    <label className="text-xs text-gray-500">Title</label>
-                    <p className="font-medium text-gray-900">{caseData.title}</p>
+                    <label className="text-xs text-gray-500 dark:text-slate-500">Title</label>
+                    <p className="font-medium text-gray-900 dark:text-white">{caseData.title}</p>
                   </div>
                   <div className="col-span-2">
-                    <label className="text-xs text-gray-500">Description</label>
+                    <label className="text-xs text-gray-500 dark:text-slate-500">Description</label>
                     <p className="text-sm text-gray-700 mt-1">{caseData.description || 'No description provided.'}</p>
                   </div>
                 </div>
@@ -85,7 +85,7 @@ export const CaseReviewModal = ({ caseData, onClose, onSuccess }: CaseReviewModa
 
             {isModifying ? (
                <div className="animate-fade-in">
-                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                    Feedback / Required Modifications
                  </label>
                  <textarea
@@ -123,7 +123,7 @@ export const CaseReviewModal = ({ caseData, onClose, onSuccess }: CaseReviewModa
                        className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-green-100 bg-green-50 hover:bg-green-100 hover:border-green-200 transition gap-2"
                      >
                        <CheckCircle className="w-8 h-8 text-green-600" />
-                       <span className="font-semibold text-green-800">Accept Case</span>
+                       <span className="font-semibold text-green-800 dark:text-emerald-300">Accept Case</span>
                      </button>
                      
                      <button
@@ -140,8 +140,8 @@ export const CaseReviewModal = ({ caseData, onClose, onSuccess }: CaseReviewModa
                         disabled={loading}
                         className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-red-100 bg-red-50 hover:bg-red-100 hover:border-red-200 transition gap-2"
                      >
-                        <XCircle className="w-8 h-8 text-red-600" />
-                        <span className="font-semibold text-red-800">Reject Case</span>
+                        <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+                        <span className="font-semibold text-red-800 dark:text-red-300">Reject Case</span>
                      </button>
                    </div>
                 </div>

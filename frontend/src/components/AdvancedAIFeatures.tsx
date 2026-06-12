@@ -182,7 +182,7 @@ const OverviewTab: React.FC<{ modelStats: any; results: any }> = ({ modelStats, 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {/* Model Status Cards */}
-      <div className="bg-white rounded-lg border p-6">
+      <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-lg border p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Deep Learning Models</h3>
           <Brain className="w-6 h-6 text-purple-600" />
@@ -199,7 +199,7 @@ const OverviewTab: React.FC<{ modelStats: any; results: any }> = ({ modelStats, 
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border p-6">
+      <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-lg border p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Evidence Classification</h3>
           <Target className="w-6 h-6 text-blue-600" />
@@ -216,7 +216,7 @@ const OverviewTab: React.FC<{ modelStats: any; results: any }> = ({ modelStats, 
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border p-6">
+      <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-lg border p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Pattern Recognition</h3>
           <TrendingUp className="w-6 h-6 text-green-600" />
@@ -236,7 +236,7 @@ const OverviewTab: React.FC<{ modelStats: any; results: any }> = ({ modelStats, 
       </div>
 
       {/* Recent Results Summary */}
-      <div className="bg-white rounded-lg border p-6 md:col-span-2 lg:col-span-3">
+      <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-lg border p-6 md:col-span-2 lg:col-span-3">
         <h3 className="text-lg font-semibold mb-4">Recent Analysis Results</h3>
         {Object.keys(results).length === 0 ? (
           <p className="text-gray-500">No analysis results yet. Run some analyses to see results here.</p>
@@ -275,7 +275,7 @@ const DeepLearningTab: React.FC<{
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {operations.map((op) => (
-          <div key={op.id} className="bg-white border rounded-lg p-4">
+          <div key={op.id} className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border rounded-lg p-4">
             <h3 className="font-semibold mb-2">{op.label}</h3>
             <p className="text-sm text-gray-600 mb-4">{op.description}</p>
             <button
@@ -291,7 +291,7 @@ const DeepLearningTab: React.FC<{
 
       {/* Results Display */}
       {Object.keys(results).length > 0 && (
-        <div className="bg-white border rounded-lg p-6">
+        <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-4">Analysis Results</h3>
           <pre className="bg-gray-50 p-4 rounded text-sm overflow-auto max-h-96">
             {JSON.stringify(results, null, 2)}
@@ -310,7 +310,7 @@ const ClassificationTab: React.FC<{
 }> = ({ onRunClassification, results, loading }) => {
   return (
     <div className="space-y-6">
-      <div className="bg-white border rounded-lg p-6">
+      <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold">Evidence Classification</h3>
@@ -362,7 +362,7 @@ const PatternsTab: React.FC<{
 }> = ({ onRunRecognition, results, loading }) => {
   return (
     <div className="space-y-6">
-      <div className="bg-white border rounded-lg p-6">
+      <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold">Pattern Recognition</h3>
@@ -447,17 +447,17 @@ const ComprehensiveTab: React.FC<{
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-          <div className="bg-white p-4 rounded shadow-sm">
+          <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl p-4 rounded shadow-sm">
             <Zap className="w-8 h-8 text-purple-600 mx-auto mb-2" />
             <div className="font-medium">Anomaly Detection</div>
             <div className="text-sm text-gray-600">ML-powered anomaly identification</div>
           </div>
-          <div className="bg-white p-4 rounded shadow-sm">
+          <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl p-4 rounded shadow-sm">
             <Target className="w-8 h-8 text-blue-600 mx-auto mb-2" />
             <div className="font-medium">Evidence Classification</div>
             <div className="text-sm text-gray-600">Automated evidence categorization</div>
           </div>
-          <div className="bg-white p-4 rounded shadow-sm">
+          <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl p-4 rounded shadow-sm">
             <TrendingUp className="w-8 h-8 text-green-600 mx-auto mb-2" />
             <div className="font-medium">Pattern Recognition</div>
             <div className="text-sm text-gray-600">Advanced pattern discovery</div>
@@ -466,7 +466,7 @@ const ComprehensiveTab: React.FC<{
       </div>
 
       {results?.comprehensive_analysis && (
-        <div className="bg-white border rounded-lg p-6">
+        <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-4">Comprehensive Analysis Results</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -520,7 +520,7 @@ const ModelsTab: React.FC<{ modelStats: any }> = ({ modelStats }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Deep Learning Models */}
-        <div className="bg-white border rounded-lg p-6">
+        <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border rounded-lg p-6">
           <div className="flex items-center gap-3 mb-4">
             <Brain className="w-6 h-6 text-purple-600" />
             <h3 className="text-lg font-semibold">Deep Learning Models</h3>
@@ -554,7 +554,7 @@ const ModelsTab: React.FC<{ modelStats: any }> = ({ modelStats }) => {
         </div>
 
         {/* Evidence Classification */}
-        <div className="bg-white border rounded-lg p-6">
+        <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border rounded-lg p-6">
           <div className="flex items-center gap-3 mb-4">
             <Target className="w-6 h-6 text-blue-600" />
             <h3 className="text-lg font-semibold">Evidence Classification</h3>
@@ -588,7 +588,7 @@ const ModelsTab: React.FC<{ modelStats: any }> = ({ modelStats }) => {
         </div>
 
         {/* Pattern Recognition */}
-        <div className="bg-white border rounded-lg p-6">
+        <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border rounded-lg p-6">
           <div className="flex items-center gap-3 mb-4">
             <TrendingUp className="w-6 h-6 text-green-600" />
             <h3 className="text-lg font-semibold">Pattern Recognition</h3>
@@ -618,7 +618,7 @@ const ModelsTab: React.FC<{ modelStats: any }> = ({ modelStats }) => {
         </div>
 
         {/* Anomaly Detection */}
-        <div className="bg-white border rounded-lg p-6">
+        <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border rounded-lg p-6">
           <div className="flex items-center gap-3 mb-4">
             <Network className="w-6 h-6 text-red-600" />
             <h3 className="text-lg font-semibold">Anomaly Detection</h3>
@@ -649,7 +649,7 @@ const ModelsTab: React.FC<{ modelStats: any }> = ({ modelStats }) => {
       </div>
 
       {/* Model Training Section */}
-      <div className="bg-white border rounded-lg p-6">
+      <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Model Training & Optimization</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">

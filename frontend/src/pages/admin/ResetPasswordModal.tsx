@@ -52,8 +52,8 @@ export const ResetPasswordModal = ({ user, onClose }: ResetPasswordModalProps) =
               <KeyRound className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Reset Password</h2>
-              <p className="text-sm text-gray-500">{user.fullName} · @{user.username}</p>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Reset Password</h2>
+              <p className="text-sm text-gray-500 dark:text-slate-500">{user.fullName} · @{user.username}</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 hover:bg-gray-200 p-2 rounded-lg transition">
@@ -64,26 +64,26 @@ export const ResetPasswordModal = ({ user, onClose }: ResetPasswordModalProps) =
         {error && (
           <div className="mx-6 mt-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-800">{error}</p>
+            <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
           </div>
         )}
 
         {success && (
           <div className="mx-6 mt-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-green-800">Password reset successfully!</p>
+            <p className="text-sm text-green-800 dark:text-emerald-300">Password reset successfully!</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">New Password *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">New Password *</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 placeholder="Min. 8 characters"
                 required
                 minLength={8}
@@ -91,7 +91,7 @@ export const ResetPasswordModal = ({ user, onClose }: ResetPasswordModalProps) =
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-slate-400"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -99,12 +99,12 @@ export const ResetPasswordModal = ({ user, onClose }: ResetPasswordModalProps) =
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Confirm Password *</label>
             <input
               type={showPassword ? 'text' : 'password'}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               placeholder="Repeat password"
               required
             />
@@ -114,7 +114,7 @@ export const ResetPasswordModal = ({ user, onClose }: ResetPasswordModalProps) =
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition text-sm"
+              className="px-4 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition text-sm"
             >
               Cancel
             </button>

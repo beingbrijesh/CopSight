@@ -53,16 +53,16 @@ export const QueryHistory = ({ caseId, onSelectQuery, refreshTrigger }: QueryHis
               className="flex w-full items-start justify-between px-2 py-4 text-left transition hover:bg-gray-50 rounded-lg"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-gray-900">
+                <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
                   {item.queryText || item.query_text}
                 </p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-slate-500">
                   <span>{new Date(item.createdAt || item.created_at).toLocaleString()}</span>
-                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-300 dark:text-slate-600">•</span>
                   <span>{item.resultsCount ?? item.results_count ?? 0} results</span>
                   {(item.confidenceScore || item.confidence_score) && (
                     <>
-                      <span className="text-gray-300">•</span>
+                      <span className="text-gray-300 dark:text-slate-600">•</span>
                       <span>
                         {Math.round(
                           ((item.confidenceScore || item.confidence_score) ?? 0) * 100,
@@ -73,14 +73,14 @@ export const QueryHistory = ({ caseId, onSelectQuery, refreshTrigger }: QueryHis
                   )}
                 </div>
               </div>
-              <Search className="ml-3 mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+              <Search className="ml-3 mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-gray-400 dark:text-slate-500" />
             </button>
           ))
         ) : (
           <div className="px-6 py-8 text-center text-gray-500 h-full flex flex-col justify-center items-center">
-            <Clock className="mb-3 h-10 w-10 text-gray-300" />
-            <p className="text-sm font-medium text-gray-600">No query history yet</p>
-            <p className="mt-1 text-xs text-gray-400">Your previous queries will appear here.</p>
+            <Clock className="mb-3 h-10 w-10 text-gray-300 dark:text-slate-600" />
+            <p className="text-sm font-medium text-gray-600 dark:text-slate-400">No query history yet</p>
+            <p className="mt-1 text-xs text-gray-400 dark:text-slate-500">Your previous queries will appear here.</p>
           </div>
         )}
       </div>

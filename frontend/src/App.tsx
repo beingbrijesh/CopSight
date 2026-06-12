@@ -17,7 +17,29 @@ import { AppShell } from './components/AppShell';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { EvidenceDetailPanel } from './components/EvidenceDetailPanel';
 import { useAuthStore } from './store/authStore';
+import { useThemeStore } from './store/themeStore';
 import { useEffect } from 'react';
+import { GlassSpotlight } from './components/GlassSpotlight';
+
+function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const { isDarkMode } = useThemeStore();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDarkMode) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  return (
+    <>
+      <GlassSpotlight />
+      {children}
+    </>
+  );
+}
 
 function RouteController() {
   const { isAuthenticated, user, token } = useAuthStore();
@@ -101,9 +123,11 @@ function RouteController() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <RouteController />
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <RouteController />
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

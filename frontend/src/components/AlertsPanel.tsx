@@ -86,11 +86,11 @@ export const AlertsPanel = ({ caseId, limit = 10, showHeader = true }: AlertsPan
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'border-red-500 bg-red-50';
-      case 'high': return 'border-orange-500 bg-orange-50';
-      case 'medium': return 'border-yellow-500 bg-yellow-50';
-      case 'low': return 'border-blue-500 bg-blue-50';
-      default: return 'border-gray-500 bg-gray-50';
+      case 'critical': return 'border-red-500 bg-red-50 dark:bg-red-500/10';
+      case 'high': return 'border-orange-500 bg-orange-50 dark:bg-orange-500/10';
+      case 'medium': return 'border-yellow-500 bg-yellow-50 dark:bg-yellow-500/10';
+      case 'low': return 'border-blue-500 bg-blue-50 dark:bg-blue-500/10';
+      default: return 'border-gray-500 bg-gray-50 dark:bg-slate-800';
     }
   };
 
@@ -107,13 +107,13 @@ export const AlertsPanel = ({ caseId, limit = 10, showHeader = true }: AlertsPan
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Active</span>;
+        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-500/10 text-red-800 dark:text-red-300">Active</span>;
       case 'acknowledged':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Acknowledged</span>;
+        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-500/10 text-yellow-800 dark:text-yellow-300">Acknowledged</span>;
       case 'resolved':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Resolved</span>;
+        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-emerald-500/10 text-green-800 dark:text-emerald-300">Resolved</span>;
       case 'dismissed':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Dismissed</span>;
+        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-300">Dismissed</span>;
       default:
         return null;
     }
@@ -121,10 +121,10 @@ export const AlertsPanel = ({ caseId, limit = 10, showHeader = true }: AlertsPan
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 p-6">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-          <span className="ml-2 text-gray-600">Loading alerts...</span>
+          <span className="ml-2 text-gray-600 dark:text-slate-400">Loading alerts...</span>
         </div>
       </div>
     );
@@ -132,27 +132,27 @@ export const AlertsPanel = ({ caseId, limit = 10, showHeader = true }: AlertsPan
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 p-6">
         <div className="text-center py-8">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600">{error}</p>
+          <AlertTriangle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
+          <p className="text-red-600 dark:text-red-400">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10">
       {showHeader && (
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-white/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bell className="w-5 h-5 text-purple-600" />
-              <h3 className="text-lg font-medium text-gray-900">
+              <Bell className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                 Alerts {caseId ? `for Case ${caseId}` : ''}
               </h3>
               {stats && (
-                <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                <span className="bg-red-100 dark:bg-red-500/10 text-red-800 dark:text-red-300 text-xs font-medium px-2.5 py-0.5 rounded-full">
                   {stats.byStatus?.active || 0} active
                 </span>
               )}
@@ -165,10 +165,10 @@ export const AlertsPanel = ({ caseId, limit = 10, showHeader = true }: AlertsPan
         {alerts.length === 0 ? (
           <div className="text-center py-8">
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-gray-900 mb-2">
+            <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               No Active Alerts
             </h4>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-slate-400">
               {caseId ? 'This case has no active alerts.' : 'You have no active alerts.'}
             </p>
           </div>
@@ -184,12 +184,12 @@ export const AlertsPanel = ({ caseId, limit = 10, showHeader = true }: AlertsPan
                     {getSeverityIcon(alert.severity)}
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-medium text-gray-900">{alert.title}</h4>
+                        <h4 className="font-medium text-gray-900 dark:text-white">{alert.title}</h4>
                         {getStatusBadge(alert.status)}
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{alert.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">{alert.description}</p>
 
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-slate-500">
                         {alert.case && (
                           <span>Case: {alert.case.caseNumber} - {alert.case.title}</span>
                         )}
@@ -246,24 +246,24 @@ export const AlertsPanel = ({ caseId, limit = 10, showHeader = true }: AlertsPan
 
         {/* Alert Statistics */}
         {stats && !caseId && (
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <h5 className="text-sm font-medium text-gray-900 mb-3">Alert Statistics</h5>
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
+            <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Alert Statistics</h5>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-red-600">{stats.byStatus?.active || 0}</div>
-                <div className="text-xs text-gray-600">Active</div>
+                <div className="text-xs text-gray-600 dark:text-slate-400">Active</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-yellow-600">{stats.byStatus?.acknowledged || 0}</div>
-                <div className="text-xs text-gray-600">Acknowledged</div>
+                <div className="text-xs text-gray-600 dark:text-slate-400">Acknowledged</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">{stats.byStatus?.resolved || 0}</div>
-                <div className="text-xs text-gray-600">Resolved</div>
+                <div className="text-xs text-gray-600 dark:text-slate-400">Resolved</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-600">{stats.total}</div>
-                <div className="text-xs text-gray-600">Total</div>
+                <div className="text-xs text-gray-600 dark:text-slate-400">Total</div>
               </div>
             </div>
           </div>
@@ -273,29 +273,29 @@ export const AlertsPanel = ({ caseId, limit = 10, showHeader = true }: AlertsPan
       {/* Resolve Alert Modal */}
       {showModal && selectedAlert && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl p-6 max-w-md w-full mx-4 border border-gray-100 dark:border-white/10">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Resolve Alert</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Resolve Alert</h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
             <div className="mb-4">
-              <h4 className="font-medium text-gray-900 mb-2">{selectedAlert.title}</h4>
-              <p className="text-sm text-gray-600">{selectedAlert.description}</p>
+              <h4 className="font-medium text-gray-900 dark:text-white mb-2">{selectedAlert.title}</h4>
+              <p className="text-sm text-gray-600 dark:text-slate-400">{selectedAlert.description}</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Resolution Notes (Optional)
                 </label>
                 <textarea
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-purple-500 focus:border-purple-500"
                   rows={3}
                   placeholder="Add notes about how this alert was resolved..."
                   onChange={(e) => {
@@ -308,7 +308,7 @@ export const AlertsPanel = ({ caseId, limit = 10, showHeader = true }: AlertsPan
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                  className="flex-1 px-4 py-2 text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition"
                 >
                   Cancel
                 </button>

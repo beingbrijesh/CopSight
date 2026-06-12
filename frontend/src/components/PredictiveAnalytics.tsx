@@ -77,17 +77,17 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
       case 'communication_patterns': return <TrendingUp className="w-5 h-5 text-green-600" />;
       case 'timeline_analysis': return <CheckCircle className="w-5 h-5 text-purple-600" />;
       case 'network_analysis': return <Lightbulb className="w-5 h-5 text-orange-600" />;
-      default: return <Lightbulb className="w-5 h-5 text-gray-600" />;
+      default: return <Lightbulb className="w-5 h-5 text-gray-600 dark:text-slate-400" />;
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow h-[600px] flex flex-col overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
+    <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl dark:bg-white/5 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 h-[600px] flex flex-col overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-white/10 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-purple-600" />
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white dark:text-white">
               Predictive Analytics
             </h3>
             {results && (
@@ -140,8 +140,8 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-              <p className="text-red-800">{error}</p>
+              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <p className="text-red-800 dark:text-red-300">{error}</p>
             </div>
           </div>
         )}
@@ -149,7 +149,7 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
         {!results && !loading && (
           <div className="text-center py-12">
             <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-gray-900 mb-2">
+            <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               Predictive Investigation Analytics
             </h4>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
@@ -174,7 +174,7 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
                 <span>Pattern Recognition</span>
               </div>
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-500 dark:text-slate-500">
               <p className="mb-2">⚠️ Note: Train the model first using historical case data for best results.</p>
               <p>Model training requires completed cases with known outcomes.</p>
             </div>
@@ -187,8 +187,8 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
             {results.risk_prediction && (
               <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
                     Risk Assessment
                   </h4>
                   <div className="flex items-center gap-2">
@@ -203,16 +203,16 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-gray-900">
+                    <div className="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">
                       {(results.risk_prediction.risk_score * 100).toFixed(1)}%
                     </div>
-                    <div className="text-sm text-gray-600">Risk Score</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-400">Risk Score</div>
                   </div>
                   <div className="text-center">
                     <div className="text-3xl font-bold text-blue-600">
                       {(results.risk_prediction.confidence * 100).toFixed(1)}%
                     </div>
-                    <div className="text-sm text-gray-600">Confidence</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-400">Confidence</div>
                   </div>
                   <div className="text-center">
                     <div className={`text-3xl font-bold capitalize ${
@@ -223,18 +223,18 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
                     }`}>
                       {results.risk_prediction.prediction}
                     </div>
-                    <div className="text-sm text-gray-600">Risk Level</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-400">Risk Level</div>
                   </div>
                 </div>
 
-                <p className="text-gray-700">{results.risk_prediction.message}</p>
+                <p className="text-gray-700 dark:text-slate-300">{results.risk_prediction.message}</p>
               </div>
             )}
 
             {/* Investigation Leads */}
             {results.investigation_leads && results.investigation_leads.length > 0 && (
               <div>
-                <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <Lightbulb className="w-5 h-5 text-purple-600" />
                   Investigation Leads ({results.investigation_leads.length})
                 </h4>
@@ -246,8 +246,8 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
                         <div className="flex items-center gap-3">
                           {getLeadIcon(lead.lead_type)}
                           <div>
-                            <h5 className="font-medium text-gray-900">{lead.title}</h5>
-                            <p className="text-sm text-gray-600">{lead.description}</p>
+                            <h5 className="font-medium text-gray-900 dark:text-white dark:text-white">{lead.title}</h5>
+                            <p className="text-sm text-gray-600 dark:text-slate-400">{lead.description}</p>
                           </div>
                         </div>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getConfidenceColor(lead.confidence)}`}>
@@ -257,7 +257,7 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
 
                       {lead.recommendations && lead.recommendations.length > 0 && (
                         <div className="mb-3">
-                          <h6 className="text-sm font-medium text-gray-900 mb-2">Recommendations:</h6>
+                          <h6 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Recommendations:</h6>
                           <ul className="text-sm text-gray-700 space-y-1">
                             {lead.recommendations.map((rec, idx) => (
                               <li key={idx} className="flex items-start gap-2">
@@ -270,16 +270,16 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
                       )}
 
                       {lead.related_cases && lead.related_cases.length > 0 && (
-                        <div className="pt-3 border-t border-gray-200">
-                          <h6 className="text-sm font-medium text-gray-900 mb-2">Related Cases:</h6>
+                        <div className="pt-3 border-t border-gray-200 dark:border-white/10">
+                          <h6 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Related Cases:</h6>
                           <div className="flex flex-wrap gap-2">
                             {lead.related_cases.slice(0, 3).map((case_item: any, idx: number) => (
-                              <span key={idx} className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                              <span key={idx} className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-500/10 text-blue-800 dark:text-blue-300">
                                 {case_item.case_number}
                               </span>
                             ))}
                             {lead.related_cases.length > 3 && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-gray-500 dark:text-slate-500">
                                 +{lead.related_cases.length - 3} more
                               </span>
                             )}
@@ -295,10 +295,10 @@ export const PredictiveAnalytics = ({ caseId }: PredictiveAnalyticsProps) => {
             {results.investigation_leads && results.investigation_leads.length === 0 && (
               <div className="text-center py-8">
                 <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                <h4 className="text-lg font-medium text-gray-900 mb-2">
+                <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   No Investigation Leads Generated
                 </h4>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-slate-400">
                   The predictive analysis did not identify any specific investigation leads for this case.
                   This may indicate the case follows typical patterns.
                 </p>

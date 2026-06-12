@@ -53,27 +53,27 @@ interface DetectionResults {
 
 /* ─── Helpers ───────────────────────────────────────────────────────── */
 const RISK_COLORS: Record<string, string> = {
-  critical: 'text-red-600 bg-red-50 border-red-200',
-  high:     'text-orange-600 bg-orange-50 border-orange-200',
-  medium:   'text-yellow-700 bg-yellow-50 border-yellow-200',
-  low:      'text-blue-600 bg-blue-50 border-blue-200',
-  none:     'text-green-600 bg-green-50 border-green-200',
+  critical: 'text-red-600 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-500/30',
+  high:     'text-orange-600 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-500/30',
+  medium:   'text-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-500/30',
+  low:      'text-blue-600 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-500/30',
+  none:     'text-green-600 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-500/30',
 };
 
 const RISK_DOT: Record<string, string> = {
-  critical: 'bg-red-500 animate-pulse',
-  high:     'bg-orange-500',
-  medium:   'bg-yellow-500',
-  low:      'bg-blue-500',
-  none:     'bg-green-500',
+  critical: 'bg-red-50 dark:bg-red-900/200 animate-pulse',
+  high:     'bg-orange-50 dark:bg-orange-900/200',
+  medium:   'bg-yellow-50 dark:bg-yellow-900/200',
+  low:      'bg-blue-50 dark:bg-blue-900/200',
+  none:     'bg-green-50 dark:bg-green-900/200',
 };
 
 const confidenceColor = (c: number) =>
   c >= 0.8 ? '#dc2626' : c >= 0.6 ? '#ea580c' : c >= 0.4 ? '#ca8a04' : '#2563eb';
 
 const confidenceBg = (c: number) =>
-  c >= 0.8 ? 'bg-red-100 text-red-700' : c >= 0.6 ? 'bg-orange-100 text-orange-700'
-           : c >= 0.4 ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700';
+  c >= 0.8 ? 'bg-red-100 dark:bg-red-900/40 text-red-700' : c >= 0.6 ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700'
+           : c >= 0.4 ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700';
 
 const fmtType = (t: string) => t.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 const fmtPct  = (c: number) => `${(c * 100).toFixed(0)}%`;
@@ -117,10 +117,10 @@ function HighlightedText({ text }: { text: string }) {
   }
 
   const hlClass: Record<string, string> = {
-    phone:   'bg-blue-100   text-blue-800   rounded px-0.5 font-mono text-sm',
-    attack:  'bg-red-100    text-red-800    rounded px-0.5 font-semibold',
-    conf:    'bg-orange-100 text-orange-800 rounded px-0.5 font-medium',
-    time:    'bg-yellow-100 text-yellow-800 rounded px-0.5',
+    phone:   'bg-blue-100 dark:bg-blue-900/40   text-blue-800   rounded px-0.5 font-mono text-sm',
+    attack:  'bg-red-100 dark:bg-red-900/40    text-red-800    rounded px-0.5 font-semibold',
+    conf:    'bg-orange-100 dark:bg-orange-900/40 text-orange-800 rounded px-0.5 font-medium',
+    time:    'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 rounded px-0.5',
     foreign: 'bg-purple-100 text-purple-800 rounded px-0.5',
     entity:  'bg-emerald-100 text-emerald-800 rounded px-0.5 font-medium italic',
   };
@@ -174,7 +174,7 @@ function DonutChart({ data }: { data: Array<{ label: string; count: number; colo
       </svg>
       <div className="space-y-1.5">
         {data.map((d, i) => (
-          <div key={i} className="flex items-center gap-2 text-xs text-gray-600">
+          <div key={i} className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-400">
             <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: d.color }} />
             <span>{d.label}: <strong>{d.count}</strong></span>
           </div>
@@ -188,7 +188,7 @@ function DonutChart({ data }: { data: Array<{ label: string; count: number; colo
 function ConfBar({ value, max = 1 }: { value: number; max?: number }) {
   const pct = Math.min((value / max) * 100, 100);
   return (
-    <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+    <div className="w-full bg-gray-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
       <div
         className="h-full rounded-full transition-all duration-700"
         style={{ width: `${pct}%`, background: confidenceColor(value) }}
@@ -201,18 +201,18 @@ function ConfBar({ value, max = 1 }: { value: number; max?: number }) {
 function AnomalyCard({ anomaly, modelBadge }: { anomaly: AnomalyResult; modelBadge?: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all bg-white">
+    <div className="border border-gray-200 dark:border-white/10 rounded-xl p-4 hover:shadow-md transition-all glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center flex-wrap gap-1.5 mb-1.5">
-            <span className="font-semibold text-gray-900 text-sm">{fmtType(anomaly.anomaly_type)}</span>
+            <span className="font-semibold text-gray-900 dark:text-white text-sm">{fmtType(anomaly.anomaly_type)}</span>
             {anomaly.attack_category && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 uppercase tracking-wide">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 dark:bg-red-900/40 text-red-700 uppercase tracking-wide">
                 {anomaly.attack_category}
               </span>
             )}
             {modelBadge && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-700">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/40 text-violet-700">
                 {modelBadge}
               </span>
             )}
@@ -222,40 +222,40 @@ function AnomalyCard({ anomaly, modelBadge }: { anomaly: AnomalyResult; modelBad
           </div>
           <ConfBar value={anomaly.confidence} />
           {anomaly.description && (
-            <p className="text-xs text-gray-600 mt-2 leading-relaxed">
+            <p className="text-xs text-gray-600 dark:text-slate-300 mt-2 leading-relaxed">
               <HighlightedText text={anomaly.description} />
             </p>
           )}
         </div>
-        <button onClick={() => setOpen(o => !o)} className="text-gray-400 hover:text-gray-600 flex-shrink-0 mt-0.5">
+        <button onClick={() => setOpen(o => !o)} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:text-slate-300 flex-shrink-0 mt-0.5">
           {open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
         </button>
       </div>
 
       {open && (anomaly.record || anomaly.reconstruction_error !== undefined) && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Forensic Evidence Records</span>
+            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">Forensic Evidence Records</span>
           </div>
           
           <div className="max-h-64 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
             {/* Simple key-value metrics first */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 mb-3">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-slate-300 mb-3">
               {anomaly.hour !== undefined && (
                 <>
-                  <span className="font-medium text-gray-700">Hour</span><span>{anomaly.hour}:00</span>
-                  <span className="font-medium text-gray-700">Z-Score</span><span>{anomaly.z_score?.toFixed(2)}</span>
+                  <span className="font-medium text-gray-700 dark:text-slate-300">Hour</span><span>{anomaly.hour}:00</span>
+                  <span className="font-medium text-gray-700 dark:text-slate-300">Z-Score</span><span>{anomaly.z_score?.toFixed(2)}</span>
                 </>
               )}
               {anomaly.degree !== undefined && (
                 <>
-                  <span className="font-medium text-gray-700">Comm Degree</span><span>{anomaly.degree}</span>
-                  <span className="font-medium text-gray-700">Bridge Score</span><span>{anomaly.bridge_score?.toFixed(2)}</span>
+                  <span className="font-medium text-gray-700 dark:text-slate-300">Comm Degree</span><span>{anomaly.degree}</span>
+                  <span className="font-medium text-gray-700 dark:text-slate-300">Bridge Score</span><span>{anomaly.bridge_score?.toFixed(2)}</span>
                 </>
               )}
               {anomaly.reconstruction_error !== undefined && (
                 <>
-                  <span className="font-medium text-gray-700">Recon Error</span>
+                  <span className="font-medium text-gray-700 dark:text-slate-300">Recon Error</span>
                   <span className="font-mono">{anomaly.reconstruction_error.toFixed(2)} / {anomaly.threshold?.toFixed(2)}</span>
                 </>
               )}
@@ -321,8 +321,8 @@ function AnomalyCard({ anomaly, modelBadge }: { anomaly: AnomalyResult; modelBad
             )}
 
             {/* Comprehensive Record Display (Scrollable) */}
-            <div className="bg-gray-50 rounded-lg p-2 border border-gray-100">
-              <pre className="text-[10px] text-gray-500 font-mono whitespace-pre-wrap break-all">
+            <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 border border-gray-100 dark:border-white/10">
+              <pre className="text-[10px] text-gray-500 dark:text-slate-400 font-mono whitespace-pre-wrap break-all">
                 {JSON.stringify(anomaly.record, null, 2)}
               </pre>
             </div>
@@ -343,19 +343,19 @@ function Section({
   const [open, setOpen] = useState(defaultOpen);
   if (count === 0) return null;
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden">
+    <div className="border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition"
+        className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:bg-slate-700/50 transition"
       >
         <div className="flex items-center gap-2">
           <span className={color}>{icon}</span>
-          <span className="font-semibold text-gray-900 text-sm">{title}</span>
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${color === 'text-red-600' ? 'bg-red-100 text-red-700' : color === 'text-orange-600' ? 'bg-orange-100 text-orange-700' : color === 'text-green-600' ? 'bg-green-100 text-green-700' : color === 'text-blue-600' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700'}`}>
+          <span className="font-semibold text-gray-900 dark:text-white text-sm">{title}</span>
+          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${color === 'text-red-600' ? 'bg-red-100 dark:bg-red-900/40 text-red-700' : color === 'text-orange-600' ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700' : color === 'text-green-600' ? 'bg-green-100 dark:bg-green-900/40 text-green-700' : color === 'text-blue-600' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700' : 'bg-violet-100 dark:bg-violet-900/40 text-violet-700'}`}>
             {count}
           </span>
         </div>
-        {open ? <ChevronUp size={14} className="text-gray-500" /> : <ChevronDown size={14} className="text-gray-500" />}
+        {open ? <ChevronUp size={14} className="text-gray-500 dark:text-slate-500" /> : <ChevronDown size={14} className="text-gray-500 dark:text-slate-500" />}
       </button>
       {open && <div className="p-4 space-y-3">{children}</div>}
     </div>
@@ -395,13 +395,13 @@ function ForensicReport({ results }: { results: DetectionResults }) {
   ].filter(Boolean).join(' ');
 
   return (
-    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+    <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
       <div className="flex items-center gap-2 mb-3">
         <FileText16 />
-        <span className="font-semibold text-gray-900 text-sm">Forensic Report Generator (Full Result)</span>
+        <span className="font-semibold text-gray-900 dark:text-white text-sm">Forensic Report Generator (Full Result)</span>
       </div>
       <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-        <p className="text-sm text-gray-700 leading-relaxed">
+        <p className="text-sm text-gray-700 dark:text-slate-200 leading-relaxed">
           <HighlightedText text={narrative} />
         </p>
       </div>
@@ -409,7 +409,7 @@ function ForensicReport({ results }: { results: DetectionResults }) {
   );
 }
 const FileText16 = () => (
-  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="text-gray-500">
+  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="text-gray-500 dark:text-slate-500">
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
   </svg>
 );
@@ -468,27 +468,27 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
 
   /* ── Render ─────────────────────────────────────────────────────── */
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden h-[600px] flex flex-col">
+    <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200 dark:border-white/10 overflow-hidden h-[600px] flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-50 to-white flex-shrink-0">
+      <div className="px-6 py-4 border-b border-gray-100 dark:border-white/10 bg-gradient-to-r from-violet-50 dark:from-violet-900/30 to-white dark:to-transparent flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center shadow-sm">
               <Brain className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-gray-900">AI Anomaly Detection</h3>
-              <p className="text-xs text-gray-500">XGBoost · DNN · LSTM-AE · Isolation Forest</p>
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">AI Anomaly Detection</h3>
+              <p className="text-xs text-gray-500 dark:text-slate-500">XGBoost · DNN · LSTM-AE · Isolation Forest</p>
             </div>
             {results && (
-              <span className="ml-1 bg-violet-100 text-violet-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+              <span className="ml-1 bg-violet-100 dark:bg-violet-900/40 text-violet-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
                 {results.summary.total_anomalies} anomalies
               </span>
             )}
           </div>
           <div className="flex items-center gap-2">
             {results && (
-              <button onClick={exportJSON} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+              <button onClick={exportJSON} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-600 dark:text-slate-300 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-lg hover:bg-gray-50 dark:bg-white/5 transition">
                 <Download size={13} /> Export JSON
               </button>
             )}
@@ -511,7 +511,7 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
 
         {/* Error */}
         {error && (
-          <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+          <div className="mb-5 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-xl flex items-start gap-3">
             <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-red-700">{error}</p>
           </div>
@@ -520,20 +520,20 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
         {/* Empty state */}
         {!results && !loading && (
           <div className="text-center py-14">
-            <div className="w-16 h-16 rounded-2xl bg-violet-50 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center mx-auto mb-4">
               <Brain className="w-9 h-9 text-violet-300" />
             </div>
-            <h4 className="text-base font-semibold text-gray-900 mb-1">Multi-Model Anomaly Detection</h4>
-            <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">
+            <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-1">Multi-Model Anomaly Detection</h4>
+            <p className="text-sm text-gray-500 dark:text-slate-400 max-w-md mx-auto mb-6">
               Analyse all communication logs through four AI models simultaneously — detecting attack patterns, behavioural anomalies, and temporal irregularities.
             </p>
-            <div className="flex justify-center flex-wrap gap-3 text-xs text-gray-500">
+            <div className="flex justify-center flex-wrap gap-3 text-xs text-gray-500 dark:text-slate-500">
               {[['XGBoost', 'Attack Classification', '🎯'], ['Universal DNN', 'Pattern Anomalies', '🧠'], ['LSTM-AE', 'Sequence Anomalies', '📈'], ['Isolation Forest', 'Outlier Detection', '🔍']].map(([m, desc, em]) => (
-                <div key={m} className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-3 py-2 rounded-xl">
+                <div key={m} className="flex items-center gap-1.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 px-3 py-2 rounded-xl">
                   <span>{em}</span>
                   <div className="text-left">
-                    <div className="font-semibold text-gray-700">{m}</div>
-                    <div className="text-gray-400">{desc}</div>
+                    <div className="font-semibold text-gray-700 dark:text-slate-300">{m}</div>
+                    <div className="text-gray-400 dark:text-slate-500">{desc}</div>
                   </div>
                 </div>
               ))}
@@ -545,10 +545,10 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
         {loading && (
           <div className="space-y-4 animate-pulse">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-gray-100 rounded-xl" />)}
+              {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-gray-100 dark:bg-slate-700/50 rounded-xl" />)}
             </div>
-            <div className="h-32 bg-gray-100 rounded-xl" />
-            <div className="h-48 bg-gray-100 rounded-xl" />
+            <div className="h-32 bg-gray-100 dark:bg-slate-700/50 rounded-xl" />
+            <div className="h-48 bg-gray-100 dark:bg-slate-700/50 rounded-xl" />
           </div>
         )}
 
@@ -559,14 +559,14 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
             {/* ── Summary Cards ── */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* Total */}
-              <div className="rounded-xl border border-gray-200 p-4 bg-white">
+              <div className="rounded-xl border border-gray-200 dark:border-white/10 p-4 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl">
                 <div className="flex items-center gap-2 mb-1">
-                  <Target size={14} className="text-gray-400" />
-                  <span className="text-xs text-gray-500 font-medium">Total Anomalies</span>
+                  <Target size={14} className="text-gray-400 dark:text-slate-500" />
+                  <span className="text-xs text-gray-500 dark:text-slate-400 font-medium">Total Anomalies</span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">{results.summary.total_anomalies}</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-white">{results.summary.total_anomalies}</div>
                 {results.summary.classic_anomalies != null && (
-                  <div className="text-[10px] text-gray-400 mt-1">
+                  <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">
                     {results.summary.classic_anomalies} classic · {results.summary.advanced_anomalies} advanced
                   </div>
                 )}
@@ -582,24 +582,24 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
               </div>
 
               {/* High confidence */}
-              <div className="rounded-xl border border-gray-200 p-4 bg-white">
+              <div className="rounded-xl border border-gray-200 dark:border-white/10 p-4 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl">
                 <div className="flex items-center gap-2 mb-1">
                   <AlertTriangle size={14} className="text-orange-400" />
-                  <span className="text-xs text-gray-500 font-medium">High Confidence</span>
+                  <span className="text-xs text-gray-500 dark:text-slate-400 font-medium">High Confidence</span>
                 </div>
                 <div className="text-3xl font-bold text-orange-600">{results.summary.high_confidence_count}</div>
-                <div className="text-[10px] text-gray-400 mt-1">≥ 70% confidence</div>
+                <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">≥ 70% confidence</div>
               </div>
 
               {/* Models */}
-              <div className="rounded-xl border border-gray-200 p-4 bg-white">
+              <div className="rounded-xl border border-gray-200 dark:border-white/10 p-4 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl">
                 <div className="flex items-center gap-2 mb-2">
                   <Activity size={14} className="text-violet-400" />
-                  <span className="text-xs text-gray-500 font-medium">Models Used</span>
+                  <span className="text-xs text-gray-500 dark:text-slate-400 font-medium">Models Used</span>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {(results.summary.models_used || ['classic']).map(m => (
-                    <span key={m} className="px-1.5 py-0.5 bg-violet-50 text-violet-700 text-[10px] font-semibold rounded-md uppercase tracking-wide">{m}</span>
+                    <span key={m} className="px-1.5 py-0.5 bg-violet-50 dark:bg-violet-900/20 text-violet-700 text-[10px] font-semibold rounded-md uppercase tracking-wide">{m}</span>
                   ))}
                 </div>
               </div>
@@ -609,32 +609,32 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
             {results.summary.total_anomalies > 0 && (
               <div className="grid md:grid-cols-2 gap-4">
                 {/* Donut */}
-                <div className="rounded-xl border border-gray-200 p-4 bg-white">
+                <div className="rounded-xl border border-gray-200 dark:border-white/10 p-4 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl">
                   <div className="flex items-center gap-2 mb-3">
-                    <BarChart2 size={14} className="text-gray-400" />
-                    <span className="text-xs font-semibold text-gray-700">Anomaly Distribution</span>
+                    <BarChart2 size={14} className="text-gray-400 dark:text-slate-500" />
+                    <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">Anomaly Distribution</span>
                   </div>
                   <DonutChart data={donutData} />
                 </div>
 
                 {/* Confidence bars */}
-                <div className="rounded-xl border border-gray-200 p-4 bg-white">
+                <div className="rounded-xl border border-gray-200 dark:border-white/10 p-4 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl">
                   <div className="flex items-center gap-2 mb-3">
-                    <Shield size={14} className="text-gray-400" />
-                    <span className="text-xs font-semibold text-gray-700">Confidence Breakdown</span>
+                    <Shield size={14} className="text-gray-400 dark:text-slate-500" />
+                    <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">Confidence Breakdown</span>
                   </div>
                   <div className="space-y-2">
                     {[...allAdvanced, ...allClassic].slice(0, 8).map((a, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <span className="text-[10px] text-gray-500 w-28 truncate">{fmtType(a.anomaly_type)}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-slate-400 w-28 truncate">{fmtType(a.anomaly_type)}</span>
                         <div className="flex-1">
                           <ConfBar value={a.confidence} />
                         </div>
-                        <span className="text-[10px] text-gray-600 font-mono w-8 text-right">{fmtPct(a.confidence)}</span>
+                        <span className="text-[10px] text-gray-600 dark:text-slate-300 font-mono w-8 text-right">{fmtPct(a.confidence)}</span>
                       </div>
                     ))}
                     {(allAdvanced.length + allClassic.length) > 8 && (
-                      <p className="text-[10px] text-gray-400 pt-1">+{(allAdvanced.length + allClassic.length) - 8} more…</p>
+                      <p className="text-[10px] text-gray-400 dark:text-slate-500 pt-1">+{(allAdvanced.length + allClassic.length) - 8} more…</p>
                     )}
                   </div>
                 </div>
@@ -651,7 +651,7 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
                   title="XGBoost — Attack Classification"
                   icon={<Target size={16} />}
                   count={results.advanced_anomalies.xgb_anomalies?.length || 0}
-                  color="text-red-600"
+                  color="text-red-600 dark:text-red-400"
                 >
                   {results.advanced_anomalies.xgb_anomalies?.map((a, i) => (
                     <AnomalyCard key={i} anomaly={a} modelBadge="XGBoost" />
@@ -714,8 +714,8 @@ export const AnomalyDetection = ({ caseId }: AnomalyDetectionProps) => {
             {results.summary.total_anomalies === 0 && (
               <div className="text-center py-10">
                 <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                <h4 className="text-base font-semibold text-gray-900 mb-1">No Anomalies Detected</h4>
-                <p className="text-sm text-gray-500">All communication patterns are within normal parameters.</p>
+                <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-1">No Anomalies Detected</h4>
+                <p className="text-sm text-gray-500 dark:text-slate-500">All communication patterns are within normal parameters.</p>
               </div>
             )}
 

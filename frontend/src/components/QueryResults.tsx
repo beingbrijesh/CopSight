@@ -42,12 +42,12 @@ export const QueryResults = ({ results }: QueryResultsProps) => {
   };
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+    <div className="overflow-hidden rounded-lg border border-gray-200 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl dark:bg-white/5">
       <div className="border-b border-gray-200 px-5 py-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Query Results</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white dark:text-white">Query Results</h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-slate-500">
               {results.evidence?.length || 0} evidence items matched this request.
             </p>
           </div>
@@ -55,7 +55,7 @@ export const QueryResults = ({ results }: QueryResultsProps) => {
             <span className={`rounded-full px-3 py-1 text-xs font-medium ${getConfidenceTone(results.confidence || 0)}`}>
               Confidence {Math.round((results.confidence || 0) * 100)}%
             </span>
-            <button className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900">
+            <button className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white dark:text-white">
               <Download className="h-4 w-4" />
               Export
             </button>
@@ -97,17 +97,17 @@ export const QueryResults = ({ results }: QueryResultsProps) => {
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-gray-200 p-6 text-sm text-gray-500">
+              <div className="rounded-lg border border-dashed border-gray-200 p-6 text-sm text-gray-500 dark:text-slate-500">
                 No answer is available for this query yet.
               </div>
             )}
 
             {results.findings?.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Key Findings</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-500">Key Findings</h3>
                 {results.findings.map((finding: any, index: number) => (
                   <div key={`${finding.finding || finding}-${index}`} className="flex gap-3 rounded-lg border border-gray-200 p-4">
-                    <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-500" />
+                    <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-500 dark:text-slate-500" />
                     <div>
                       <p className="text-sm text-gray-800">{finding.finding || finding}</p>
                     </div>
@@ -138,15 +138,15 @@ export const QueryResults = ({ results }: QueryResultsProps) => {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex min-w-0 flex-1 gap-3">
                         <div className="rounded-lg bg-gray-100 p-2">
-                          <SourceIcon className="h-4 w-4 text-gray-700" />
+                          <SourceIcon className="h-4 w-4 text-gray-700 dark:text-slate-300" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-medium capitalize text-gray-900">{sourceType.replaceAll('_', ' ')}</span>
+                            <span className="text-sm font-medium capitalize text-gray-900 dark:text-white dark:text-white">{sourceType.replaceAll('_', ' ')}</span>
                             <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Relevance {scorePercentage}%</span>
                           </div>
-                          <p className="mt-2 text-sm leading-6 text-gray-700">{item.content || item.source?.content}</p>
-                          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-400">
+                          <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-slate-300">{item.content || item.source?.content}</p>
+                          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-slate-500">
                             {item.metadata?.phoneNumber && <span>From {item.metadata.phoneNumber}</span>}
                             {item.metadata?.timestamp && <span>{new Date(item.metadata.timestamp).toLocaleString()}</span>}
                           </div>
@@ -173,7 +173,7 @@ export const QueryResults = ({ results }: QueryResultsProps) => {
                 );
               })
             ) : (
-              <div className="rounded-lg border border-dashed border-gray-200 p-6 text-sm text-gray-500">
+              <div className="rounded-lg border border-dashed border-gray-200 p-6 text-sm text-gray-500 dark:text-slate-500">
                 No evidence matched this query.
               </div>
             )}
@@ -185,14 +185,14 @@ export const QueryResults = ({ results }: QueryResultsProps) => {
             {results.query_components && (
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Intent</p>
-                  <p className="mt-2 text-sm text-gray-900">{results.query_components.intent || 'N/A'}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-500">Intent</p>
+                  <p className="mt-2 text-sm text-gray-900 dark:text-white dark:text-white">{results.query_components.intent || 'N/A'}</p>
                 </div>
                 <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Keywords</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-500">Keywords</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {(results.query_components.keywords || []).map((keyword: string) => (
-                      <span key={keyword} className="rounded-full bg-white px-2.5 py-1 text-xs text-gray-700">
+                      <span key={keyword} className="rounded-full glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl px-2.5 py-1 text-xs text-gray-700 dark:text-slate-300">
                         {keyword}
                       </span>
                     ))}
@@ -200,10 +200,10 @@ export const QueryResults = ({ results }: QueryResultsProps) => {
                 </div>
                 {results.query_components.entities?.length > 0 && (
                   <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 md:col-span-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Detected Entities</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-500">Detected Entities</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {results.query_components.entities.map((entity: string) => (
-                        <span key={entity} className="rounded-full bg-white px-2.5 py-1 text-xs text-gray-700">
+                        <span key={entity} className="rounded-full glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl px-2.5 py-1 text-xs text-gray-700 dark:text-slate-300">
                           {entity}
                         </span>
                       ))}
@@ -215,16 +215,16 @@ export const QueryResults = ({ results }: QueryResultsProps) => {
 
             <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
-                <p className="text-2xl font-semibold text-gray-900">{results.evidence?.length || 0}</p>
-                <p className="mt-1 text-sm text-gray-500">Evidence Items</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white dark:text-white">{results.evidence?.length || 0}</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-slate-500">Evidence Items</p>
               </div>
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
-                <p className="text-2xl font-semibold text-gray-900">{Math.round((results.confidence || 0) * 100)}%</p>
-                <p className="mt-1 text-sm text-gray-500">Confidence</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white dark:text-white">{Math.round((results.confidence || 0) * 100)}%</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-slate-500">Confidence</p>
               </div>
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
-                <p className="text-2xl font-semibold text-gray-900">{results.findings?.length || 0}</p>
-                <p className="mt-1 text-sm text-gray-500">Findings</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white dark:text-white">{results.findings?.length || 0}</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-slate-500">Findings</p>
               </div>
             </div>
           </div>

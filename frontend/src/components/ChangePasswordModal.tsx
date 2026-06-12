@@ -49,7 +49,7 @@ export const ChangePasswordModal = () => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/75 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl">
+      <div className="w-full max-w-md overflow-hidden rounded-xl glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl shadow-2xl dark:shadow-none border border-gray-100 dark:border-white/10">
         <div className="bg-blue-600 px-6 py-8 text-center text-white">
           <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white border-2 border-white/20">
             <img src="/logo.jpeg" alt="CopSight Logo" className="h-full w-full object-cover" />
@@ -65,39 +65,39 @@ export const ChangePasswordModal = () => {
             <div className="flex flex-col items-center justify-center py-6 text-center text-green-600">
               <CheckCircle2 className="h-16 w-16 animate-bounce" />
               <p className="mt-4 text-lg font-medium">Password updated successfully!</p>
-              <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+              <p className="text-sm text-gray-500 dark:text-slate-500">Redirecting to dashboard...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+                <div className="flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
                   <AlertCircle className="h-5 w-5 flex-shrink-0" />
                   <p>{error}</p>
                 </div>
               )}
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Current Password</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Current Password</label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <Lock className="h-5 w-5 text-gray-400" />
+                    <Lock className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                   </div>
                   <input
                     type="password"
                     required
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="block w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="block w-full rounded-lg border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white py-2 pl-10 pr-3 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="Enter current password"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">New Password</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">New Password</label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <Shield className="h-5 w-5 text-gray-400" />
+                    <Shield className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                   </div>
                   <input
                     type="password"
@@ -105,17 +105,17 @@ export const ChangePasswordModal = () => {
                     minLength={8}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="block w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="block w-full rounded-lg border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white py-2 pl-10 pr-3 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="Minimum 8 characters"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Confirm New Password</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Confirm New Password</label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <Shield className="h-5 w-5 text-gray-400" />
+                    <Shield className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                   </div>
                   <input
                     type="password"
@@ -123,7 +123,7 @@ export const ChangePasswordModal = () => {
                     minLength={8}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="block w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="block w-full rounded-lg border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white py-2 pl-10 pr-3 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="Re-enter new password"
                   />
                 </div>

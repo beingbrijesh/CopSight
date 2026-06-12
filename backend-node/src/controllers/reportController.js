@@ -60,7 +60,7 @@ export const generateReport = async (req, res) => {
           attributes: []
         }],
         limit: 100,
-        order: [['createdAt', 'DESC']]
+        order: [['created_at', 'DESC']]
       });
       reportData.evidence = evidence.map(e => e.toJSON());
     }
@@ -74,7 +74,7 @@ export const generateReport = async (req, res) => {
           where: { caseId },
           attributes: []
         }],
-        order: [['createdAt', 'ASC']],
+        order: [['created_at', 'ASC']],
         limit: 100
       });
       reportData.timeline = timeline.map(t => ({
@@ -88,7 +88,7 @@ export const generateReport = async (req, res) => {
     if (includeQueries) {
       const queries = await CaseQuery.findAll({
         where: { caseId },
-        order: [['createdAt', 'DESC']],
+        order: [['created_at', 'DESC']],
         limit: 20
       });
       reportData.queries = queries.map(q => q.toJSON());
@@ -98,7 +98,7 @@ export const generateReport = async (req, res) => {
     if (includeBookmarks) {
       const bookmarks = await EvidenceBookmark.findAll({
         where: { caseId },
-        order: [['createdAt', 'DESC']]
+        order: [['created_at', 'DESC']]
       });
       reportData.bookmarks = bookmarks.map(b => b.toJSON());
     }
@@ -161,7 +161,7 @@ export const getReportHistory = async (req, res) => {
       include: [
         { model: User, as: 'user', attributes: ['id', 'fullName', 'email'] }
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       limit: 50
     });
 

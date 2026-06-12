@@ -220,7 +220,7 @@ class NetworkExtractionService {
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Computing transaction cycles...' })}\n\n`);
       
       // Get core node IDs to run cycle detection against
-      const caseNodesResult = await session.run(`MATCH (c:Case {id: $caseId})-[]-(n) RETURN id(n) AS id`);
+      const caseNodesResult = await session.run(`MATCH (c:Case {id: $caseId})-[]-(n) RETURN id(n) AS id`, { caseId: parseInt(caseId) });
       const nodeIds = caseNodesResult.records.map(r => r.get('id').toNumber());
       
       // Add the extended nodes as well

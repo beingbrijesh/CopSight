@@ -101,7 +101,7 @@ export const EvidenceDetailPanel = () => {
       {/* Panel */}
       <div
         className={`
-          fixed top-0 right-0 h-full w-full sm:w-[440px] bg-white shadow-2xl z-50
+          fixed top-0 right-0 h-full w-full sm:w-[440px] glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl shadow-2xl z-50
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}
           flex flex-col
@@ -116,7 +116,7 @@ export const EvidenceDetailPanel = () => {
           </div>
           <button
             onClick={closeEvidence}
-            className="p-1.5 rounded-lg hover:bg-gray-200 transition text-gray-500"
+            className="p-1.5 rounded-lg hover:bg-gray-200 transition text-gray-500 dark:text-slate-500"
           >
             <X className="w-5 h-5" />
           </button>
@@ -127,7 +127,7 @@ export const EvidenceDetailPanel = () => {
 
           {/* Primary Value */}
           <div>
-            <h2 className="text-xl font-bold text-gray-900 break-all leading-tight">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white break-all leading-tight">
               {selected.value}
             </h2>
             {selected.summary && (
@@ -227,7 +227,7 @@ export const EvidenceDetailPanel = () => {
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <div className="flex items-center gap-2">
-                <Tag className="w-4 h-4 text-gray-400" />
+                <Tag className="w-4 h-4 text-gray-400 dark:text-slate-500" />
                 <input
                   type="text"
                   placeholder="Tags (comma-separated)..."

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Database, Filter, Search, Download, MessageCircle, Activity, Upload } from 'lucide-react';
+import { Database, FilterX, Search, Download, MessageSquareText, Activity, CloudUpload, MessageCircle } from 'lucide-react';
 import { caseAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { EvidenceChip } from '../../components/EvidenceChip';
@@ -185,17 +185,13 @@ export const EntitiesView = () => {
     return (
         <div className="mx-auto max-w-7xl py-8">
 
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-6">
             <div className="flex items-center gap-3">
-              <div className="text-red-600">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
+              <Database className="w-6 h-6 text-red-600 dark:text-red-400" />
               <div>
-                <h3 className="text-lg font-semibold text-red-900">Error Loading Entities</h3>
-                <p className="text-red-700 mt-1">{error}</p>
-                <p className="text-red-600 text-sm mt-2">
+                <h3 className="text-lg font-semibold text-red-900 dark:text-red-300">Error Loading Entities</h3>
+                <p className="text-red-700 dark:text-red-400 mt-1">{error}</p>
+                <p className="text-red-600 dark:text-red-400/70 text-sm mt-2">
                   This might be because no forensic data has been processed yet, or there was an error during processing.
                 </p>
               </div>
@@ -207,7 +203,7 @@ export const EntitiesView = () => {
 
   return (
       <div className="mx-auto max-w-7xl py-8">
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl dark:bg-white/5 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <Database className="w-6 h-6 text-blue-600" />
@@ -220,7 +216,7 @@ export const EntitiesView = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-500 dark:text-slate-500">
                 Total: {totalEntities + totalChats} items
               </span>
               {totalEntities + totalChats > 0 && (
@@ -236,14 +232,14 @@ export const EntitiesView = () => {
           </div>
 
           {/* Tabs */}
-          <div className="border-b border-gray-200 mb-6">
+          <div className="border-b border-gray-200 dark:border-white/10 mb-6">
             <nav className="-mb-px flex space-x-8">
               <button
                 onClick={() => setActiveTab('entities')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'entities'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-600'
                 }`}
               >
                 <Activity className="w-4 h-4 inline mr-2" />
@@ -253,11 +249,11 @@ export const EntitiesView = () => {
                 onClick={() => setActiveTab('chats')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'chats'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-600'
                 }`}
               >
-                <MessageCircle className="w-4 h-4 inline mr-2" />
+                <MessageSquareText className="w-4 h-4 inline mr-2" />
                 Chat Messages ({totalChats})
               </button>
             </nav>
@@ -271,18 +267,18 @@ export const EntitiesView = () => {
                 {entityTypes.map((type) => (
                   <div
                     key={type.type}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition ${
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition card-hover-lift ${
                       selectedType === type.type
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-500/10'
+                        : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-transparent'
                     }`}
                     onClick={() => {
                       setSelectedType(selectedType === type.type ? '' : type.type);
                       setCurrentPage(1);
                     }}
                   >
-                    <div className="text-2xl font-bold text-gray-900">{type.count}</div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white dark:text-white">{type.count}</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-400">
                       {type.type === 'phone_number' ? '📱 Phones' :
                        type.type === 'person' ? '👤 Persons' :
                        type.type === 'email' ? '✉️ Emails' :
@@ -299,13 +295,13 @@ export const EntitiesView = () => {
               {/* Filters */}
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <div className="flex-1 relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-500" />
                   <input
                     type="text"
                     placeholder="Search entities..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 dark:placeholder:text-slate-500"
                   />
                 </div>
                 {selectedType && (
@@ -314,9 +310,9 @@ export const EntitiesView = () => {
                       setSelectedType('');
                       setCurrentPage(1);
                     }}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center gap-2"
+                    className="px-4 py-2 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition flex items-center gap-2"
                   >
-                    <Filter className="w-4 h-4" />
+                    <FilterX className="w-4 h-4" />
                     Clear Filter
                   </button>
                 )}
@@ -326,17 +322,17 @@ export const EntitiesView = () => {
               <div className="space-y-2">
                 {filteredEntities.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-8 border border-blue-200">
-                      <Database className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Ready to Extract Forensic Data</h3>
-                      <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                    <div className="bg-gradient-to-br from-blue-50 dark:from-blue-500/10 to-indigo-50 dark:to-indigo-500/10 rounded-2xl p-8 border border-blue-200 dark:border-blue-500/30">
+                      <Database className="w-16 h-16 text-blue-500 dark:text-blue-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Ready to Extract Forensic Data</h3>
+                      <p className="text-gray-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
                         No entities have been extracted yet. Upload and process a UFDR file to discover phone numbers, emails, crypto addresses, and chat conversations.
                       </p>
                       <button
                         onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
-                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium"
                       >
-                        <Upload className="w-4 h-4 mr-2" />
+                        <CloudUpload className="w-4 h-4 mr-2" />
                         Upload CopSight AI File
                       </button>
                     </div>
@@ -345,20 +341,20 @@ export const EntitiesView = () => {
                   filteredEntities.map((entity) => (
                     <div
                       key={entity.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition"
+                      className="border border-gray-200 dark:border-white/10 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                              entity.entityType === 'phone_number' ? 'bg-green-100 text-green-800' :
-                              entity.entityType === 'person' ? 'bg-orange-100 text-orange-800' :
-                              entity.entityType === 'email' ? 'bg-blue-100 text-blue-800' :
-                              entity.entityType === 'crypto_address' ? 'bg-yellow-100 text-yellow-800' :
-                              entity.entityType === 'url' ? 'bg-purple-100 text-purple-800' :
-                              entity.entityType === 'indian_id' ? 'bg-indigo-100 text-indigo-800' :
-                              entity.entityType === 'ip_address' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
+                              entity.entityType === 'phone_number' ? 'bg-green-100 dark:bg-emerald-500/10 text-green-800 dark:text-emerald-300' :
+                              entity.entityType === 'person' ? 'bg-orange-100 dark:bg-orange-500/10 text-orange-800 dark:text-orange-300' :
+                              entity.entityType === 'email' ? 'bg-blue-100 dark:bg-blue-500/10 text-blue-800 dark:text-blue-300' :
+                              entity.entityType === 'crypto_address' ? 'bg-yellow-100 dark:bg-yellow-500/10 text-yellow-800 dark:text-yellow-300' :
+                              entity.entityType === 'url' ? 'bg-purple-100 dark:bg-purple-500/10 text-purple-800 dark:text-purple-300' :
+                              entity.entityType === 'indian_id' ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-800 dark:text-indigo-300' :
+                              entity.entityType === 'ip_address' ? 'bg-red-100 dark:bg-red-500/10 text-red-800 dark:text-red-300' :
+                              'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-300'
                             }`}>
                               {entity.entityType === 'phone_number' ? '📱 Phone' :
                                entity.entityType === 'person' ? '👤 Person' :
@@ -369,11 +365,11 @@ export const EntitiesView = () => {
                                entity.entityType === 'ip_address' ? '🌐 IP' :
                                entity.entityType.replace('_', ' ')}
                             </span>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-gray-500 dark:text-slate-500">
                               {entity.evidenceType} • {entity.evidenceId}
                             </span>
                           </div>
-                          <div className="font-medium text-gray-900 mb-1">
+                          <div className="font-medium text-gray-900 dark:text-white mb-1">
                             <EvidenceChip
                               evidence={{
                                 id: `entity_${entity.id}`,
@@ -391,17 +387,17 @@ export const EntitiesView = () => {
                             />
                           </div>
                           {entity.entityMetadata && Object.keys(entity.entityMetadata).length > 0 && (
-                            <div className="text-sm text-gray-600 mt-1">
+                            <div className="text-sm text-gray-600 dark:text-slate-400 mt-1">
                               {entity.entityType === 'phone_number' && (
                                 <div className="flex items-center gap-4">
                                   {entity.entityMetadata.cleaned && (
-                                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                    <span className="text-xs bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 px-2 py-1 rounded">
                                       Cleaned: {entity.entityMetadata.cleaned}
                                     </span>
                                   )}
                                   {entity.entityMetadata.isIndian !== undefined && (
                                     <span className={`text-xs px-2 py-1 rounded ${
-                                      entity.entityMetadata.isIndian ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                      entity.entityMetadata.isIndian ? 'bg-green-100 dark:bg-emerald-500/10 text-green-800 dark:text-emerald-300' : 'bg-red-100 dark:bg-red-500/10 text-red-800 dark:text-red-300'
                                     }`}>
                                       {entity.entityMetadata.isIndian ? '🇮🇳 Indian' : '🌍 International'}
                                     </span>
@@ -410,14 +406,14 @@ export const EntitiesView = () => {
                               )}
                               {entity.entityType === 'crypto_address' && (
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded capitalize">
+                                  <span className="text-xs bg-blue-100 dark:bg-blue-500/10 text-blue-800 dark:text-blue-300 px-2 py-1 rounded capitalize">
                                     {entity.entityMetadata.currency || 'Unknown'} Network
                                   </span>
                                 </div>
                               )}
                               {entity.entityType === 'indian_id' && (
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded capitalize">
+                                  <span className="text-xs bg-purple-100 dark:bg-purple-500/10 text-purple-800 dark:text-purple-300 px-2 py-1 rounded capitalize">
                                     {entity.entityMetadata.idType || 'ID'} Document
                                   </span>
                                 </div>
@@ -434,7 +430,7 @@ export const EntitiesView = () => {
                             </div>
                           )}
                         </div>
-                        <div className="text-right text-sm text-gray-500">
+                        <div className="text-right text-sm text-gray-500 dark:text-slate-500">
                           <div>Confidence: {(entity.confidenceScore * 100).toFixed(1)}%</div>
                           <div>{new Date(entity.created_at).toLocaleDateString('en-IN', {
                             timeZone: 'Asia/Kolkata',
@@ -452,24 +448,24 @@ export const EntitiesView = () => {
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-gray-500 dark:text-slate-500">
                     Showing {((currentPage - 1) * 50) + 1} to {Math.min(currentPage * 50, totalEntities)} of {totalEntities} entities
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
-                      className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      className="px-3 py-1.5 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-slate-700 transition"
                     >
                       Previous
                     </button>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-gray-600 dark:text-slate-400">
                       Page {currentPage} of {totalPages}
                     </span>
                     <button
                       onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage === totalPages}
-                      className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      className="px-3 py-1.5 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-slate-700 transition"
                     >
                       Next
                     </button>
@@ -481,35 +477,33 @@ export const EntitiesView = () => {
             /* Chats View */
             <div className="space-y-4">
               {Object.keys(conversations).length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-8 border border-green-200">
-                    <MessageCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Chat Messages Await Discovery</h3>
-                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                      No chat conversations have been processed yet. Upload a UFDR file containing WhatsApp, SMS, or messaging data to view detailed chat histories with timestamps.
-                    </p>
-                    <button
-                      onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
-                      className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload CopSight AI File
-                    </button>
-                  </div>
+                <div className="bg-gradient-to-br from-green-50 dark:from-emerald-500/10 to-emerald-50 dark:to-green-500/10 rounded-2xl p-8 border border-green-200 dark:border-emerald-500/30">
+                  <MessageCircle className="w-16 h-16 text-green-500 dark:text-emerald-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Chat Messages Await Discovery</h3>
+                  <p className="text-gray-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
+                    No chat conversations have been processed yet. Upload a UFDR file containing WhatsApp, SMS, or messaging data to view detailed chat histories with timestamps.
+                  </p>
+                  <button
+                    onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
+                    className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition font-medium"
+                  >
+                    <CloudUpload className="w-4 h-4 mr-2" />
+                    Upload CopSight AI File
+                  </button>
                 </div>
               ) : (
                 Object.entries(conversations).map(([conversationKey, messages]) => (
-                  <div key={conversationKey} className="bg-gray-50 rounded-lg p-4">
+                  <div key={conversationKey} className="bg-gray-50 dark:bg-white/5 rounded-xl p-4 border border-gray-100 dark:border-white/10">
                     <div className="flex items-center gap-2 mb-3">
-                      <MessageCircle className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-medium text-gray-900">{conversationKey}</h3>
-                      <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                      <MessageSquareText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <h3 className="font-medium text-gray-900 dark:text-white">{conversationKey}</h3>
+                      <span className="text-xs text-gray-500 dark:text-slate-400 bg-gray-200 dark:bg-slate-800 px-2 py-1 rounded-full">
                         {messages.length} messages
                       </span>
                     </div>
                     <div className="space-y-2">
                       {messages.slice().reverse().map((chat) => (
-                        <div key={chat.id} className="bg-white rounded p-3 shadow-sm">
+                        <div key={chat.id} className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded p-3 shadow-sm">
                           <div className="flex items-start justify-between mb-1">
                             <div className="flex items-center gap-2">
                               <EvidenceChip
@@ -524,7 +518,7 @@ export const EntitiesView = () => {
                                 }}
                                 compact
                               />
-                              <span className="text-gray-500">→</span>
+                              <span className="text-gray-500 dark:text-slate-500">→</span>
                               <EvidenceChip
                                 evidence={{
                                   id: `chat_receiver_${chat.id}`,
@@ -538,7 +532,7 @@ export const EntitiesView = () => {
                                 compact
                               />
                             </div>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 dark:text-slate-500">
                               {new Date(chat.timestamp).toLocaleString('en-IN', {
                                 timeZone: 'Asia/Kolkata',
                                 year: 'numeric',
@@ -549,7 +543,7 @@ export const EntitiesView = () => {
                               })}
                             </span>
                           </div>
-                          <p className="text-gray-700">{chat.message}</p>
+                          <p className="text-gray-700 dark:text-slate-300">{chat.message}</p>
                         </div>
                       ))}
                     </div>
@@ -560,24 +554,24 @@ export const EntitiesView = () => {
               {/* Chat Pagination */}
               {totalChatPages > 1 && (
                 <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-gray-500 dark:text-slate-500">
                     Showing {((chatPage - 1) * 100) + 1} to {Math.min(chatPage * 100, totalChats)} of {totalChats} messages
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setChatPage(Math.max(1, chatPage - 1))}
                       disabled={chatPage === 1}
-                      className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      className="px-3 py-1.5 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-slate-700 transition"
                     >
                       Previous
                     </button>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-gray-600 dark:text-slate-400">
                       Page {chatPage} of {totalChatPages}
                     </span>
                     <button
                       onClick={() => setChatPage(Math.min(totalChatPages, chatPage + 1))}
                       disabled={chatPage === totalChatPages}
-                      className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      className="px-3 py-1.5 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-slate-700 transition"
                     >
                       Next
                     </button>
