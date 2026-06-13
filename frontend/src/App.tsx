@@ -42,7 +42,7 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
 }
 
 function RouteController() {
-  const { isAuthenticated, user, token } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const location = useLocation();
 
   // The useEffect that automatically redirected for cli_callback was removed
