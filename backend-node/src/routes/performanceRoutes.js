@@ -149,8 +149,8 @@ export const performanceMiddleware = (req, res, next) => {
     // Record metrics
     performanceMonitor.recordRequest(endpoint, method, responseTime);
 
-    // Log slow requests
-    if (responseTime > 5000) { // Over 5 seconds
+    // Log slow requests (skip for streaming endpoints as they are expected to take longer)
+    if (responseTime > 5000 && !endpoint.endsWith('/stream')) { // Over 5 seconds
       logger.warn(`Slow request: ${method} ${endpoint} took ${responseTime}ms`);
     }
   });

@@ -180,6 +180,7 @@ class WindowsExtractor(AbstractExtractor):
         self,
         session: ForensicSession,
         level: ExtractionLevel,
+        profile: str = "all",
     ) -> Iterator[Artifact]:
         """Dispatch extraction for *level* and yield all collected artefacts.
 

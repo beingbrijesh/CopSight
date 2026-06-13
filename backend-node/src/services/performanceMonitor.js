@@ -90,8 +90,8 @@ class PerformanceMonitor {
       this.responseTimes.shift();
     }
 
-    // Log slow requests
-    if (responseTime > 5000) {
+    // Log slow requests (skip for streaming endpoints)
+    if (responseTime > 5000 && !endpoint.endsWith('/stream')) {
       logger.warn(`Slow request: ${key} took ${responseTime}ms`);
     }
   }

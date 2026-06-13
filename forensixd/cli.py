@@ -23,6 +23,12 @@ console = Console()
 def main(ctx):
     """forensixd — Forensic Data Extraction for Law Enforcement."""
     if ctx.invoked_subcommand is None:
+        console.print("[cyan]  ____            ____  _       _     _   [/cyan]")
+        console.print("[cyan] / ___|___  _ __ / ___|(_) __ _| |__ | |_ [/cyan]")
+        console.print("[cyan]| |   / _ \\| '_ \\\\___ \\| |/ _` | '_ \\| __|[/cyan]")
+        console.print("[cyan]| |__| (_) | |_) |___) | | (_| | | | | |_ [/cyan]")
+        console.print("[cyan] \\____\\___/| .__/|____/|_|\\__, |_| |_|\\__|[/cyan]")
+        console.print("[cyan]           |_|            |___/           [/cyan]\n")
         interactive_mode()
 
 @main.command()
@@ -65,7 +71,7 @@ def acquire(output_dir, level, ufdr_config):
         from forensixd.core.auth_manager import authenticate_via_browser, get_assigned_cases, prompt_case_selection
         from forensixd.writers.api_stream_writer import ApiStreamWriter
         
-        console.print(f"[cyan]Connecting to server at: {stream_url}[/cyan]")
+        # Removed the print statement that exposed the backend server location to the user
         token, session_encryption_key = authenticate_via_browser(login_url=login_url)
         cases = get_assigned_cases(stream_url, token)
         selected_case = prompt_case_selection(cases)

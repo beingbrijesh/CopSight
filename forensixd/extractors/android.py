@@ -217,6 +217,7 @@ class AndroidExtractor(AbstractExtractor):
         self,
         session: ForensicSession,
         level: ExtractionLevel,
+        profile: str = "all",
     ) -> Iterator[Artifact]:
         """Dispatch to the appropriate extraction strategy for *level*.
 

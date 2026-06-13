@@ -36,19 +36,43 @@ async def process_ingestion_batch(ctx, case_id: int, records: list):
     Background task to process a batch of ingested data from forensixd
     """
     logger.info(f"Processing batch of {len(records)} records for case {case_id}")
-    from app.services.parser_worker import parse_and_route_data
+    from app.services.parser_worker import parse_payload
+    from app.services.graph_mapper import graph_mapper
+    from app.services.rag import rag_pipeline
     
     success_count = 0
+    all_entities = []
+    all_relationships = []
+    all_data_sources = []
+    
     for record in records:
         try:
-            # record contains: source_type, content, metadata, entities
-            await parse_and_route_data(case_id, "text", record)
+            result = await parse_payload(case_id, "text", record)
+            all_entities.extend(result["parsed_data"]["entities"])
+            all_relationships.extend(result["parsed_data"]["relationships"])
+            all_data_sources.extend(result["data_sources"])
             success_count += 1
         except Exception as e:
-            logger.error(f"Error processing a record in batch for case {case_id}: {e}")
-            # Continue processing the rest of the batch even if one record fails
+            logger.error(f"Error parsing a record in batch for case {case_id}: {e}")
             
-    logger.info(f"Successfully processed {success_count}/{len(records)} records for case {case_id}")
+    # Bulk Graph mapping
+    if all_entities or all_relationships:
+        try:
+            await graph_mapper.ingest_entities_and_relationships(case_id, {
+                "entities": all_entities,
+                "relationships": all_relationships
+            })
+        except Exception as e:
+            logger.error(f"Error bulk mapping graph for case {case_id}: {e}")
+            
+    # Bulk RAG indexing
+    if all_data_sources:
+        try:
+            await rag_pipeline.index_case_data(case_id, all_data_sources, all_entities)
+        except Exception as e:
+            logger.error(f"Error bulk indexing RAG for case {case_id}: {e}")
+            
+    logger.info(f"Successfully processed {success_count}/{len(records)} records for case {case_id} in bulk")
 
 class WorkerSettings:
     functions = [process_ingestion_payload, process_ingestion_batch]

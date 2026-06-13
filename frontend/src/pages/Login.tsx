@@ -18,19 +18,16 @@ export const Login = () => {
   const { isDarkMode, toggleTheme } = useThemeStore();
   
   const urlParams = new URLSearchParams(window.location.search);
-  const cliCallback = urlParams.get('cli_callback');
-
-  if (isAuthenticated && cliCallback && !cliSuccess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-slate-900 flex flex-col items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-800 p-1 rounded-full mb-6 animate-pulse overflow-hidden h-20 w-20 shadow-lg border border-gray-100 dark:border-white/10 flex items-center justify-center">
-          <img src="/logo.jpeg" alt="CopSight Logo" className="h-full w-full object-cover rounded-full" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Authenticating CLI...</h2>
-        <p className="text-gray-600 dark:text-slate-400">Please wait while we securely connect your session.</p>
-      </div>
-    );
+  let cliCallback = urlParams.get('cli_callback');
+  if (cliCallback && !cliCallback.startsWith('http')) {
+    try {
+      cliCallback = atob(cliCallback);
+    } catch (e) {
+      console.warn('Failed to decode cli_callback', e);
+    }
   }
+
+  // Removed the "Authenticating CLI..." overlay because the user must log in again to generate a new sessionEncryptionKey
 
   if (cliSuccess) {
     return (
@@ -115,6 +112,15 @@ export const Login = () => {
             <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">CopSight AI</h1>
             <p className="text-gray-600 dark:text-slate-400 mt-2 font-medium">Unified Forensic Data Repository</p>
           </div>
+
+          {cliCallback && (
+            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-blue-800 dark:text-blue-300">
+                Please {isAuthenticated ? "re-enter your credentials" : "sign in"} to securely connect your CLI session.
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl flex items-start gap-3">

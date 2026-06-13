@@ -45,15 +45,9 @@ function RouteController() {
   const { isAuthenticated, user, token } = useAuthStore();
   const location = useLocation();
 
-  useEffect(() => {
-    if (isAuthenticated && token) {
-      const urlParams = new URLSearchParams(location.search);
-      const cliCallback = urlParams.get('cli_callback');
-      if (cliCallback) {
-        window.location.href = `${cliCallback}?token=${encodeURIComponent(token)}`;
-      }
-    }
-  }, [isAuthenticated, token, location.search]);
+  // The useEffect that automatically redirected for cli_callback was removed
+  // because the CLI expects a POST request with the sessionEncryptionKey, 
+  // not a GET request. The user must manually log in to generate the key.
 
   const getDefaultRoute = () => {
     if (!isAuthenticated) return '/login';

@@ -302,7 +302,7 @@ class NEREngine {
     
     // PAN card numbers
     const panMatches = text.matchAll(this.panPattern);
-    for (const match of matches) {
+    for (const match of panMatches) {
       entities.push({
         evidenceType,
         evidenceId,

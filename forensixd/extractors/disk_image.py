@@ -235,6 +235,7 @@ class DiskImageExtractor(AbstractExtractor):
         self,
         session: ForensicSession,
         level: ExtractionLevel,
+        profile: str = "all",
     ) -> Iterator[Artifact]:
         """Walk the disk image and yield one artefact per regular file.
 

@@ -36,30 +36,33 @@ class GraphMapper:
                                  p.event_count = coalesce(p.event_count, 0) + 1,
                                  p.is_suspect = CASE WHEN $is_suspect THEN true ELSE p.is_suspect END,
                                  p.threat_score = CASE WHEN $threat_score > coalesce(p.threat_score, 0) THEN $threat_score ELSE p.threat_score END,
+                                 p.threat_reason = CASE WHEN $threat_score > coalesce(p.threat_score, 0) THEN $threat_reason ELSE p.threat_reason END,
                                  p.is_flagged = CASE WHEN p.is_suspect OR p.event_count > 10 THEN true ELSE false END
                 """, val=phone["value"], case_id=case_id, is_suspect=phone.get("isSuspect", False), threat_score=phone.get("threatScore", 0), threat_reason=phone.get("threatReason", ""))
                 
             for aadhaar in aadhars:
                 await session.run("""
                     MERGE (a:Aadhaar {id: $val})
-                    ON CREATE SET a.case_ids = [$case_id], a.event_count = 1, a.is_flagged = coalesce($is_suspect, false), a.is_suspect = $is_suspect, a.threat_score = $threat_score
+                    ON CREATE SET a.case_ids = [$case_id], a.event_count = 1, a.is_flagged = coalesce($is_suspect, false), a.is_suspect = $is_suspect, a.threat_score = $threat_score, a.threat_reason = $threat_reason
                     ON MATCH SET a.case_ids = CASE WHEN a.case_ids IS NULL THEN [$case_id] WHEN NOT $case_id IN a.case_ids THEN a.case_ids + [$case_id] ELSE a.case_ids END, 
                                  a.event_count = coalesce(a.event_count, 0) + 1,
                                  a.is_suspect = CASE WHEN $is_suspect THEN true ELSE a.is_suspect END,
                                  a.threat_score = CASE WHEN $threat_score > coalesce(a.threat_score, 0) THEN $threat_score ELSE a.threat_score END,
+                                 a.threat_reason = CASE WHEN $threat_score > coalesce(a.threat_score, 0) THEN $threat_reason ELSE a.threat_reason END,
                                  a.is_flagged = CASE WHEN a.is_suspect OR a.event_count > 10 THEN true ELSE false END
-                """, val=aadhaar["value"], case_id=case_id, is_suspect=aadhaar.get("isSuspect", False), threat_score=aadhaar.get("threatScore", 0))
+                """, val=aadhaar["value"], case_id=case_id, is_suspect=aadhaar.get("isSuspect", False), threat_score=aadhaar.get("threatScore", 0), threat_reason=aadhaar.get("threatReason", ""))
 
             for bank in banks:
                 await session.run("""
                     MERGE (b:BankAccount {account_number: $val})
-                    ON CREATE SET b.case_ids = [$case_id], b.event_count = 1, b.is_flagged = coalesce($is_suspect, false), b.is_suspect = $is_suspect, b.threat_score = $threat_score
+                    ON CREATE SET b.case_ids = [$case_id], b.event_count = 1, b.is_flagged = coalesce($is_suspect, false), b.is_suspect = $is_suspect, b.threat_score = $threat_score, b.threat_reason = $threat_reason
                     ON MATCH SET b.case_ids = CASE WHEN b.case_ids IS NULL THEN [$case_id] WHEN NOT $case_id IN b.case_ids THEN b.case_ids + [$case_id] ELSE b.case_ids END, 
                                  b.event_count = coalesce(b.event_count, 0) + 1,
                                  b.is_suspect = CASE WHEN $is_suspect THEN true ELSE b.is_suspect END,
                                  b.threat_score = CASE WHEN $threat_score > coalesce(b.threat_score, 0) THEN $threat_score ELSE b.threat_score END,
+                                 b.threat_reason = CASE WHEN $threat_score > coalesce(b.threat_score, 0) THEN $threat_reason ELSE b.threat_reason END,
                                  b.is_flagged = CASE WHEN b.is_suspect OR b.event_count > 10 THEN true ELSE false END
-                """, val=bank["value"], case_id=case_id, is_suspect=bank.get("isSuspect", False), threat_score=bank.get("threatScore", 0))
+                """, val=bank["value"], case_id=case_id, is_suspect=bank.get("isSuspect", False), threat_score=bank.get("threatScore", 0), threat_reason=bank.get("threatReason", ""))
 
             # 2. Merge Persons to Identifiers (Identity Resolution)
             for person in persons:
@@ -78,24 +81,26 @@ class GraphMapper:
                     primary_id = identifiers[0]  # Simplistic resolution for now
                     await session.run("""
                         MERGE (p:Person {primary_id: $primary_id})
-                        ON CREATE SET p.name = $name, p.case_ids = [$case_id], p.event_count = 1, p.is_flagged = coalesce($is_suspect, false), p.is_suspect = $is_suspect, p.threat_score = $threat_score
+                        ON CREATE SET p.name = $name, p.case_ids = [$case_id], p.event_count = 1, p.is_flagged = coalesce($is_suspect, false), p.is_suspect = $is_suspect, p.threat_score = $threat_score, p.threat_reason = $threat_reason
                         ON MATCH SET p.case_ids = CASE WHEN p.case_ids IS NULL THEN [$case_id] WHEN NOT $case_id IN p.case_ids THEN p.case_ids + [$case_id] ELSE p.case_ids END, 
                                      p.event_count = coalesce(p.event_count, 0) + 1,
                                      p.is_suspect = CASE WHEN $is_suspect THEN true ELSE p.is_suspect END,
                                      p.threat_score = CASE WHEN $threat_score > coalesce(p.threat_score, 0) THEN $threat_score ELSE p.threat_score END,
+                                     p.threat_reason = CASE WHEN $threat_score > coalesce(p.threat_score, 0) THEN $threat_reason ELSE p.threat_reason END,
                                      p.is_flagged = CASE WHEN p.is_suspect OR p.event_count > 10 THEN true ELSE false END
-                    """, primary_id=primary_id, name=person["value"], case_id=case_id, is_suspect=person.get("isSuspect", False), threat_score=person.get("threatScore", 0))
+                    """, primary_id=primary_id, name=person["value"], case_id=case_id, is_suspect=person.get("isSuspect", False), threat_score=person.get("threatScore", 0), threat_reason=person.get("threatReason", ""))
                 else:
                     # Loose person node (High risk of duplication, but necessary if no identifiers exist)
                     await session.run("""
                         MERGE (p:Person {name: $name})
-                        ON CREATE SET p.case_ids = [$case_id], p.event_count = 1, p.is_flagged = coalesce($is_suspect, false), p.is_suspect = $is_suspect, p.threat_score = $threat_score
+                        ON CREATE SET p.case_ids = [$case_id], p.event_count = 1, p.is_flagged = coalesce($is_suspect, false), p.is_suspect = $is_suspect, p.threat_score = $threat_score, p.threat_reason = $threat_reason
                         ON MATCH SET p.case_ids = CASE WHEN p.case_ids IS NULL THEN [$case_id] WHEN NOT $case_id IN p.case_ids THEN p.case_ids + [$case_id] ELSE p.case_ids END, 
                                      p.event_count = coalesce(p.event_count, 0) + 1,
                                      p.is_suspect = CASE WHEN $is_suspect THEN true ELSE p.is_suspect END,
                                      p.threat_score = CASE WHEN $threat_score > coalesce(p.threat_score, 0) THEN $threat_score ELSE p.threat_score END,
+                                     p.threat_reason = CASE WHEN $threat_score > coalesce(p.threat_score, 0) THEN $threat_reason ELSE p.threat_reason END,
                                      p.is_flagged = CASE WHEN p.is_suspect OR p.event_count > 10 THEN true ELSE false END
-                    """, name=person["value"], case_id=case_id, is_suspect=person.get("isSuspect", False), threat_score=person.get("threatScore", 0))
+                    """, name=person["value"], case_id=case_id, is_suspect=person.get("isSuspect", False), threat_score=person.get("threatScore", 0), threat_reason=person.get("threatReason", ""))
             
             # 3. Create Events and check Flagging
             for rel in relationships:

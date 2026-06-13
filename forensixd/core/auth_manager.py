@@ -69,12 +69,14 @@ def authenticate_via_browser(login_url: str = "http://localhost:5173/login") -> 
     """
     Opens browser for login and runs a local server to catch the JWT token and AES encryption key.
     """
+    import base64
     callback_url = "http://localhost:54321"
+    b64_callback = base64.b64encode(callback_url.encode('utf-8')).decode('utf-8')
     server = AuthHTTPServer(('localhost', 54321), AuthCallbackHandler)
     server.token = None
     server.session_encryption_key = None
 
-    url_to_open = f"{login_url}?cli_callback={urllib.parse.quote(callback_url)}"
+    url_to_open = f"{login_url}?cli_callback={b64_callback}"
     console.print(f"\n[cyan]Opening browser for authentication...[/cyan]")
     console.print(f"If your browser does not open automatically, visit: [underline]{url_to_open}[/underline]")
     webbrowser.open(url_to_open)

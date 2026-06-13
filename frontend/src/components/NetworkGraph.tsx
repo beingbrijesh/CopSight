@@ -33,6 +33,7 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [showLegend, setShowLegend] = useState(true);
   const { isDarkMode } = useThemeStore();
 
   // Simple force-directed layout
@@ -176,9 +177,21 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.2, 3));
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.2, 0.5));
   const handleReset = () => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
+    const isMobile = window.innerWidth < 768;
+    const targetZoom = isMobile ? 1.8 : 1;
+    setZoom(targetZoom);
+    if (targetZoom !== 1) {
+      setPan({ x: 600 - 600 * targetZoom, y: 300 - 300 * targetZoom });
+    } else {
+      setPan({ x: 0, y: 0 });
+    }
   };
+
+  // Auto-center on mount
+  useEffect(() => {
+    handleReset();
+    setShowLegend(window.innerWidth >= 768);
+  }, []);
 
   const handleExport = () => {
     const canvas = canvasRef.current;
@@ -225,34 +238,45 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
       </div>
 
       {/* Legend */}
-      <div className="absolute top-4 left-4 z-10 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 p-4">
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Legend</h4>
-        <div className="space-y-2 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-            <span>Device</span>
+      <div className="absolute top-4 left-4 z-10">
+        <button 
+          onClick={() => setShowLegend(!showLegend)}
+          className="mb-2 px-3 py-1.5 text-xs font-semibold glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-lg shadow-sm border border-gray-100 dark:border-white/10 text-gray-700 dark:text-gray-200"
+        >
+          {showLegend ? 'Hide Legend' : 'Show Legend'}
+        </button>
+        
+        {showLegend && (
+          <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 p-4">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Legend</h4>
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                <span>Device</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-green-500"></div>
+                <span>Local Number</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-orange-500"></div>
+                <span>Foreign Number</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-red-500 border border-red-900"></div>
+                <span className="font-bold text-red-600 dark:text-red-400">Suspect / Threat</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-purple-500"></div>
+                <span>Contact</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-amber-500"></div>
+                <span>Entity</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-green-500"></div>
-            <span>Local Number</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-orange-500"></div>
-            <span>Foreign Number</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-red-500 border border-red-900"></div>
-            <span className="font-bold text-red-600 dark:text-red-400">Suspect / Threat</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-purple-500"></div>
-            <span>Contact</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-orange-500"></div>
-            <span>Entity</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Canvas */}
