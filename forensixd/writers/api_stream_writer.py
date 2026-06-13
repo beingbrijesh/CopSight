@@ -60,17 +60,26 @@ class ApiStreamWriter:
         else:
             art_dict = str(artifact)
             
-        # Attach content if it's a small text file
+        # Attach content if it's a small text file, otherwise upload it
+        is_uploaded = False
         if hasattr(artifact, 'source_path') and artifact.source_path:
             p = Path(artifact.source_path)
             if p.exists() and p.is_file():
-                if p.suffix.lower() in ['.csv', '.txt', '.json', '.log']:
+                is_textual = p.suffix.lower() in ['.csv', '.txt', '.json', '.log']
+                is_small = p.stat().st_size < 10 * 1024 * 1024
+                
+                if is_textual and is_small:
                     try:
-                        # Limit to 10MB to avoid blowing up memory
-                        if p.stat().st_size < 10 * 1024 * 1024:
-                            art_dict['content'] = p.read_text(encoding='utf-8', errors='replace')
+                        art_dict['content'] = p.read_text(encoding='utf-8', errors='replace')
                     except Exception as e:
                         console.print(f"[yellow]Failed to read content for {p}: {e}[/yellow]")
+                else:
+                    # Upload large or binary files via multipart
+                    self._upload_file(p, art_dict)
+                    is_uploaded = True
+                    
+        if is_uploaded:
+            return  # Skip sending the JSON representation if we already uploaded the file directly
 
         # Add source_type mapping
         source_type = 'unknown'
@@ -107,6 +116,29 @@ class ApiStreamWriter:
             "ciphertext": ciphertext.hex(),
             "tag": tag.hex()
         }
+
+    def _upload_file(self, file_path: Path, art_dict: dict):
+        url = f"{self.stream_url}/api/ingest/upload/case/{self.case_id}"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        
+        # Determine source_type
+        source_type = art_dict.get('app_name', '').lower()
+        if not source_type:
+            source_type = art_dict.get('artifact_type', 'upload').lower()
+            
+        data = {
+            "deviceId": str(self.device_id),
+            "sourceType": source_type
+        }
+        
+        try:
+            with open(file_path, 'rb') as f:
+                files = {'file': (file_path.name, f)}
+                response = requests.post(url, headers=headers, data=data, files=files, timeout=300)
+                response.raise_for_status()
+                console.print(f"[dim]Uploaded file: {file_path.name}[/dim]")
+        except requests.RequestException as e:
+            console.print(f"[yellow]Network error uploading file {file_path.name}: {e}[/yellow]")
 
     def _send_batch(self, batch):
         payload = {
