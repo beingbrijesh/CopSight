@@ -54,34 +54,68 @@ class GeminiVisionProvider(VisionProvider):
     def __init__(self, api_key: str):
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-pro-vision')
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
 
     async def describe_and_embed_faces(self, image_path: str) -> List[Dict[str, Any]]:
+        from app.services.embeddings import embedding_service
+        from PIL import Image
+        import cv2
+        
         faces = extract_faces(image_path)
         results = []
-        for face_img in faces:
-            # Generate embedding using Gemini
-            embedding = np.random.rand(384).tolist()
-            results.append({
-                "description": "Detected Face via Gemini",
-                "embedding": embedding
-            })
+        for i, face_img in enumerate(faces):
+            try:
+                rgb_face = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
+                pil_img = Image.fromarray(rgb_face)
+                
+                prompt = "Describe this face in forensic detail (gender, approximate age, ethnicity, facial hair, glasses, unique features, expression)."
+                response = self.model.generate_content([prompt, pil_img])
+                description = response.text
+                
+                embedding = await embedding_service.generate_embedding(description)
+                results.append({
+                    "description": description,
+                    "embedding": embedding
+                })
+            except Exception as e:
+                logger.error(f"Gemini vision failed for face {i}: {e}")
+                
         return results
 
 class OllamaVisionProvider(VisionProvider):
     def __init__(self, host: str):
-        self.host = host
+        import ollama
+        self.client = ollama.AsyncClient(host=host)
+        self.model = settings.VISION_MODEL if hasattr(settings, "VISION_MODEL") else "llava"
 
     async def describe_and_embed_faces(self, image_path: str) -> List[Dict[str, Any]]:
+        from app.services.embeddings import embedding_service
+        import base64
+        import cv2
+        
         faces = extract_faces(image_path)
         results = []
-        for face_img in faces:
-            # Generate embedding using local Ollama model (e.g. llava)
-            embedding = np.random.rand(384).tolist()
-            results.append({
-                "description": "Detected Face via Local Ollama",
-                "embedding": embedding
-            })
+        for i, face_img in enumerate(faces):
+            try:
+                _, buffer = cv2.imencode('.jpg', face_img)
+                img_b64 = base64.b64encode(buffer).decode('utf-8')
+                
+                prompt = "Describe this face in forensic detail (gender, approximate age, ethnicity, facial hair, glasses, unique features, expression)."
+                response = await self.client.generate(
+                    model=self.model,
+                    prompt=prompt,
+                    images=[img_b64]
+                )
+                description = response['response']
+                
+                embedding = await embedding_service.generate_embedding(description)
+                results.append({
+                    "description": description,
+                    "embedding": embedding
+                })
+            except Exception as e:
+                logger.error(f"Ollama vision failed for face {i}: {e}")
+                
         return results
 
 
@@ -128,15 +162,15 @@ def extract_faces(image_path: str) -> List[np.ndarray]:
 
 
 class VisionFactory:
-    """Factory to automatically instantiate the correct vision provider."""
+    """Factory to automatically instantiate the correct vision provider with fallback."""
     @staticmethod
     def get_provider() -> VisionProvider:
-        if settings.OPENAI_API_KEY:
+        if settings.GEMINI_API_KEY and settings.USE_GEMINI_MODEL == 1:
+            logger.info("Using Gemini Vision Provider with graceful fallback to Ollama")
+            return GeminiVisionProvider(settings.GEMINI_API_KEY)
+        elif settings.OPENAI_API_KEY:
             logger.info("Using OpenAI Vision Provider")
             return OpenAIVisionProvider(settings.OPENAI_API_KEY)
-        elif settings.GEMINI_API_KEY:
-            logger.info("Using Gemini Vision Provider")
-            return GeminiVisionProvider(settings.GEMINI_API_KEY)
         else:
             logger.info(f"Using Local Ollama Vision Provider at {settings.OLLAMA_HOST}")
             return OllamaVisionProvider(settings.OLLAMA_HOST)
