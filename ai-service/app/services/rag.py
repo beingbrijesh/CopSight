@@ -126,17 +126,17 @@ class RAGPipeline:
                     result['is_cross_case'] = search_case_id != case_id
                 results.extend(es_results)
             
-            # ChromaDB semantic search
-            if db_manager.chroma_collection:
-                chroma_results = await self._search_chromadb(
+            # Qdrant semantic search
+            if db_manager.qdrant_client:
+                qdrant_results = await self._search_qdrant(
                     search_case_id,
                     semantic_query
                 )
                 # Mark results with source case
-                for result in chroma_results:
+                for result in qdrant_results:
                     result['source_case_id'] = search_case_id
                     result['is_cross_case'] = search_case_id != case_id
-                results.extend(chroma_results)
+                results.extend(qdrant_results)
             
             # Neo4j graph search
             if db_manager.neo4j:
@@ -246,16 +246,16 @@ class RAGPipeline:
             logger.error(f"Elasticsearch search failed: {e}")
             return []
     
-    async def _search_chromadb(
+    async def _search_qdrant(
         self,
         case_id: int,
         semantic_query: str
     ) -> List[Dict[str, Any]]:
-        """Search ChromaDB for semantic matches"""
+        """Search Qdrant for semantic matches"""
         
         try:
-            if not db_manager.chroma_collection:
-                logger.warning("ChromaDB not available for search")
+            if not db_manager.qdrant_client:
+                logger.warning("Qdrant not available for search")
                 return []
                 
             # Generate query embedding
@@ -266,38 +266,41 @@ class RAGPipeline:
                 logger.warning("Failed to generate query embedding")
                 return []
             
-            # Search ChromaDB with native case_id filter — avoids fetching all docs
-            logger.info(f"Executing ChromaDB query for case_id={case_id}...")
-            import asyncio
-            results = await asyncio.to_thread(
-                db_manager.chroma_collection.query,
-                query_embeddings=[query_embedding],
-                n_results=50,
-                where={"case_id": case_id},
-                include=["documents", "metadatas", "distances"]
+            # Search Qdrant with native case_id filter
+            logger.info(f"Executing Qdrant query for case_id={case_id}...")
+            
+            from qdrant_client.http import models as rest
+            
+            results = await db_manager.qdrant_client.search(
+                collection_name="copsight_embeddings",
+                query_vector=query_embedding,
+                limit=50,
+                query_filter=rest.Filter(
+                    must=[
+                        rest.FieldCondition(
+                            key="case_id",
+                            match=rest.MatchValue(value=case_id)
+                        )
+                    ]
+                )
             )
             
             # Format results
             formatted_results = []
-            ids_list = results.get('ids', [[]])[0]
-            docs_list = results.get('documents', [[]])[0]
-            metas_list = results.get('metadatas', [[]])[0]
-            dists_list = results.get('distances', [[]])[0]
             
-            for i, doc_id in enumerate(ids_list):
-                metadata = metas_list[i] if i < len(metas_list) else {}
-                distance = dists_list[i] if i < len(dists_list) else 1.0
-                document = docs_list[i] if i < len(docs_list) else ""
-                
-                # Cosine distance from ChromaDB is in [0,2]; convert to similarity [0,1]
-                similarity = max(0.0, 1.0 - (distance / 2.0))
+            for hit in results:
+                # Cosine similarity is natively supported by Qdrant, score is directly the similarity
+                similarity = max(0.0, hit.score)
                 
                 # Filter out low similarity results to prevent hallucinations
                 if similarity < 0.6:
                     continue
                 
+                metadata = hit.payload or {}
+                document = metadata.get("document", "")
+                
                 formatted_results.append({
-                    "id": doc_id,
+                    "id": hit.id,
                     "score": round(similarity, 4),
                     "source": {"type": "rag", "name": "RAG"},
                     "content": document,
@@ -311,11 +314,11 @@ class RAGPipeline:
                     }
                 })
             
-            logger.info(f"ChromaDB found {len(formatted_results)} results for case_id={case_id}")
+            logger.info(f"Qdrant found {len(formatted_results)} results for case_id={case_id}")
             return formatted_results
             
         except Exception as e:
-            logger.error(f"ChromaDB search failed: {e}")
+            logger.error(f"Qdrant search failed: {e}")
             return []
     
     async def _search_neo4j(
@@ -524,23 +527,22 @@ class RAGPipeline:
         data_sources: List[Dict[str, Any]],
         entities: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Index case data to ChromaDB for semantic search"""
+        """Index case data to Qdrant for semantic search"""
         
         try:
-            if not db_manager.chroma_collection:
-                logger.warning("ChromaDB not available for indexing")
+            if not db_manager.qdrant_client:
+                logger.warning("Qdrant not available for indexing")
                 return {
                     'success': False,
-                    'error': 'ChromaDB not available',
+                    'error': 'Qdrant not available',
                     'indexed_count': 0,
                     'case_id': case_id
                 }
                 
-            logger.info(f"Indexing case {case_id} data to ChromaDB")
+            logger.info(f"Indexing case {case_id} data to Qdrant")
             
             documents = []
             metadatas = []
-            ids = []
             
             # Process data sources
             for source in data_sources:
@@ -569,29 +571,40 @@ class RAGPipeline:
                             'direction': record.get('direction'),
                             'file_name': source.get('file_name'),
                             'entity_count': len(record_entities),
-                            'entity_types': ','.join([e.get('type', '') for e in record_entities])
+                            'entity_types': ','.join([e.get('type', '') for e in record_entities]),
+                            'document': content  # Store document text in payload for Qdrant
                         }
                         
-                        # Sanitize metadata (remove None values which ChromaDB doesn't allow)
+                        # Sanitize metadata (remove None values)
                         metadatas.append({k: (v if v is not None else "") for k, v in metadata.items()})
-                        ids.append(f"{case_id}_{source.get('sourceType')}_{record.get('id', str(len(ids)))}")
             
             if documents:
                 # Generate embeddings for indexing
                 logger.info(f"Generating embeddings for {len(documents)} documents")
                 embeddings = await embedding_service.generate_embeddings(documents)
                 
-                # Index to ChromaDB with pre-computed embeddings using a thread pool to avoid blocking the event loop
-                import asyncio
-                await asyncio.to_thread(
-                    db_manager.chroma_collection.add,
-                    ids=ids,
-                    documents=documents,
-                    metadatas=metadatas,
-                    embeddings=embeddings
+                # Index to Qdrant
+                from qdrant_client.http import models as rest
+                import uuid
+                
+                points = []
+                for i in range(len(documents)):
+                    # Qdrant requires UUID or int IDs
+                    point_id = str(uuid.uuid4())
+                    points.append(
+                        rest.PointStruct(
+                            id=point_id,
+                            vector=embeddings[i],
+                            payload=metadatas[i]
+                        )
+                    )
+                
+                await db_manager.qdrant_client.upsert(
+                    collection_name="copsight_embeddings",
+                    points=points
                 )
                 
-                logger.info(f"Indexed {len(documents)} documents to ChromaDB for case {case_id}")
+                logger.info(f"Indexed {len(documents)} documents to Qdrant for case {case_id}")
                 return {
                     'success': True,
                     'indexed_count': len(documents),

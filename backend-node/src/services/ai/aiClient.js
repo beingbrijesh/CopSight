@@ -92,7 +92,14 @@ class AIClient {
       return response.data;
     } catch (error) {
       logger.error('AI query execution failed:', error.message);
-      throw new Error('Failed to execute AI query');
+      const isDown = error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT';
+      const err = new Error(
+        isDown
+          ? 'The AI Analysis engine is currently warming up or unreachable. Please try again in a few moments.'
+          : 'AI query could not be completed at this time. Please try again later.'
+      );
+      err.status = 503;
+      throw err;
     }
   }
 
@@ -233,10 +240,10 @@ class AIClient {
     } catch (error) {
       logger.error('[AIClient] Failed to open upstream SSE stream:', error.message);
       if (!res.writableEnded) {
-        const isUnavailable = error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND';
+        const isUnavailable = error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT';
         const msg = isUnavailable
-          ? '🔌 AI Service is not running. Please start the ai-service and try again.'
-          : '⏱️ AI Service took too long. The local LLM may be under heavy load. Please try again.';
+          ? 'The AI Analysis engine is currently warming up or unreachable. Please try again in a few moments.'
+          : 'AI service took too long to respond. Please try again shortly.';
         res.write(`data: ${JSON.stringify({ type: 'error', message: msg })}\n\n`);
         res.write('data: [DONE]\n\n');
         res.end();

@@ -11,6 +11,10 @@ import EntityTag from '../models/EntityTag.js';
 import Case from '../models/Case.js';
 import AuditLog from '../models/AuditLog.js';
 import logger from '../config/logger.js';
+import cloudStorage from '../config/cloudStorage.js';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 
 logger.info('WORKER FILE LOADED: processingWorker.js imported');
 
@@ -22,8 +26,21 @@ try {
     logger.debug('Job data received:', JSON.stringify(job.data, null, 2));
 
     try {
-      const { filePath, caseId, jobId } = job.data;
-      logger.info(`Extracted job parameters - filePath: ${filePath}, caseId: ${caseId}, jobId: ${jobId}`);
+      const { filePath, caseId, jobId, storageType } = job.data;
+      logger.info(`Extracted job parameters - filePath: ${filePath}, caseId: ${caseId}, jobId: ${jobId}, storageType: ${storageType || 'local'}`);
+
+      // If the file is on R2, download it to a temporary local path first
+      let localFilePath = filePath;
+      let tempDownloaded = false;
+
+      if (storageType === 'r2' && cloudStorage.isConfigured) {
+        const tmpDir = os.tmpdir();
+        localFilePath = path.join(tmpDir, `job_${jobId}_${path.basename(filePath)}`);
+        logger.info(`[Worker] Downloading from R2: ${filePath} → ${localFilePath}`);
+        await cloudStorage.downloadFile(filePath, localFilePath);
+        tempDownloaded = true;
+      }
+
       // Update job status
       await ProcessingJob.update(
         { status: 'processing', progress: 10, startedAt: new Date() },
@@ -33,8 +50,8 @@ try {
       job.progress(10);
 
       // Step 1: Parse UFDR file
-      logger.info(`Parsing UFDR file: ${filePath}`);
-      const parsedData = await parseUFDRFile(filePath);
+      logger.info(`Parsing UFDR file: ${localFilePath}`);
+      const parsedData = await parseUFDRFile(localFilePath);
       logger.info('Parsed data structure:', JSON.stringify(parsedData, null, 2).substring(0, 500) + '...');
       await ProcessingJob.update({ progress: 30 }, { where: { id: jobId } });
       job.progress(30);
@@ -210,6 +227,16 @@ try {
       );
 
       job.progress(100);
+
+      // Clean up temp file downloaded from R2
+      if (tempDownloaded && fs.existsSync(localFilePath)) {
+        try {
+          fs.unlinkSync(localFilePath);
+          logger.info(`[Worker] Cleaned up temp file: ${localFilePath}`);
+        } catch (cleanupErr) {
+          logger.warn(`[Worker] Failed to clean temp file: ${cleanupErr.message}`);
+        }
+      }
 
       return {
         success: true,

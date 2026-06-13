@@ -27,6 +27,7 @@ import { connectDatabase } from './config/database.js';
 import { testDatabaseConnections, closeDatabaseConnections } from './config/databases.js';
 import { initializeIndices } from './services/search/elasticsearchService.js';
 import logger from './config/logger.js';
+import aiClient from './services/ai/aiClient.js';
 import './workers/processingWorker.js'; // Start background worker
 import './workers/streamWorker.js'; // Start stream background worker
 
@@ -158,6 +159,78 @@ const startServer = async () => {
       logger.info(`   - Elasticsearch: ${dbStatus.elasticsearch ? '✓' : '✗'}`);
       logger.info(`   - Neo4j: ${dbStatus.neo4j ? '✓' : '✗'}`);
       logger.info(`   - Redis: ${dbStatus.redis ? '✓' : '✗'}`);
+
+      // ── Advanced Stealth Keep-Alive Ping System ──
+      const USER_AGENTS = [
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"
+      ];
+
+      let isAIServerDown = false;
+
+      const performStealthPing = async () => {
+        try {
+          const headers = {
+            "User-Agent": USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)],
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
+          };
+
+          // 1. Ping AI Server (Masked as root page visit instead of /health)
+          const aiUrl = process.env.AI_SERVICE_URL || 'http://localhost:8005';
+          try {
+            const resp = await fetch(`${aiUrl}/`, { headers });
+            if (resp.ok) {
+              logger.info('[STEALTH KEEPALIVE] ✅ AI Service (HuggingFace) ping successful.');
+              isAIServerDown = false;
+            } else {
+              logger.warn(`[STEALTH KEEPALIVE] ⚠️ AI Service returned ${resp.status}`);
+              isAIServerDown = true;
+            }
+          } catch (e) {
+            logger.error('[STEALTH KEEPALIVE] ❌ AI Service (HuggingFace) is OFFLINE or UNREACHABLE');
+            isAIServerDown = true;
+          }
+
+          // 2. Fail-over Logic: If AI is down, Ping Qdrant
+          if (isAIServerDown && process.env.QDRANT_URL && process.env.QDRANT_API_KEY) {
+            try {
+              logger.info('[STEALTH KEEPALIVE] AI is offline. Executing fail-over ping to Qdrant...');
+              const qHeaders = { ...headers, "api-key": process.env.QDRANT_API_KEY };
+              const qResp = await fetch(`${process.env.QDRANT_URL}/collections`, { headers: qHeaders });
+              if (qResp.ok) {
+                logger.info('[STEALTH KEEPALIVE] ✅ Qdrant fail-over ping successful.');
+              } else {
+                logger.warn(`[STEALTH KEEPALIVE] ⚠️ Qdrant returned ${qResp.status}`);
+              }
+            } catch (e) {
+              logger.error('[STEALTH KEEPALIVE] ❌ Qdrant fail-over ping failed');
+            }
+          }
+
+        } catch (error) {
+          logger.error(`[STEALTH KEEPALIVE] ❌ Keep-Alive Ping Failed: ${error.message}`);
+        } finally {
+          // Calculate next interval with Jitter
+          // Normal: ~1 hour (3300 to 3900 seconds)
+          // Fail-over: ~10 minutes (570 to 840 seconds)
+          let nextDelayMs;
+          if (isAIServerDown) {
+            nextDelayMs = (Math.floor(Math.random() * (840 - 570 + 1)) + 570) * 1000;
+          } else {
+            nextDelayMs = (Math.floor(Math.random() * (3900 - 3300 + 1)) + 3300) * 1000;
+          }
+          
+          setTimeout(performStealthPing, nextDelayMs);
+        }
+      };
+
+      // Run once immediately at startup (after a small 5s delay)
+      setTimeout(performStealthPing, 5000);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);

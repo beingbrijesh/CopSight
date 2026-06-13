@@ -47,10 +47,9 @@ class Settings(BaseSettings):
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "copsight_password"
     
-    # ChromaDB
-    CHROMA_HOST: str = "localhost"
-    CHROMA_PORT: int = 8006
-    CHROMA_TELEMETRY_DISABLED: bool = True
+    # Qdrant (Vector DB)
+    QDRANT_URL: str = "http://localhost:6333"
+    QDRANT_API_KEY: str | None = None
     
     # Redis
     REDIS_URL: str | None = None
@@ -71,11 +70,18 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str | None = None
     USE_GEMINI_MODEL: int = 0
     
-    # AWS S3 Storage (Hybrid On-Prem/Cloud)
+    # AWS S3 / Cloudflare R2 Storage
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
     AWS_S3_BUCKET: str | None = None
     AWS_REGION: str = "us-east-1"
+    R2_ACCESS_KEY_ID: str | None = None
+    R2_SECRET_ACCESS_KEY: str | None = None
+    R2_ENDPOINT: str | None = None
+    R2_BUCKET_NAME: str | None = None
+    
+    # Cross-Server Health
+    BACKEND_URL: str = "http://localhost:8080"
     
     # Model Configuration
     MAX_TOKENS: int = 4096

@@ -4,6 +4,8 @@ import EntityTag from '../models/EntityTag.js';
 import logger from '../config/logger.js';
 import processingQueue from '../queues/processingQueue.js';
 import AuditLog from '../models/AuditLog.js';
+import cloudStorage from '../config/cloudStorage.js';
+import fs from 'fs';
 
 /**
  * Upload UFDR file and start processing
@@ -27,7 +29,6 @@ export const uploadUFDRFile = async (req, res) => {
       }
       
       const crypto = await import('crypto');
-      const fs = await import('fs');
       const key = Buffer.from(req.user.sessionEncryptionKey, 'hex');
       const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(req.body.iv, 'hex'), key);
       decipher.setAuthTag(Buffer.from(req.body.tag, 'hex'));
@@ -50,6 +51,25 @@ export const uploadUFDRFile = async (req, res) => {
 
     logger.info(`File uploaded for case ${caseId}: ${file.filename}`);
 
+    // Upload to Cloudflare R2 if configured, then delete local copy
+    let fileLocation = file.path;
+    let storageType = 'local';
+
+    if (cloudStorage.isConfigured) {
+      const r2Key = `cases/${caseId}/${file.filename}`;
+      await cloudStorage.uploadFile(file.path, r2Key);
+      fileLocation = r2Key;
+      storageType = 'r2';
+
+      // Clean up the local temporary file to free ephemeral Render disk
+      try {
+        fs.unlinkSync(file.path);
+        logger.info(`[Upload] Cleaned local temp file after R2 upload: ${file.filename}`);
+      } catch (cleanupErr) {
+        logger.warn(`[Upload] Could not delete local temp: ${cleanupErr.message}`);
+      }
+    }
+
     // Create processing job
     const job = await ProcessingJob.create({
       caseId: parseInt(caseId),
@@ -68,20 +88,22 @@ export const uploadUFDRFile = async (req, res) => {
       details: {
         filename: file.originalname,
         size: file.size,
-        mimetype: file.mimetype
+        mimetype: file.mimetype,
+        storageType
       },
       ipAddress: req.ip,
       userAgent: req.get('user-agent'),
       sessionId: req.sessionId
     });
 
-    // Add job to processing queue
+    // Add job to processing queue — pass R2 key or local path
     await processingQueue.add('parse-ufdr', {
       jobId: job.id,
       caseId: parseInt(caseId),
-      filePath: file.path,
+      filePath: fileLocation,
       fileName: file.originalname,
-      userId: req.user.id
+      userId: req.user.id,
+      storageType
     });
 
     res.json({

@@ -100,10 +100,22 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Handle 503 Service Unavailable — AI service is warming up or offline
+    // Do NOT retry these; the backend already returns a sanitized, user-friendly message
+    if (error.response?.status === 503) {
+      const sanitizedMessage =
+        error.response?.data?.message ||
+        'A required service is currently warming up or unreachable. Please try again in a few moments.';
+
+      // Attach the clean message so components can display it directly
+      error.userMessage = sanitizedMessage;
+      return Promise.reject(error);
+    }
+
     // Implement retry logic for specific errors with conservative settings
     if (
       error.response?.status === 429 || // Too Many Requests
-      error.response?.status >= 500 || // Server errors
+      (error.response?.status >= 500 && error.response?.status !== 503) || // Server errors (except 503)
       error.code === 'NETWORK_ERROR' || // Network issues
       !error.response // No response (network error)
     ) {

@@ -27,8 +27,8 @@ async def parse_and_route_data(case_id: int, payload_type: str, data: dict):
         # Vision Parsing & Embedding
         provider = vision_factory.get_provider()
         faces = await provider.describe_and_embed_faces(file_path)
-        
-        # Add faces to ChromaDB via existing pipeline
+        # Extract faces from image/video content
+        # Add faces to Qdrant via existing pipeline
         # Simulated format for RAG indexing
         data_sources = [{"data": [{"content": face["description"]}], "sourceType": "media", "file_name": data["filename"]} for face in faces]
         await rag_pipeline.index_case_data(case_id, data_sources, [])

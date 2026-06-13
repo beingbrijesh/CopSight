@@ -87,10 +87,80 @@ async def lifespan(app: FastAPI):
         )
     except Exception as e:
         logger.error(f"Failed to start ARQ worker: {e}")
+
+    # ── Advanced Stealth Keep-Alive Ping System ──
+    import asyncio
+    import httpx
+    import random
+    import time
+
+    USER_AGENTS = [
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"
+    ]
+
+    async def _stealth_keepalive():
+        """Advanced Stealth Ping to evade bot detection on Render & Qdrant"""
+        last_qdrant_ping = 0
         
+        while True:
+            try:
+                # 1. Jitter interval (9.5 to 14 minutes)
+                sleep_seconds = random.uniform(570, 840)
+                await asyncio.sleep(sleep_seconds)
+                
+                # 2. Spoof headers
+                headers = {
+                    "User-Agent": random.choice(USER_AGENTS),
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.5",
+                    "Cache-Control": "no-cache",
+                    "Pragma": "no-cache",
+                    "Sec-Fetch-Dest": "document",
+                    "Sec-Fetch-Mode": "navigate",
+                    "Sec-Fetch-Site": "none",
+                    "Upgrade-Insecure-Requests": "1"
+                }
+                
+                # 3. Ping Node.js Backend (Masked as root page visit instead of /health)
+                async with httpx.AsyncClient(timeout=15, verify=False) as client:
+                    resp = await client.get(f"{settings.BACKEND_URL}/", headers=headers)
+                    if resp.status_code == 200:
+                        logger.info(f"[STEALTH KEEPALIVE] ✅ Node.js Backend (Render) ping successful. Responded as expected.")
+                    else:
+                        logger.warning(f"[STEALTH KEEPALIVE] ⚠️ Node.js Backend returned {resp.status_code}")
+                
+                # 4. Ping Qdrant Cluster every ~24 hours (86400 seconds)
+                current_time = time.time()
+                if current_time - last_qdrant_ping > 86000:
+                    logger.info("[STEALTH KEEPALIVE] Initiating daily Qdrant wake-up ping...")
+                    if settings.QDRANT_URL and settings.QDRANT_API_KEY:
+                        q_headers = headers.copy()
+                        q_headers["api-key"] = settings.QDRANT_API_KEY
+                        async with httpx.AsyncClient(timeout=15) as client:
+                            # Fetch collections list - lightweight and standard
+                            q_resp = await client.get(f"{settings.QDRANT_URL}/collections", headers=q_headers)
+                            if q_resp.status_code == 200:
+                                logger.info("[STEALTH KEEPALIVE] ✅ Qdrant Cloud ping successful.")
+                                last_qdrant_ping = current_time
+                            else:
+                                logger.warning(f"[STEALTH KEEPALIVE] ⚠️ Qdrant Cloud returned {q_resp.status_code}")
+                    else:
+                        logger.info("[STEALTH KEEPALIVE] ⏭️ Skipping Qdrant ping (no credentials configured).")
+
+            except Exception as e:
+                logger.error(f"[STEALTH KEEPALIVE] ❌ Keep-Alive Ping Failed: {e}")
+
+    health_task = asyncio.create_task(_stealth_keepalive())
+
     logger.info("AI Service ready")
     yield
     logger.info("Shutting down AI Service...")
+
+    # Cancel health monitor
+    health_task.cancel()
     
     if worker_process:
         logger.info("Terminating ARQ background worker...")

@@ -55,11 +55,11 @@ router.post(
         ...response.data,
       });
     } catch (error) {
-      const isDown = error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND';
-      const status = error.response?.status || 503;
+      const isDown = error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT';
+      const status = isDown ? 503 : (error.response?.status || 503);
       const message = isDown
-        ? 'AI service is not running. Please start it with: uvicorn app.main:app --reload --port 8005'
-        : error.response?.data?.detail || 'Anomaly detection failed';
+        ? 'The AI Analysis engine is currently warming up or unreachable. Please try again in a few moments.'
+        : 'Analysis could not be completed at this time. Please try again later.';
 
       logger.error(`[Analysis] detect-anomalies failed: ${error.message}`);
       return res.status(status).json({ success: false, message });
@@ -85,10 +85,13 @@ router.post(
       });
       return res.json({ success: true, ...response.data });
     } catch (error) {
+      const isDown = error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT';
       logger.error(`[Analysis] detect-patterns failed: ${error.message}`);
-      return res.status(error.response?.status || 503).json({
+      return res.status(isDown ? 503 : (error.response?.status || 503)).json({
         success: false,
-        message: error.response?.data?.detail || 'Pattern detection failed',
+        message: isDown
+          ? 'The AI Analysis engine is currently warming up or unreachable. Please try again in a few moments.'
+          : 'Pattern detection could not be completed at this time. Please try again later.',
       });
     }
   }
@@ -109,10 +112,13 @@ router.post(
       const response = await aiClient.get(`/api/analysis/summary/${caseId}`);
       return res.json({ success: true, ...response.data });
     } catch (error) {
+      const isDown = error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT';
       logger.error(`[Analysis] case-summary failed: ${error.message}`);
-      return res.status(error.response?.status || 503).json({
+      return res.status(isDown ? 503 : (error.response?.status || 503)).json({
         success: false,
-        message: error.response?.data?.detail || 'Case summary failed',
+        message: isDown
+          ? 'The AI Analysis engine is currently warming up or unreachable. Please try again in a few moments.'
+          : 'Case summary could not be generated at this time. Please try again later.',
       });
     }
   }
@@ -135,10 +141,13 @@ router.post(
       });
       return res.json({ success: true, ...response.data });
     } catch (error) {
+      const isDown = error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT';
       logger.error(`[Analysis] predictive-analysis failed: ${error.message}`);
-      return res.status(error.response?.status || 503).json({
+      return res.status(isDown ? 503 : (error.response?.status || 503)).json({
         success: false,
-        message: error.response?.data?.detail || 'Predictive analysis failed',
+        message: isDown
+          ? 'The AI Analysis engine is currently warming up or unreachable. Please try again in a few moments.'
+          : 'Predictive analysis could not be completed at this time. Please try again later.',
       });
     }
   }

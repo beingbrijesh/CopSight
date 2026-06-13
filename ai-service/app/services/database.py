@@ -15,13 +15,14 @@ import redis.asyncio as aioredis
 from app.config import settings
 
 try:
-    import chromadb
-    from chromadb.config import Settings as ChromaSettings
-    CHROMA_IMPORT_ERROR = None
+    from qdrant_client import AsyncQdrantClient
+    from qdrant_client.http.models import Distance, VectorParams
+    QDRANT_IMPORT_ERROR = None
 except Exception as import_error:
-    chromadb = None
-    ChromaSettings = None
-    CHROMA_IMPORT_ERROR = import_error
+    AsyncQdrantClient = None
+    Distance = None
+    VectorParams = None
+    QDRANT_IMPORT_ERROR = import_error
 
 
 class DatabaseManager:
@@ -32,8 +33,7 @@ class DatabaseManager:
         self.elasticsearch = None
         self.neo4j = None
         self.redis = None
-        self.chroma_client = None
-        self.chroma_collection = None
+        self.qdrant_client = None
 
     async def connect(self):
         """Connect to all configured backends."""
@@ -118,29 +118,34 @@ class DatabaseManager:
             logger.error(f"Redis connection failed: {e}")
             self.redis = None
 
-        logger.info("Initializing ChromaDB...")
-        if CHROMA_IMPORT_ERROR is not None:
-            logger.warning(f"ChromaDB unavailable: {CHROMA_IMPORT_ERROR}")
-            self.chroma_client = None
-            self.chroma_collection = None
+        logger.info("Initializing Qdrant...")
+        if QDRANT_IMPORT_ERROR is not None:
+            logger.warning(f"Qdrant unavailable: {QDRANT_IMPORT_ERROR}")
+            self.qdrant_client = None
         else:
             try:
-                self.chroma_client = chromadb.HttpClient(  # type: ignore[union-attr]
-                    host=settings.CHROMA_HOST,
-                    port=settings.CHROMA_PORT,
-                    ssl=(settings.CHROMA_PORT == 443),
-                    settings=ChromaSettings(anonymized_telemetry=False),  # type: ignore[misc]
+                self.qdrant_client = AsyncQdrantClient(
+                    url=settings.QDRANT_URL,
+                    api_key=settings.QDRANT_API_KEY,
+                    timeout=30.0,
                 )
-                self.chroma_collection = self.chroma_client.get_or_create_collection(
-                    name="copsight_embeddings",
-                    metadata={"description": "CopSight AI forensic data embeddings"},
-                )
-                count = self.chroma_collection.count()
-                logger.info(f"ChromaDB connected, collection count: {count}")
+                
+                # Check if collection exists, create if not
+                collection_name = "copsight_embeddings"
+                try:
+                    collection_info = await self.qdrant_client.get_collection(collection_name)
+                    logger.info(f"Qdrant connected, collection exists with {collection_info.points_count} points")
+                except Exception as e:
+                    # If it fails, assume it doesn't exist (Qdrant raises UnexpectedResponse)
+                    logger.info("Creating Qdrant collection...")
+                    await self.qdrant_client.create_collection(
+                        collection_name=collection_name,
+                        vectors_config=VectorParams(size=settings.EMBEDDING_DIM, distance=Distance.COSINE),
+                    )
+                    logger.info("Qdrant collection created")
             except Exception as e:
-                logger.error(f"ChromaDB initialization failed: {e}")
-                self.chroma_client = None
-                self.chroma_collection = None
+                logger.error(f"Qdrant initialization failed: {e}")
+                self.qdrant_client = None
 
     async def reconnect_postgres(self):
         """Reconnect to PostgreSQL if the pool is lost."""
@@ -184,8 +189,9 @@ class DatabaseManager:
             await self.neo4j.close()
         if self.redis:
             await self.redis.close()
-        if self.chroma_client:
-            logger.info("ChromaDB client closed")
+        if self.qdrant_client:
+            await self.qdrant_client.close()
+            logger.info("Qdrant client closed")
 
     async def check_health(self):
         """Check health of all connections."""
@@ -194,7 +200,7 @@ class DatabaseManager:
             "elasticsearch": False,
             "neo4j": False,
             "redis": False,
-            "chromadb": False,
+            "qdrant": False,
         }
 
         if self.postgres:
@@ -226,10 +232,10 @@ class DatabaseManager:
             except Exception:
                 pass
 
-        if self.chroma_client and self.chroma_collection:
+        if self.qdrant_client:
             try:
-                self.chroma_collection.count()
-                health["chromadb"] = True
+                await self.qdrant_client.get_collection("copsight_embeddings")
+                health["qdrant"] = True
             except Exception:
                 pass
 
