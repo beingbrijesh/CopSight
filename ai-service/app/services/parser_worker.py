@@ -62,6 +62,18 @@ async def parse_and_route_data(case_id: int, payload_type: str, data: dict):
         if metadata.get("phoneNumber"):
             entities.append({"type": "PhoneNumber", "value": metadata["phoneNumber"]})
             
+        # 0. Evaluate Threat Semantics via LLM
+        threat_eval = {"is_suspect": False, "threat_score": 0}
+        if raw_text and len(raw_text) > 10:
+            threat_eval = await llm_service.evaluate_threat(raw_text)
+            
+        # Apply threat mapping to the primary entities if flagged
+        if threat_eval.get("is_suspect") or threat_eval.get("threat_score", 0) >= 50:
+            for ent in entities:
+                ent["isSuspect"] = True
+                ent["threatScore"] = threat_eval.get("threat_score", 0)
+                ent["threatReason"] = threat_eval.get("reasoning", "")
+            
         # Create relationships between entities that co-occur in this payload
         for i in range(len(entities)):
             for j in range(i + 1, len(entities)):

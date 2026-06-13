@@ -179,6 +179,44 @@ Rules:
                 "keywords": query.split(),
                 "semantic_query": query
             }
+            
+    async def evaluate_threat(self, text: str) -> Dict[str, Any]:
+        """Evaluate text for threats, coded language, and suspect behavior."""
+        prompt = f"""You are a specialized forensic NLP engine analyzing intercepted communications and extracted data.
+Analyze the following text for illicit intent, coded language, or threat indicators.
+
+Text to analyze: "{text}"
+
+Look for:
+- Coded languages, slang, or euphemisms for drugs, weapons, or illegal transactions.
+- Semantics implying conspiracy, threats of violence, or criminal coordination.
+- Specific keywords (e.g., 'hack', 'drop', 'cash', 'hit', 'pack').
+
+Extract and return in this exact JSON format:
+{{
+    "is_suspect": true|false,
+    "threat_score": 0-100,
+    "reasoning": "brief explanation of why this was flagged or not"
+}}
+
+Return ONLY the JSON object. No explanation, no markdown fences."""
+
+        try:
+            response = await self.generate_response(prompt, temperature=0.2, max_tokens=150)
+            import json, re
+            match = re.search(r'\{.*\}', response, re.DOTALL)
+            if match:
+                return json.loads(match.group(0))
+            else:
+                json_str = response.replace("```json", "").replace("```", "").strip()
+                return json.loads(json_str)
+        except Exception as e:
+            logger.error(f"Threat evaluation failed: {e}")
+            return {
+                "is_suspect": False,
+                "threat_score": 0,
+                "reasoning": "Evaluation failed"
+            }
     
     async def synthesize_answer(
         self,

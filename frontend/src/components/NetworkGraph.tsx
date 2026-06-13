@@ -7,6 +7,9 @@ interface Node {
   type: 'device' | 'phone' | 'contact' | 'entity';
   label: string;
   isForeign?: boolean;
+  isSuspect?: boolean;
+  isRedNode?: boolean;
+  threatScore?: number;
   metadata?: any;
 }
 
@@ -88,19 +91,27 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
 
       // Node color based on type
       let color = '#3b82f6'; // blue for device
-      if (node.type === 'phone') {
-        color = node.isForeign ? '#ef4444' : '#10b981'; // red for foreign, green for local
+      if (node.isSuspect || node.isRedNode || (node.threatScore && node.threatScore >= 50)) {
+        color = '#ef4444'; // critical red for suspect/threat
+      } else if (node.type === 'phone') {
+        color = node.isForeign ? '#f97316' : '#10b981'; // orange for foreign, green for local
       } else if (node.type === 'contact') {
         color = '#8b5cf6'; // purple
       } else if (node.type === 'entity') {
-        color = '#f59e0b'; // orange
+        color = '#f59e0b'; // amber
       }
 
       // Draw node circle
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 20, 0, 2 * Math.PI);
+      ctx.arc(pos.x, pos.y, node.isSuspect || node.isRedNode ? 24 : 20, 0, 2 * Math.PI);
       ctx.fillStyle = color;
       ctx.fill();
+      
+      if (node.isSuspect || node.isRedNode) {
+        ctx.strokeStyle = '#7f1d1d'; // dark red border
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
       
       // Highlight selected node
       if (selectedNode?.id === node.id) {
@@ -226,8 +237,12 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
             <span>Local Number</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-red-500"></div>
+            <div className="w-4 h-4 rounded-full bg-orange-500"></div>
             <span>Foreign Number</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-red-500 border border-red-900"></div>
+            <span className="font-bold text-red-600 dark:text-red-400">Suspect / Threat</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-purple-500"></div>
@@ -262,6 +277,16 @@ export const NetworkGraph = ({ nodes, edges, onNodeClick }: NetworkGraphProps) =
               {selectedNode.isForeign !== undefined && (
                 <p className="text-sm text-gray-600 dark:text-slate-400">
                   {selectedNode.isForeign ? 'Foreign Number' : 'Local Number'}
+                </p>
+              )}
+              {(selectedNode.isSuspect || selectedNode.isRedNode) && (
+                <p className="text-sm font-bold text-red-600 mt-1">
+                  ⚠️ Flagged as Suspect / Red Node
+                </p>
+              )}
+              {selectedNode.threatScore !== undefined && (
+                <p className="text-sm text-red-500">
+                  Threat Score: {selectedNode.threatScore}
                 </p>
               )}
             </div>
