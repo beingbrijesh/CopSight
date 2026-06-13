@@ -6,8 +6,9 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = process.env.RENDER ? '/var/data/uploads' : path.join(__dirname, '../../uploads');
+// Create uploads directory if it doesn't exist. 
+// Use /tmp on Render since it's an ephemeral read-only filesystem except for /tmp.
+const uploadsDir = process.env.RENDER ? '/tmp/uploads' : path.join(__dirname, '../../uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
