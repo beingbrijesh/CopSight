@@ -85,6 +85,9 @@ class DatabaseManager:
                 settings.NEO4J_URI,
                 auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD),
                 connection_timeout=30,
+                keep_alive=True,
+                max_connection_lifetime=200,  # Aura kills idle connections > 3-5 mins
+                max_connection_pool_size=50,
             )
             await self.neo4j.verify_connectivity()
             logger.info("Neo4j connected")
