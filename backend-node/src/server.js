@@ -56,6 +56,9 @@ import { performanceMiddleware } from './routes/performanceRoutes.js';
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Trust the reverse proxy (Render) so rate limiting uses the correct IP
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet());
 app.use(cors({
