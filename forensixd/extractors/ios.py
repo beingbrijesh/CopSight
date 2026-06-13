@@ -227,6 +227,7 @@ class IosExtractor(AbstractExtractor):
         self,
         session: ForensicSession,
         level: ExtractionLevel,
+        profile: str = "all",
     ) -> Iterator[Artifact]:
         """Dispatch extraction for *level* and yield all collected artefacts.
 
@@ -279,9 +280,9 @@ class IosExtractor(AbstractExtractor):
         )
 
         if level == ExtractionLevel.LOGICAL:
-            yield from self._backup_extract(session)
+            yield from self._backup_extract(session, profile)
         elif level == ExtractionLevel.FILE_SYSTEM:
-            yield from self._afc_extract(session)
+            yield from self._afc_extract(session, profile)
 
     def disconnect(self) -> None:
         """Release the device reference and mark the extractor as disconnected.
@@ -300,7 +301,7 @@ class IosExtractor(AbstractExtractor):
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _backup_extract(self, session: ForensicSession) -> Iterator[Artifact]:
+    def _backup_extract(self, session: ForensicSession, profile: str = "all") -> Iterator[Artifact]:
         """Trigger a live backup using pymobiledevice3 and yield the resulting artefacts."""
         assert self._device is not None
 
@@ -362,6 +363,15 @@ class IosExtractor(AbstractExtractor):
 
             try:
                 artifact_type: ArtifactType = _artifact_type_for_path(file_path)
+                
+                extract_media = profile in ["all", "media"]
+                extract_textual = profile in ["all", "textual"]
+
+                if not extract_media and artifact_type == ArtifactType.MEDIA:
+                    continue
+                if not extract_textual and artifact_type != ArtifactType.MEDIA:
+                    continue
+
                 hashes = HashEngine.hash_file(file_path)
 
                 artifact = Artifact(
@@ -387,9 +397,14 @@ class IosExtractor(AbstractExtractor):
                     exc_info=True,
                 )
 
-    def _afc_extract(self, session: ForensicSession) -> Iterator[Artifact]:
+    def _afc_extract(self, session: ForensicSession, profile: str = "all") -> Iterator[Artifact]:
         """Use Apple File Conduit (AFC) to pull accessible media and app data."""
         assert self._device is not None
+        
+        extract_media = profile in ["all", "media"]
+        if not extract_media:
+            _logger.info("Skipping AFC extraction (DCIM) because profile excludes media")
+            return
 
         afc_dir = session.output_dir / "ios_afc"
         afc_dir.mkdir(parents=True, exist_ok=True)

@@ -1,18 +1,20 @@
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import { User, AuditLog } from '../models/index.js';
 import logger, { auditLogger } from '../config/logger.js';
 
 /**
  * Generate JWT token
  */
-const generateToken = (user, sessionId) => {
+const generateToken = (user, sessionId, sessionEncryptionKey) => {
   return jwt.sign(
     {
       userId: user.id,
       username: user.username,
       role: user.role,
-      sessionId
+      sessionId,
+      sessionEncryptionKey
     },
     process.env.JWT_SECRET,
     {
@@ -73,9 +75,10 @@ export const login = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate session ID and token
+    // Generate session ID, key, and token
     const sessionId = uuidv4();
-    const token = generateToken(user, sessionId);
+    const sessionEncryptionKey = crypto.randomBytes(32).toString('hex');
+    const token = generateToken(user, sessionId, sessionEncryptionKey);
 
     // Log successful login
     await AuditLog.create({
@@ -99,6 +102,7 @@ export const login = async (req, res) => {
       success: true,
       message: 'Login successful',
       token,
+      sessionEncryptionKey,
       user: {
         id: user.id,
         username: user.username,
@@ -112,6 +116,7 @@ export const login = async (req, res) => {
       },
       data: {
         token,
+        sessionEncryptionKey,
         user: {
           id: user.id,
           username: user.username,

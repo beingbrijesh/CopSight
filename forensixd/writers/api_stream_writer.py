@@ -9,16 +9,18 @@ from rich.console import Console
 console = Console()
 
 class ApiStreamWriter:
-    def __init__(self, stream_url: str, token: str, case_id: int, device_id: int, batch_size: int = 50):
+    def __init__(self, stream_url: str, token: str, session_encryption_key: str, case_id: int, device_id: int, batch_size: int = 50):
         self.stream_url = stream_url.rstrip('/')
         if self.stream_url.endswith('/api'):
             self.stream_url = self.stream_url[:-4]
             
         self.token = token
+        self.session_encryption_key = bytes.fromhex(session_encryption_key) if session_encryption_key else None
         self.case_id = case_id
         self.device_id = device_id
         self.batch_size = batch_size
         self.buffer = []
+        self._seen_hashes = set()
         self.lock = Lock()
         
         # Setup offline queue DB
@@ -40,6 +42,12 @@ class ApiStreamWriter:
             ''')
 
     def append_artifact(self, artifact):
+        sha256 = artifact.hashes.get("SHA-256")
+        if sha256:
+            if sha256 in self._seen_hashes:
+                return
+            self._seen_hashes.add(sha256)
+
         # Convert artifact to dict safely
         if hasattr(artifact, 'model_dump'):
             art_dict = artifact.model_dump(mode="json")
@@ -81,18 +89,39 @@ class ApiStreamWriter:
                 self.buffer.clear()
                 self._send_batch(batch)
 
+    def _encrypt_payload(self, payload_dict: dict) -> dict:
+        if not self.session_encryption_key:
+            return payload_dict
+            
+        from Crypto.Cipher import AES
+        import os
+        
+        iv = os.urandom(12)
+        cipher = AES.new(self.session_encryption_key, AES.MODE_GCM, nonce=iv)
+        
+        plaintext = json.dumps(payload_dict).encode('utf-8')
+        ciphertext, tag = cipher.encrypt_and_digest(plaintext)
+        
+        return {
+            "iv": iv.hex(),
+            "ciphertext": ciphertext.hex(),
+            "tag": tag.hex()
+        }
+
     def _send_batch(self, batch):
         payload = {
             "deviceId": self.device_id,
             "artifacts": batch
         }
         
+        encrypted_payload = self._encrypt_payload(payload)
+        
         headers = {"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"}
         # Assumes stream_url is the base URL like http://localhost:8080
         url = f"{self.stream_url}/api/ingest/stream/case/{self.case_id}"
         
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            response = requests.post(url, json=encrypted_payload, headers=headers, timeout=10)
             response.raise_for_status()
         except requests.RequestException as e:
             console.print(f"[yellow]Network error sending batch to backend. Queueing offline. ({e})[/yellow]")
@@ -127,7 +156,8 @@ class ApiStreamWriter:
                         "deviceId": device_id,
                         "artifacts": json.loads(payload_str)
                     }
-                    response = requests.post(url, json=payload, headers=headers, timeout=10)
+                    encrypted_payload = self._encrypt_payload(payload)
+                    response = requests.post(url, json=encrypted_payload, headers=headers, timeout=10)
                     response.raise_for_status()
                     
                     # Delete successful row

@@ -25,6 +25,7 @@ dependencies = [
     "libusb-package>=1.0.26",
     "pymobiledevice3>=2.36.0",
     "paramiko>=3.4.0",
+    "adb-shell>=0.4.4",
 ]
 
 [project.optional-dependencies]

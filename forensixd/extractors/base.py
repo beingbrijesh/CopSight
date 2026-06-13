@@ -90,6 +90,7 @@ class AbstractExtractor(ABC):
         self,
         session: ForensicSession,
         level: ExtractionLevel,
+        profile: str = "all",
     ) -> Iterator[Artifact]:
         """Yield artefacts from the connected device at the requested *level*.
 

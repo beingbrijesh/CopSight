@@ -112,6 +112,34 @@ export const buildKnowledgeGraph = async (caseId, parsedData, entities) => {
       }
     }
 
+    // Threat detection and Node Flagging
+    const THREAT_KEYWORDS = ['bomb', 'kill', 'attack', 'weapon', 'smuggle', 'drug', 'terror', 'hack', 'code', 'illegal'];
+    
+    if (parsedData.dataSources) {
+      for (const source of parsedData.dataSources) {
+        for (const record of source.data) {
+          const text = String(record.content || record.message || record.body || '').toLowerCase();
+          const hasThreat = THREAT_KEYWORDS.some(kw => text.includes(kw));
+          
+          if (hasThreat && record.phoneNumber) {
+             await session.run(
+               `MATCH (p:PhoneNumber {number: $number})
+                SET p.isRedNode = true, p.threatMatched = true`,
+               { number: record.phoneNumber }
+             );
+          }
+        }
+      }
+    }
+    
+    // Flag nodes that communicate with many people (high degree)
+    await session.run(
+      `MATCH (p:PhoneNumber)<-[:COMMUNICATED_WITH]-(d:Device)
+       WITH p, count(DISTINCT d) as degree
+       WHERE degree >= 2
+       SET p.isRedNode = true, p.highDegree = true`
+    );
+
     // Create entity nodes from NER
     for (const entity of entities) {
       if (!entity || !entity.value) continue; // Skip invalid entities

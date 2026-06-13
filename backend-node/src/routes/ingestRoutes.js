@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticate } from '../middleware/auth.js';
+import { decryptPayload } from '../middleware/encryptionMiddleware.js';
 import streamQueue from '../queues/streamQueue.js';
 import logger from '../config/logger.js';
 import Case from '../models/Case.js';
@@ -7,6 +8,7 @@ import Case from '../models/Case.js';
 const router = express.Router();
 
 router.use(authenticate);
+router.use(decryptPayload);
 
 // Stream artifacts
 router.post('/stream/case/:caseId', async (req, res) => {

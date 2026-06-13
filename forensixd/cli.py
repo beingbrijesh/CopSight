@@ -66,7 +66,7 @@ def acquire(output_dir, level, ufdr_config):
         from forensixd.writers.api_stream_writer import ApiStreamWriter
         
         console.print(f"[cyan]Connecting to server at: {stream_url}[/cyan]")
-        token = authenticate_via_browser(login_url=login_url)
+        token, session_encryption_key = authenticate_via_browser(login_url=login_url)
         cases = get_assigned_cases(stream_url, token)
         selected_case = prompt_case_selection(cases)
         if not selected_case:
@@ -80,7 +80,7 @@ def acquire(output_dir, level, ufdr_config):
         # Using hash of device_id or simple lookup if we have a real DB device ID,
         # For now just use 1 or hash of string device id
         internal_device_id = 1
-        api_stream_writer = ApiStreamWriter(stream_url, token, int(case_id), internal_device_id)
+        api_stream_writer = ApiStreamWriter(stream_url, token, session_encryption_key, int(case_id), internal_device_id)
     except Exception as e:
         console.print(f"[red]Authentication or server connection failed:[/red] {e}")
         console.print("[red]Extraction cannot proceed without server connection.[/red]")
@@ -115,6 +115,19 @@ def acquire(output_dir, level, ufdr_config):
         output_dir = Prompt.ask("\n[bold]Output directory[/bold]", default="./cases")
     if not level:
         level = Prompt.ask("[bold]Extraction level[/bold]", choices=["logical", "file_system", "physical"], default="logical")
+        
+    profile_input = Prompt.ask(
+        "[bold]Extraction Profile[/bold]\n"
+        "  [1] Textual Only (SMS, Calls, Contacts, Backups)\n"
+        "  [2] Media Only (Images, Videos, PDFs)\n"
+        "  [3] Everything\n"
+        "Select an option", 
+        choices=["1", "2", "3"], 
+        default="1"
+    )
+    profile_map = {"1": "textual", "2": "media", "3": "all"}
+    extraction_profile = profile_map[profile_input]
+
     if ufdr_config is None:
         ufdr_config = Prompt.ask("[bold]CopSight AI config path[/bold] (optional, press Enter to skip)", default="")
 
@@ -141,7 +154,7 @@ def acquire(output_dir, level, ufdr_config):
         extractor.connect(device)
         with Progress(SpinnerColumn(), TextColumn("{task.description}")) as p:
             t = p.add_task("Extracting...", total=None)
-            for a in extractor.extract(session, ext_level):
+            for a in extractor.extract(session, ext_level, profile=extraction_profile):
                 artifacts.append(a)
                 if api_stream_writer:
                     api_stream_writer.append_artifact(a)

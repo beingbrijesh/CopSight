@@ -58,21 +58,7 @@ jobs:
 
     - name: Build with PyInstaller
       shell: bash
-      run: |
-        pyinstaller forensixd/cli.py \
-          --onefile \
-          --name forensixd \
-          --hidden-import pymobiledevice3 \
-          --hidden-import Registry \
-          --hidden-import pycparser.yacctab \
-          --hidden-import pycparser.lextab \
-          --hidden-import requests \
-          --collect-all forensixd \
-          --collect-all Crypto \
-          --collect-all jinja2 \
-          --collect-all xhtml2pdf \
-          --collect-all libusb_package \
-          --noconfirm
+      run: pyinstaller forensixd.spec --noconfirm
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4

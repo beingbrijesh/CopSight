@@ -75,6 +75,14 @@ if (process.env.NODE_ENV === 'development') {
   }));
 }
 
+// Root health check endpoint for load balancers
+app.get('/', (req, res) => {
+  res.json({
+    status: 'live',
+    service: 'copsight-backend'
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({

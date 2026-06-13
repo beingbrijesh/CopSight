@@ -246,9 +246,9 @@ class AndroidExtractor(AbstractExtractor):
             :attr:`~forensixd.core.models.ExtractionLevel.PHYSICAL`.
         """
         if level == ExtractionLevel.LOGICAL:
-            yield from self._logical_extract(session)
+            yield from self._logical_extract(session, profile)
         elif level == ExtractionLevel.FILE_SYSTEM:
-            yield from self._fs_extract(session)
+            yield from self._fs_extract(session, profile)
         else:
             raise NotImplementedError(
                 f"AndroidExtractor does not support ExtractionLevel.{level.value}. "
@@ -281,7 +281,7 @@ class AndroidExtractor(AbstractExtractor):
         """
         return bool(self._device and self._device.is_rooted)
 
-    def _logical_extract(self, session: ForensicSession) -> Iterator[Artifact]:
+    def _logical_extract(self, session: ForensicSession, profile: str = "all") -> Iterator[Artifact]:
         """Yield artefacts from standard user-accessible paths via ADB.
 
         Iterates over :data:`_LOGICAL_PATHS` and uses `adb pull` to extract real
@@ -349,14 +349,13 @@ class AndroidExtractor(AbstractExtractor):
         )
         prompt_allow_deny("Manual App Backups Required", backup_instructions)
 
-        extract_media = prompt_allow_deny(
-            "Media Extraction",
-            "Do you want to extract large media files (photos, videos, audio, stickers, etc.)?\n\n"
-            "Select 'No' to save time and storage space, extracting ONLY meaningful text data (SMS, Calls, Contacts, Chat logs)."
-        )
+        extract_media = profile in ["all", "media"]
+        extract_textual = profile in ["all", "textual"]
 
         for remote_path, artifact_type in _LOGICAL_PATHS:
             if not extract_media and artifact_type == ArtifactType.MEDIA:
+                continue
+            if not extract_textual and artifact_type != ArtifactType.MEDIA:
                 continue
             
             while True:
@@ -430,7 +429,7 @@ class AndroidExtractor(AbstractExtractor):
                         break
                 
         # 2. Attempt ADB Backup for application data
-        if prompt_allow_deny("ADB Backup", "Would you like to perform a full ADB backup for deeper extraction? (Requires tapping 'Back up my data' on device)"):
+        if extract_textual and prompt_allow_deny("ADB Backup", "Would you like to perform a full ADB backup for deeper extraction? (Requires tapping 'Back up my data' on device)"):
             backup_file = session.output_dir / "backup.ab"
             _logger.info("Starting adb backup to %s", backup_file)
             
@@ -477,7 +476,8 @@ class AndroidExtractor(AbstractExtractor):
                 yield artifact
 
         # 3. Extract native Content Providers (SMS, Call Logs, Contacts)
-        _logger.info("Extracting native Android content providers (SMS, Call Logs, Contacts)")
+        if extract_textual:
+            _logger.info("Extracting native Android content providers (SMS, Call Logs, Contacts)")
         providers = {
             "sms": "content://sms/",
             "call_logs": "content://call_log/calls",
@@ -518,7 +518,7 @@ class AndroidExtractor(AbstractExtractor):
             except Exception as exc:
                 _logger.warning(f"Failed to query {uri}: {exc}", exc_info=True)
 
-    def _fs_extract(self, session: ForensicSession) -> Iterator[Artifact]:
+    def _fs_extract(self, session: ForensicSession, profile: str = "all") -> Iterator[Artifact]:
         """Yield artefacts from protected application-data paths (root required).
 
         Raises :class:`~forensixd.core.exceptions.ExtractionError` immediately

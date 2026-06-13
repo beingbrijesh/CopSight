@@ -36,6 +36,7 @@ export const authenticate = async (req, res, next) => {
 
     // Attach user to request
     req.user = user;
+    req.user.sessionEncryptionKey = decoded.sessionEncryptionKey;
     req.sessionId = decoded.sessionId;
 
     next();

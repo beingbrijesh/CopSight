@@ -10,6 +10,7 @@ export const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cliSuccess, setCliSuccess] = useState(false);
   
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
@@ -19,7 +20,7 @@ export const Login = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const cliCallback = urlParams.get('cli_callback');
 
-  if (isAuthenticated && cliCallback) {
+  if (isAuthenticated && cliCallback && !cliSuccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-slate-900 flex flex-col items-center justify-center p-4">
         <div className="bg-white dark:bg-slate-800 p-1 rounded-full mb-6 animate-pulse overflow-hidden h-20 w-20 shadow-lg border border-gray-100 dark:border-white/10 flex items-center justify-center">
@@ -31,6 +32,20 @@ export const Login = () => {
     );
   }
 
+  if (cliSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-slate-900 flex flex-col items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-800 p-1 rounded-full mb-6 overflow-hidden h-20 w-20 shadow-lg border border-gray-100 dark:border-white/10 flex items-center justify-center">
+          <div className="h-full w-full bg-green-500 flex items-center justify-center rounded-full">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+          </div>
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Authentication Successful!</h2>
+        <p className="text-gray-600 dark:text-slate-400 text-center max-w-md">Your secure CLI session is now connected with End-to-End Encryption. You may close this browser window and return to your terminal.</p>
+      </div>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -38,7 +53,7 @@ export const Login = () => {
 
     try {
       const response = await authAPI.login({ username, password });
-      const { token, user } = response.data.data;
+      const { token, user, sessionEncryptionKey } = response.data.data;
       
       login(token, user);
       
@@ -46,7 +61,16 @@ export const Login = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const cliCallback = urlParams.get('cli_callback');
       if (cliCallback) {
-        window.location.href = `${cliCallback}?token=${encodeURIComponent(token)}`;
+        try {
+          await fetch(cliCallback, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, sessionEncryptionKey })
+          });
+          setCliSuccess(true);
+        } catch (err) {
+          setError('Failed to connect to local CLI server. Please ensure the CLI tool is running.');
+        }
         return;
       }
       
