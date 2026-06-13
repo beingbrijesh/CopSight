@@ -20,6 +20,34 @@ export const uploadUFDRFile = async (req, res) => {
       });
     }
 
+    // Decrypt the file if it's AES-256-GCM encrypted
+    if (req.body.encrypted === 'true' && req.body.iv && req.body.tag) {
+      if (!req.user || !req.user.sessionEncryptionKey) {
+        return res.status(401).json({ success: false, message: 'Missing session encryption key for file decryption' });
+      }
+      
+      const crypto = await import('crypto');
+      const fs = await import('fs');
+      const key = Buffer.from(req.user.sessionEncryptionKey, 'hex');
+      const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(req.body.iv, 'hex'), key);
+      decipher.setAuthTag(Buffer.from(req.body.tag, 'hex'));
+      
+      const tempPath = file.path + '.tmp';
+      
+      await new Promise((resolve, reject) => {
+        const readStream = fs.createReadStream(file.path);
+        const writeStream = fs.createWriteStream(tempPath);
+        
+        readStream.pipe(decipher).pipe(writeStream)
+          .on('finish', resolve)
+          .on('error', reject);
+      });
+      
+      // Replace encrypted file with decrypted file
+      fs.renameSync(tempPath, file.path);
+      logger.info(`Decrypted AES-256-GCM file for case ${caseId}`);
+    }
+
     logger.info(`File uploaded for case ${caseId}: ${file.filename}`);
 
     // Create processing job

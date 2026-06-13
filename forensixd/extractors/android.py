@@ -281,6 +281,21 @@ class AndroidExtractor(AbstractExtractor):
         """
         return bool(self._device and self._device.is_rooted)
 
+    def _get_adb_cmd(self) -> str:
+        """Get the path to the adb executable, preferring the PyInstaller bundled version."""
+        import sys
+        import os
+        if hasattr(sys, '_MEIPASS'):
+            bundled_adb = os.path.join(sys._MEIPASS, 'platform-tools', 'adb.exe' if os.name == 'nt' else 'adb')
+            if os.path.exists(bundled_adb):
+                if os.name != 'nt':
+                    try:
+                        os.chmod(bundled_adb, 0o755)
+                    except:
+                        pass
+                return bundled_adb
+        return 'adb'
+
     def _logical_extract(self, session: ForensicSession, profile: str = "all") -> Iterator[Artifact]:
         """Yield artefacts from standard user-accessible paths via ADB.
 
@@ -310,11 +325,12 @@ class AndroidExtractor(AbstractExtractor):
         adb_serial = None
         device_status = None
         
+        adb_cmd = self._get_adb_cmd()
         # Restart ADB server to ensure fresh connection
-        subprocess.run(["adb", "kill-server"], capture_output=True)
-        subprocess.run(["adb", "start-server"], capture_output=True)
+        subprocess.run([adb_cmd, "kill-server"], capture_output=True)
+        subprocess.run([adb_cmd, "start-server"], capture_output=True)
         
-        devices_out = subprocess.run(["adb", "devices"], capture_output=True, text=True).stdout
+        devices_out = subprocess.run([adb_cmd, "devices"], capture_output=True, text=True).stdout
         for line in devices_out.splitlines()[1:]:
             line = line.strip()
             if not line:
@@ -363,7 +379,7 @@ class AndroidExtractor(AbstractExtractor):
                     local_dest = adb_pull_dir / Path(remote_path).name
                     _logger.info("Executing adb pull %s %s", remote_path, local_dest)
                     result = subprocess.run(
-                        ["adb", *adb_target_args, "pull", remote_path, str(local_dest)],
+                        [adb_cmd, *adb_target_args, "pull", remote_path, str(local_dest)],
                         capture_output=True, text=True
                     )
                     
@@ -435,7 +451,7 @@ class AndroidExtractor(AbstractExtractor):
             
             while True:
                 backup_proc = subprocess.Popen(
-                    ["adb", *adb_target_args, "backup", "-all", "-f", str(backup_file)],
+                    [adb_cmd, *adb_target_args, "backup", "-all", "-f", str(backup_file)],
                     stderr=subprocess.PIPE, text=True
                 )
                 
@@ -489,7 +505,7 @@ class AndroidExtractor(AbstractExtractor):
                 dest_file = adb_pull_dir / f"{name}.csv"
                 _logger.info(f"Querying {uri} to {dest_file}")
                 
-                query_cmd = ["adb", *adb_target_args, "shell", "content", "query", "--uri", uri]
+                query_cmd = [adb_cmd, *adb_target_args, "shell", "content", "query", "--uri", uri]
                 query_proc = subprocess.run(query_cmd, capture_output=True, text=True)
                 
                 if query_proc.returncode == 0 and query_proc.stdout.strip() and "No result found" not in query_proc.stdout:

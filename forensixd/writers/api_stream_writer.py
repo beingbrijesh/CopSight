@@ -121,7 +121,6 @@ class ApiStreamWriter:
         url = f"{self.stream_url}/api/ingest/upload/case/{self.case_id}"
         headers = {"Authorization": f"Bearer {self.token}"}
         
-        # Determine source_type
         source_type = art_dict.get('app_name', '').lower()
         if not source_type:
             source_type = art_dict.get('artifact_type', 'upload').lower()
@@ -131,14 +130,40 @@ class ApiStreamWriter:
             "sourceType": source_type
         }
         
+        upload_path = file_path
+        
         try:
-            with open(file_path, 'rb') as f:
+            if self.session_encryption_key:
+                from Crypto.Cipher import AES
+                import os
+                iv = os.urandom(12)
+                cipher = AES.new(self.session_encryption_key, AES.MODE_GCM, nonce=iv)
+                enc_path = file_path.with_suffix(file_path.suffix + '.enc')
+                
+                with open(file_path, 'rb') as f_in, open(enc_path, 'wb') as f_out:
+                    while True:
+                        chunk = f_in.read(64 * 1024)
+                        if not chunk:
+                            break
+                        f_out.write(cipher.encrypt(chunk))
+                    tag = cipher.digest()
+                
+                data["iv"] = iv.hex()
+                data["tag"] = tag.hex()
+                data["encrypted"] = "true"
+                upload_path = enc_path
+
+            with open(upload_path, 'rb') as f:
                 files = {'file': (file_path.name, f)}
                 response = requests.post(url, headers=headers, data=data, files=files, timeout=300)
                 response.raise_for_status()
                 console.print(f"[dim]Uploaded file: {file_path.name}[/dim]")
+                
         except requests.RequestException as e:
             console.print(f"[yellow]Network error uploading file {file_path.name}: {e}[/yellow]")
+        finally:
+            if self.session_encryption_key and upload_path != file_path and upload_path.exists():
+                upload_path.unlink()
 
     def _send_batch(self, batch):
         payload = {

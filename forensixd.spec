@@ -3,7 +3,7 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = []
 binaries = []
-hiddenimports = ['pymobiledevice3', 'Registry', 'pycparser.yacctab', 'pycparser.lextab', 'requests', 'adb_shell', 'paramiko']
+hiddenimports = ['pymobiledevice3', 'Registry', 'pycparser.yacctab', 'pycparser.lextab', 'requests', 'adb_shell', 'paramiko', 'tkinter', 'Crypto.Cipher.AES']
 tmp_ret = collect_all('forensixd')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('Crypto')
@@ -19,6 +19,14 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('paramiko')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
+
+import os
+import platform
+
+system = platform.system()
+adb_file = 'platform-tools/adb.exe' if system == 'Windows' else 'platform-tools/adb'
+if os.path.exists(adb_file):
+    datas.append((adb_file, 'platform-tools'))
 
 a = Analysis(
     ['forensixd/cli.py'],
