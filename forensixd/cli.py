@@ -26,27 +26,28 @@ def main(ctx):
         interactive_mode()
 
 @main.command()
-@click.option("--output-dir","-o", required=True, type=click.Path())
-@click.option("--level","-l", type=click.Choice(["logical","file_system","physical"]), default="logical")
+@click.option("--output-dir","-o", required=False, type=click.Path())
+@click.option("--level","-l", type=click.Choice(["logical","file_system","physical"]), default=None)
 @click.option("--ufdr-config", type=click.Path(), default=None)
 def acquire(output_dir, level, ufdr_config):
     """Run a full forensic acquisition."""
     console.print(Panel("[bold]forensixd Acquisition[/bold]", subtitle="Law Enforcement Only"))
 
     # Step 1: detect device
+    from forensixd.core.device_detector import USB_AVAILABLE
+    if not USB_AVAILABLE:
+        console.print("[red]Error: pyusb library is missing or no USB backend is available.[/red]")
+        console.print("[yellow]Hint: Run 'pip install pyusb' and ensure libusb is installed (e.g. 'brew install libusb' on macOS).[/yellow]")
+        sys.exit(1)
+
     detector = DeviceDetector()
     with Progress(SpinnerColumn(), TextColumn("{task.description}"), transient=True) as p:
         t = p.add_task("Scanning for devices...", total=None)
         devices = detector.scan()
         p.remove_task(t)
     if not devices:
-        from forensixd.core.device_detector import USB_AVAILABLE
-        if not USB_AVAILABLE:
-            console.print("[red]Error: pyusb library is missing or no USB backend is available.[/red]")
-            console.print("[yellow]Hint: Run 'pip install pyusb' and ensure libusb is installed (e.g. 'brew install libusb' on macOS).[/yellow]")
-        else:
-            console.print("[red]No devices found.[/red]")
-            console.print("[yellow]Hint: If a device is connected, ensure libusb is installed (e.g. 'brew install libusb' on macOS) and your device is trusted.[/yellow]")
+        console.print("[red]No devices found.[/red]")
+        console.print("[yellow]Hint: Please ensure your device is connected via USB and trusted.[/yellow]")
         sys.exit(1)
     device = devices[0]
     console.print(f"[green]Found:[/green] {device.platform.value} — {device.device_id}")
@@ -107,6 +108,15 @@ def acquire(output_dir, level, ufdr_config):
     except (AuthorizationError, ForensixdError) as e:
         console.print(f"[red]Authorization failed:[/red] {e}")
         sys.exit(1)
+
+    # Step 2.5: Interactive Prompts for missing args
+    from rich.prompt import Prompt
+    if not output_dir:
+        output_dir = Prompt.ask("\n[bold]Output directory[/bold]", default="./cases")
+    if not level:
+        level = Prompt.ask("[bold]Extraction level[/bold]", choices=["logical", "file_system", "physical"], default="logical")
+    if ufdr_config is None:
+        ufdr_config = Prompt.ask("[bold]CopSight AI config path[/bold] (optional, press Enter to skip)", default="")
 
     # Step 3: extractor
     try:
@@ -231,13 +241,7 @@ def interactive_mode():
             
             args = []
             if choice == "1":
-                out_dir = Prompt.ask("Output directory", default="./cases")
-                level = Prompt.ask("Extraction level", choices=["logical", "file_system", "physical"], default="logical")
-                ufdr_config = Prompt.ask("CopSight AI config path (optional, press Enter to skip)", default="")
-                
-                args = ["acquire", "--output-dir", out_dir, "--level", level]
-                if ufdr_config.strip():
-                    args.extend(["--ufdr-config", ufdr_config.strip()])
+                args = ["acquire"]
                     
             elif choice == "2":
                 session_dir = Prompt.ask("Session directory")
