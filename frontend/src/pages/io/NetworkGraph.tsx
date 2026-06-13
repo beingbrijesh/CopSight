@@ -335,6 +335,13 @@ export const NetworkGraph = () => {
         `/graph/network/${caseId}?min_interaction_threshold=${threshold}`
       );
       const graphData: GraphData = res.data.data;
+      // CRITICAL: Prevent react-force-graph crash by ensuring all links have valid nodes
+      const validNodeIds = new Set(graphData.nodes.map((n: any) => n.id));
+      graphData.edges = graphData.edges.filter((e: any) => {
+        const srcId = typeof e.source === 'object' ? e.source.id : e.source;
+        const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
+        return validNodeIds.has(srcId) && validNodeIds.has(tgtId);
+      });
       setData(graphData);
       setAnomalySet(buildAnomalySet(graphData.anomalies || []));
     } catch (err: any) {
@@ -370,12 +377,21 @@ export const NetworkGraph = () => {
             const existingEdgeIds = new Set(prev.edges.map(e => (e as any).id));
             
             const newNodes = payload.nodes.filter((n: any) => !existingNodeIds.has(n.id));
-            const newEdges = payload.edges.filter((e: any) => !existingEdgeIds.has(e.id));
+            const combinedNodes = [...prev.nodes, ...newNodes];
+            const allNodeIds = new Set(combinedNodes.map(n => n.id));
+            
+            const newEdges = payload.edges.filter((e: any) => {
+              if (existingEdgeIds.has(e.id)) return false;
+              // CRITICAL: Prevent react-force-graph crash by dropping orphaned links
+              const srcId = typeof e.source === 'object' ? e.source.id : e.source;
+              const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
+              return allNodeIds.has(srcId) && allNodeIds.has(tgtId);
+            });
             
             if (newNodes.length === 0 && newEdges.length === 0) return prev;
             
             return {
-              nodes: [...prev.nodes, ...newNodes],
+              nodes: combinedNodes,
               edges: [...prev.edges, ...newEdges],
               anomalies: prev.anomalies
             };
@@ -425,9 +441,18 @@ export const NetworkGraph = () => {
       setData(prev => {
         const existingIds = new Set(prev.nodes.map(n => n.id));
         const filteredNew = (newNodes as GraphNode[]).filter(n => !existingIds.has(n.id));
+        const combinedNodes = [...prev.nodes, ...filteredNew];
+        const allNodeIds = new Set(combinedNodes.map(n => n.id));
+
+        const filteredEdges = (newEdges as GraphEdge[]).filter(e => {
+            const srcId = typeof e.source === 'object' ? e.source.id : e.source;
+            const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
+            return allNodeIds.has(srcId) && allNodeIds.has(tgtId);
+        });
+
         return {
-          nodes: [...prev.nodes, ...filteredNew],
-          edges: [...prev.edges, ...(newEdges as GraphEdge[])],
+          nodes: combinedNodes,
+          edges: [...prev.edges, ...filteredEdges],
           anomalies: prev.anomalies
         };
       });
