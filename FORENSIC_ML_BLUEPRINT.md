@@ -1,10 +1,12 @@
 # Forensic ML Blueprint: Anomaly & Predictive Analysis
 
-This document outlines the structured use case, data flow, and architecture for implementing machine learning models within the CopSight AI platform, specifically targeting forensic anomaly detection and predictive relationship analysis.
+This document outlines the machine learning models and pipelines implemented within the CopSight AI platform, specifically targeting forensic anomaly detection, predictive relationship analysis, and evidence classification.
 
 ---
 
-## 1. Structured Use Cases
+## 1. Implemented ML Models & Use Cases
+
+CopSight AI has moved beyond concept into implementation. The following models are currently active in the `ai-service/app/services/` layer:
 
 ### 1.1 Anomaly Detection: "The Ghost Entity"
 **Objective**: Identify entities or transaction patterns that deviate from normal forensic baselines.
@@ -13,9 +15,9 @@ This document outlines the structured use case, data flow, and architecture for 
     - **Circular Flows**: Money/Messages traveling in complete closed loops (Money Laundering).
     - **Burst Communication**: 500+ calls/messages within a 1-hour window to a single unverified CID.
     - **Hardware Overlap**: One IMEI/Device ID associated with 20+ distinct SIM/PhoneNumbers.
-- **Model Recommendation**: 
+- **Implemented Models** (`anomaly_detector.py`): 
     - **Isolation Forest**: Unsupervised approach to identify outliers in communication frequency and node degree.
-    - **Autoencoders**: To learn "normal" communication embeddings and flag high-reconstruction error nodes.
+    - **Autoencoders**: PyTorch-based neural networks learning "normal" communication embeddings and flagging high-reconstruction error nodes.
 
 ### 1.2 Predictive Analysis: "Hidden Link Prediction"
 **Objective**: Predict relationships between two entities that have no direct observed communication but are statistically likely to be connected.
@@ -23,84 +25,123 @@ This document outlines the structured use case, data flow, and architecture for 
 - **Predictions Targeted**:
     - **Common Accomplice**: Predicting that Suspect A and Suspect B are linked via a common "middle-man" node.
     - **Next Step Forecasting**: Predicting the next high-probability wallet transfer based on historical temporal patterns.
-- **Model Recommendation**:
-    - **Graph Neural Networks (GNNs)**: Using `GraphSage` or `Node2Vec` to generate entity embeddings that represent their topological context.
+- **Implemented Models** (`predictive_analytics.py`):
+    - **Graph Neural Networks (GNNs)**: Generating entity embeddings that represent their topological context.
+    - **Risk Scoring Engine**: Heuristic + ML composite scoring for investigation leads.
+
+### 1.3 Deep Learning Temporal Analysis
+**Objective**: Analyze sequential events to detect organized activities.
+- **Implemented Models** (`deep_learning_analyzer.py`):
+    - **LSTM (Long Short-Term Memory)**: Analyzing time-series communication data to detect coordinated operational phases (planning, execution, cleanup).
+
+### 1.4 Evidence Classification
+**Objective**: Automatically categorize raw extracted text and artifacts.
+- **Implemented Models** (`evidence_classifier.py`):
+    - **XGBoost Classifiers**: High-performance gradient boosting to categorize evidence artifacts based on textual features and metadata.
 
 ---
 
-## 2. Augmented Data Flow Diagram (DFD)
+## 2. ML Data Flow Architecture
+
+The ML pipeline operates asynchronously via the ARQ background worker, pulling data from the multi-database architecture.
 
 ```mermaid
 flowchart TD
-    subgraph Layer1[Forensic Extraction]
-        CopSight AI[UFDR Parser] -->|Extract| Sinks[Neo4j + Postgres]
+    subgraph Layer1["Data Layer (Post-Extraction)"]
+        Neo["Neo4j<br/><i>Graph Topology</i>"]
+        PG["PostgreSQL<br/><i>Temporal Metadata</i>"]
+        ES["Elasticsearch<br/><i>Textual Evidence</i>"]
     end
 
-    subgraph Layer2[ML Feature Engineering]
-        Sinks -->|Query Cypher| GraphFeats[Graph Topology Features<br/>Centrality, Degree, Triads]
-        Sinks -->|Query SQL| TemporalFeats[Temporal Features<br/>Avg. Frequency, Latency]
-        GraphFeats & TemporalFeats --> Tensor[Merged Feature Tensor]
+    subgraph Layer2["Feature Engineering"]
+        Neo -->|Cypher| GraphFeats["Graph Features<br/><i>Centrality, Degree, Triads</i>"]
+        PG -->|SQL| TemporalFeats["Temporal Features<br/><i>Avg. Frequency, Latency</i>"]
+        ES -->|REST| TextFeats["Text Features<br/><i>TF-IDF, NER Density</i>"]
+        
+        GraphFeats & TemporalFeats & TextFeats --> Tensor["Merged Feature Tensor"]
     end
 
-    subgraph Layer3[Model Training & Inference]
-        Tensor -->|Batch Train| LocalModel[Local ML Model - Pickle/PyTorch]
-        Tensor -->|Real-time Score| AIService[FastAPI Inference Wrapper]
-        LocalModel -->|Weights| AIService
+    subgraph Layer3["Inference Engine (AI Service)"]
+        Tensor -->|Batch Tensor| Models["PyTorch / XGBoost / Sklearn"]
+        Models -->|Score/Class| AIService["FastAPI ML Routers"]
     end
 
-    subgraph Layer4[Visualization]
-        AIService -->|Anomaly Flag| NetworkGraph[3D Graph - Red/Pulse Glow]
-        AIService -->|Link Probabilities| IntelligencePanel[AI Intelligence Profile]
+    subgraph Layer4["Visualization (Frontend)"]
+        AIService -->|Anomaly Flags| NetworkGraph["3D Graph UI<br/><i>Red/Pulse Glow for high risk</i>"]
+        AIService -->|Link Probabilities| IntelligencePanel["Advanced AI Dashboard<br/><i>Predictive Leads List</i>"]
     end
+
+    style Layer1 fill:#0f3460,color:#fff
+    style Layer2 fill:#16213e,stroke:#533483,color:#fff
+    style Layer3 fill:#1a1a2e,stroke:#e94560,color:#fff
+    style Layer4 fill:#2d6a4f,color:#fff
 ```
 
 ---
 
-## 3. System Architecture
+## 3. ML Orchestration & Execution Architecture
 
-The following diagram illustrates how the new **ML Inference Engine** integrates into your existing **FastAPI (AI Service)** layer without breaking current RAG functionality.
+The ML Inference Engine is fully integrated into the existing FastAPI Unified API Gateway, sitting alongside the RAG capabilities. It employs a highly decoupled architecture separating model management from inference execution.
+
+### 3.1 Separation of Concerns
+- **Unified Model Registry**: Acts as the central model management hub. It coordinates the loading of multi-format ML assets (e.g., PyTorch state dicts, XGBoost boosters) into memory to avoid redundant I/O. It provides a standardized interface for execution engines to access the models.
+- **Execution Engines**: Specialized engines (e.g., the Anomaly Execution Engine or Deep Learning Analytics Hub) do not manage models directly. Instead, they handle data preprocessing, feature engineering, and delegate inference execution to the registry's loaded models.
 
 ```mermaid
 graph TB
-    subgraph Frontend[Client Layer]
-        UI[Network Graph UI]
+    subgraph Frontend["React Client"]
+        UI["Advanced AI Dashboard"]
     end
 
-    subgraph Backend[Node.js Backend]
-        API[Express API]
+    subgraph Backend["Node.js Gateway"]
+        API["/api/analysis/* Routes"]
     end
 
-    subgraph AIService[AI Service - Python FastAPI]
-        RAG[Existing RAG Router]
-        ML_Router[NEW: ML Analysis Router]
+    subgraph AIService["Unified API Gateway (Python)"]
+        ML_Router["Analysis Router Hub"]
+        ARQ["Async Background Worker"]
         
-        subgraph Engine[ML Engine]
-            Model[Inference Engine<br/>PyTorch / Scikit-Learn]
-            FeatureStore[In-Memory Feature Cache]
+        subgraph Orchestration["ML Orchestration"]
+            Registry["Unified Model Registry"]
+        end
+
+        subgraph Engine["Specialized Execution Engines"]
+            Anomaly["Anomaly Execution Engine"]
+            Predictive["Predictive Analytics Hub"]
+            DeepLearn["Deep Learning Analytics Hub"]
+            Evidence["Evidence Processing Pipeline"]
         end
     end
 
-    subgraph Data[Data Layer]
-        Neo[(Neo4j Graph)]
-    end
+    UI <-->|"HTTP"| API
+    API <-->|"HTTP"| ML_Router
+    ML_Router -->|"Dispatch"| ARQ
+    ARQ <-->|"Initialize"| Registry
+    ARQ <-->|"Execute"| Engine
+    Engine -->|"Inference Requests"| Registry
 
-    UI <--> API
-    API <--> AIService
-    ML_Router <--> Engine
-    Engine <--> Neo
+    style Frontend fill:#16213e,color:#fff
+    style Backend fill:#0f3460,color:#fff
+    style AIService fill:#1a1a2e,stroke:#e94560,color:#fff
+    style Orchestration fill:#533483,color:#fff
+    style Engine fill:#2d6a4f,color:#fff
 ```
 
 ---
 
-## 4. Implementation Checklist for Model Training
+## 4. Hardware Acceleration
 
-To begin training, follow these technical steps:
-1.  `[ ]` **Data Export**: Execute `MATCH (n)-[r]->(m) RETURN n.id, m.id, type(r)` from Neo4j to build your adjacency list.
-2.  `[ ]` **Embedding Generation**: Use `Node2Vec` or `PyTorch Geometric` to convert your Neo4j topology into numeric vectors.
-3.  `[ ]` **Labeling**: Manually tag "High Risk" vs "Low Risk" samples in your existing cases (Supervised) or use Clustering (Unsupervised).
-4.  `[ ]` **Model Hook**: Add a new POST endpoint `/api/analysis/predict` in `ai-service/app/routers/analysis.py`.
+The AI Service is configured to leverage hardware acceleration automatically when available:
+
+> [!TIP]
+> **Performance Note:** When running Deep Learning (PyTorch) models, the `deep_learning_analyzer.py` will automatically attempt to use `torch.device('cuda')` on NVIDIA GPUs or `torch.device('mps')` to leverage the **Metal Performance Shaders (Apple Silicon GPU)**, providing up to 10x faster training and inference than CPU.
 
 ---
 
-> [!TIP]
-> **Performance Note:** When running GNNs on your Mac, utilize `torch.device('mps')` to leverage the **Metal Performance Shaders (Apple Silicon GPU)** for up to 10x faster training than CPU.
+## 5. Implementation Status
+
+- `[x]` **Data Export pipelines**: SQLAlchemy and AsyncNeo4j drivers implemented in `database.py`.
+- `[x]` **Embedding Generation**: Integrated `nomic-embed-text` via Ollama and `SentenceTransformers`.
+- `[x]` **Model Hooks**: Implemented comprehensive REST API in `routers/analysis.py` (e.g., `/api/analysis/anomalies`, `/api/analysis/predictive-analysis`).
+- `[x]` **Background Execution**: ARQ worker implemented to prevent long-running inference tasks from blocking the API gateway.
+- `[x]` **Vector Storage**: ChromaDB / Qdrant implemented for semantic similarity clustering.

@@ -1,241 +1,391 @@
-# CopSight AI - Use Case Diagram
+# CopSight AI — Use Case Diagrams
 
-## Actors
-- **Admin**: System administrator with full access
-- **Investigating Officer (IO)**: Primary case investigator
-- **Supervisor**: Oversees multiple cases and officers
-- **System**: Automated background processes
+This document maps all system actors to their use cases, showing how each role interacts with the platform features.
 
-## Use Case Diagram (Mermaid)
+---
+
+## System Actors
+
+| Actor | Description | Access Scope |
+|-------|-------------|-------------|
+| **Admin** | System administrator responsible for user management, case creation, and system configuration | Full platform access |
+| **Investigating Officer (IO)** | Field officer conducting the investigation — uploads evidence, runs queries, generates reports | Only their assigned cases |
+| **Supervisor** | Oversight role that monitors investigation progress and reviews case completion | Read-only access to unit's cases |
+| **forensixd CLI** | Automated tool actor — the standalone extraction tool that streams device data to the platform | API-only access via authenticated session |
+
+---
+
+## Complete Use Case Diagram
 
 ```mermaid
-graph LR
-    Admin((Admin))
-    IO((Investigating<br/>Officer))
-    Supervisor((Supervisor))
-    System((System))
-    
-    UC1[UC-1: Login to System]
-    UC2[UC-2: Create User Account]
-    UC3[UC-3: Manage Users]
-    UC4[UC-4: Create Investigation Case]
-    UC5[UC-5: Manage Cases]
-    UC6[UC-6: View Audit Logs]
-    
-    UC7[UC-7: View Assigned Cases]
-    UC8[UC-8: Upload CopSight AI File]
-    UC9[UC-9: Execute NL Query]
-    UC10[UC-10: Manage Bookmarks]
-    UC11[UC-11: Visualize Network]
-    UC12[UC-12: View Timeline]
-    UC13[UC-13: Generate Report]
-    
-    UC14[UC-14: Monitor Cases]
-    UC14b[UC-14b: Review Officer Work]
-    
-    UC15[UC-15: Background Processing]
-    UC16[UC-16: RAG Query Processing]
-    
-    Admin --> UC1
-    Admin --> UC2
-    Admin --> UC3
-    Admin --> UC4
-    Admin --> UC5
-    Admin --> UC6
-    
-    IO --> UC1
-    IO --> UC7
-    IO --> UC8
-    IO --> UC9
-    IO --> UC10
-    IO --> UC11
-    IO --> UC12
-    IO --> UC13
-    
-    Supervisor --> UC1
-    Supervisor --> UC14
-    Supervisor --> UC14b
+graph TB
+    Admin(("👨‍💼 Admin"))
+    IO(("🔍 Investigating<br/>Officer"))
+    Supervisor(("👁️ Supervisor"))
+    CLI(("🔧 forensixd"))
+
+    subgraph UserMgmt["User Management"]
+        UC1["UC-1<br/>Create User Account"]
+        UC2["UC-2<br/>Manage User Roles"]
+        UC3["UC-3<br/>Reset User Password"]
+        UC4["UC-4<br/>Deactivate User"]
+    end
+
+    subgraph CaseMgmt["Case Management"]
+        UC5["UC-5<br/>Create Investigation Case"]
+        UC6["UC-6<br/>Assign Case to Officer"]
+        UC7["UC-7<br/>Track Case Status"]
+        UC8["UC-8<br/>Review & Close Case"]
+    end
+
+    subgraph Evidence["Evidence Processing"]
+        UC9["UC-9<br/>Upload UFDR Evidence File"]
+        UC10["UC-10<br/>Monitor Processing Status"]
+        UC11["UC-11<br/>Browse Evidence Entities"]
+    end
+
+    subgraph Query["AI Query & Analysis"]
+        UC12["UC-12<br/>Execute Natural Language Query"]
+        UC13["UC-13<br/>View Query History"]
+        UC14["UC-14<br/>Bookmark Evidence"]
+        UC15["UC-15<br/>Explore Network Graph"]
+    end
+
+    subgraph AI["AI-Powered Investigation"]
+        UC16["UC-16<br/>Run Anomaly Detection"]
+        UC17["UC-17<br/>Run Predictive Analytics"]
+        UC18["UC-18<br/>View Cross-Case Connections"]
+        UC19["UC-19<br/>Manage Alert Rules"]
+    end
+
+    subgraph Reports["Reporting"]
+        UC20["UC-20<br/>Generate PDF Report"]
+        UC21["UC-21<br/>View Report History"]
+    end
+
+    subgraph Extraction["Device Extraction"]
+        UC22["UC-22<br/>Authenticate via Browser"]
+        UC23["UC-23<br/>Run Forensic Acquisition"]
+        UC24["UC-24<br/>Verify Chain of Custody"]
+        UC25["UC-25<br/>Stream Data to Platform"]
+    end
+
+    subgraph System["System Operations"]
+        UC26["UC-26<br/>View System Dashboard"]
+        UC27["UC-27<br/>Monitor Performance"]
+        UC28["UC-28<br/>Change Own Password"]
+    end
+
+    Admin --> UC1 & UC2 & UC3 & UC4
+    Admin --> UC5 & UC6 & UC7 & UC8
+    Admin --> UC26 & UC27
+    Admin --> UC28
+
+    IO --> UC9 & UC10 & UC11
+    IO --> UC12 & UC13 & UC14 & UC15
+    IO --> UC16 & UC17 & UC18 & UC19
+    IO --> UC20 & UC21
+    IO --> UC22 & UC23 & UC24 & UC25
+    IO --> UC28
+
+    Supervisor --> UC7 & UC8
     Supervisor --> UC11
-    Supervisor --> UC12
     Supervisor --> UC13
-    
-    System --> UC15
-    System --> UC16
-    
-    UC8 -.includes.-> UC15
-    UC9 -.includes.-> UC16
-    
-    style Admin fill:#ff9999
-    style IO fill:#99ccff
-    style Supervisor fill:#99ff99
-    style System fill:#ffcc99
-    style UC15 fill:#f0f0f0
-    style UC16 fill:#f0f0f0
+    Supervisor --> UC21
+    Supervisor --> UC26
+    Supervisor --> UC28
+
+    CLI --> UC22 & UC23 & UC24 & UC25
+
+    style Admin fill:#e94560,color:#fff
+    style IO fill:#0f3460,color:#fff
+    style Supervisor fill:#2d6a4f,color:#fff
+    style CLI fill:#533483,color:#fff
+
+    style UserMgmt fill:#1a1a2e,stroke:#e94560,color:#fff
+    style CaseMgmt fill:#1a1a2e,stroke:#0f3460,color:#fff
+    style Evidence fill:#1a1a2e,stroke:#533483,color:#fff
+    style Query fill:#1a1a2e,stroke:#0f3460,color:#fff
+    style AI fill:#1a1a2e,stroke:#c9184a,color:#fff
+    style Reports fill:#1a1a2e,stroke:#2d6a4f,color:#fff
+    style Extraction fill:#1a1a2e,stroke:#533483,color:#fff
+    style System fill:#1a1a2e,stroke:#e94560,color:#fff
 ```
 
-## Use Case Details
-
-### UC-1: Login to System
-**Actor**: Admin, IO, Supervisor  
-**Description**: User authenticates with username and password  
-**Preconditions**: User account exists and is active  
-**Postconditions**: User session created, JWT token issued  
-**Flow**:
-1. User enters credentials
-2. System validates credentials
-3. System creates session
-4. System returns JWT token
-5. User redirected to role-specific dashboard
-
-### UC-2: Create User Account
-**Actor**: Admin  
-**Description**: Admin creates new user account with role assignment  
-**Preconditions**: Admin is logged in  
-**Postconditions**: New user account created  
-**Flow**:
-1. Admin navigates to Create User page
-2. Admin enters user details (name, username, email, badge number)
-3. Admin selects role (Admin/IO/Supervisor)
-4. Admin assigns unit
-5. If IO, admin assigns supervisor
-6. System validates data
-7. System creates user with hashed password
-8. System logs action in audit trail
-
-### UC-8: Upload CopSight AI File
-**Actor**: IO  
-**Description**: IO uploads forensic data file for processing  
-**Preconditions**: IO has assigned case, file is valid XML/JSON  
-**Postconditions**: File uploaded, background processing initiated  
-**Flow**:
-1. IO selects case
-2. IO uploads UFDR file
-3. System validates file format
-4. System stores file
-5. System creates processing job
-6. System triggers UC-15 (Background Processing)
-7. IO can monitor processing status
-
-### UC-9: Execute Natural Language Query
-**Actor**: IO  
-**Description**: IO queries case data using natural language  
-**Preconditions**: Case has processed data  
-**Postconditions**: Query results displayed with AI-generated answer  
-**Flow**:
-1. IO enters natural language query
-2. System sends query to AI service
-3. AI service executes UC-16 (RAG Processing)
-4. System displays answer, evidence, and analysis
-5. System saves query to history
-6. IO can bookmark evidence from results
-
-### UC-13: Generate Report
-**Actor**: IO  
-**Description**: IO generates PDF report for case  
-**Preconditions**: Case has data and queries  
-**Postconditions**: PDF report generated and downloadable  
-**Flow**:
-1. IO selects report template
-2. IO configures report sections
-3. System gathers data from all sources
-4. System generates PDF with PDFKit
-5. System stores report metadata
-6. System provides download link
-7. System logs report generation
-
-### UC-15: Background File Processing
-**Actor**: System  
-**Description**: Automated processing of uploaded UFDR files  
-**Preconditions**: File uploaded, job created  
-**Postconditions**: Data extracted, indexed, and graphed  
-**Flow**:
-1. Worker picks job from Bull queue
-2. Parse UFDR file (XML/JSON)
-3. Extract messages, calls, contacts
-4. Extract entities (NER): phones, emails, IDs, URLs, crypto
-5. Index to Elasticsearch (3 indices)
-6. Build Neo4j graph (nodes and relationships)
-7. Generate embeddings (if Milvus available)
-8. Update job status to completed
-9. Log processing summary
-
-### UC-16: RAG Query Processing
-**Actor**: System (AI Service)  
-**Description**: Process natural language query using RAG pipeline  
-**Preconditions**: Query received, databases available  
-**Postconditions**: Answer generated with evidence  
-**Flow**:
-1. Receive query from backend
-2. Use LLM to decompose query into sub-queries
-3. Execute parallel searches:
-   - PostgreSQL: Structured data (devices, sources)
-   - Elasticsearch: Full-text search (messages, calls)
-   - Neo4j: Graph queries (relationships)
-   - Milvus: Semantic search (optional)
-4. Collect and rank results by relevance
-5. Deduplicate evidence
-6. Use LLM to synthesize answer with citations
-7. Calculate confidence score
-8. Return structured response
+---
 
 ## Actor Permissions Matrix
 
-| Use Case | Admin | IO | Supervisor |
-|----------|-------|----|-----------| 
-| UC-1: Login | ✓ | ✓ | ✓ |
-| UC-2: Create User | ✓ | ✗ | ✗ |
-| UC-3: Manage Users | ✓ | ✗ | ✗ |
-| UC-4: Create Case | ✓ | ✗ | ✗ |
-| UC-5: Manage Cases | ✓ | ✗ | ✗ |
-| UC-6: View Audit Logs | ✓ | ✗ | ✗ |
-| UC-7: View Assigned Cases | ✓ | ✓ | ✗ |
-| UC-8: Upload CopSight AI File | ✓ | ✓ | ✗ |
-| UC-9: Execute Query | ✓ | ✓ | ✓ |
-| UC-10: Manage Bookmarks | ✓ | ✓ | ✗ |
-| UC-11: Visualize Network | ✓ | ✓ | ✓ |
-| UC-12: View Timeline | ✓ | ✓ | ✓ |
-| UC-13: Generate Report | ✓ | ✓ | ✓ |
-| UC-14: Monitor Cases | ✓ | ✗ | ✓ |
+| Use Case | Admin | IO | Supervisor | forensixd |
+|----------|:-----:|:--:|:----------:|:---------:|
+| **User Management** | | | | |
+| UC-1 Create User Account | ✅ | — | — | — |
+| UC-2 Manage User Roles | ✅ | — | — | — |
+| UC-3 Reset User Password | ✅ | — | — | — |
+| UC-4 Deactivate User | ✅ | — | — | — |
+| **Case Management** | | | | |
+| UC-5 Create Investigation Case | ✅ | — | — | — |
+| UC-6 Assign Case to Officer | ✅ | — | — | — |
+| UC-7 Track Case Status | ✅ | ✅ (own) | ✅ (unit) | — |
+| UC-8 Review & Close Case | ✅ | — | ✅ | — |
+| **Evidence Processing** | | | | |
+| UC-9 Upload UFDR Evidence File | — | ✅ (own) | — | — |
+| UC-10 Monitor Processing Status | — | ✅ (own) | — | — |
+| UC-11 Browse Evidence Entities | — | ✅ (own) | ✅ (unit) | — |
+| **AI Query & Analysis** | | | | |
+| UC-12 Execute Natural Language Query | — | ✅ (own) | — | — |
+| UC-13 View Query History | — | ✅ (own) | ✅ (unit) | — |
+| UC-14 Bookmark Evidence | — | ✅ (own) | — | — |
+| UC-15 Explore Network Graph | — | ✅ (own) | — | — |
+| **AI-Powered Investigation** | | | | |
+| UC-16 Run Anomaly Detection | — | ✅ (own) | — | — |
+| UC-17 Run Predictive Analytics | — | ✅ (own) | — | — |
+| UC-18 View Cross-Case Connections | — | ✅ (own) | — | — |
+| UC-19 Manage Alert Rules | — | ✅ (own) | — | — |
+| **Reporting** | | | | |
+| UC-20 Generate PDF Report | — | ✅ (own) | — | — |
+| UC-21 View Report History | — | ✅ (own) | ✅ (unit) | — |
+| **Device Extraction** | | | | |
+| UC-22 Authenticate via Browser | — | ✅ | — | ✅ |
+| UC-23 Run Forensic Acquisition | — | ✅ | — | ✅ |
+| UC-24 Verify Chain of Custody | — | ✅ | — | ✅ |
+| UC-25 Stream Data to Platform | — | ✅ | — | ✅ |
+| **System** | | | | |
+| UC-26 View System Dashboard | ✅ | — | ✅ | — |
+| UC-27 Monitor Performance | ✅ | — | — | — |
+| UC-28 Change Own Password | ✅ | ✅ | ✅ | — |
 
-## Use Case Relationships
+---
 
-### Includes Relationships
-- UC-8 (Upload File) **includes** UC-15 (Background Processing)
-- UC-9 (Execute Query) **includes** UC-16 (RAG Processing)
+## Use Case Details
 
-### Extends Relationships
-- UC-10 (Manage Bookmarks) **extends** UC-9 (Execute Query)
-- UC-11 (Visualize Network) **extends** UC-7 (View Case)
-- UC-12 (View Timeline) **extends** UC-7 (View Case)
+### UC-9: Upload UFDR Evidence File
 
-## Key Features by Actor
+**Actor:** Investigating Officer
 
-### Admin
-- Full system access
-- User lifecycle management
-- Case creation and assignment
-- System monitoring and audit
-- All IO and Supervisor capabilities
+**Preconditions:**
+- Officer is authenticated and logged in
+- Officer has been assigned to at least one case
+- File is in supported format (UFDR/XML/JSON)
 
-### Investigating Officer
-- Case-focused workflow
-- Data upload and processing
-- AI-powered investigation
-- Evidence management
-- Report generation
-- Limited to assigned cases
+**Main Flow:**
 
-### Supervisor
-- Multi-case oversight
-- Read-only access to subordinate cases
-- Query and visualization access
-- Report viewing
-- Team monitoring
-- No data modification
+```mermaid
+sequenceDiagram
+    participant IO as 🔍 IO
+    participant FE as Frontend
+    participant BE as Backend
+    participant Queue as Bull Queue
+    participant Worker as Worker
+    participant PG as PostgreSQL
+    participant ES as Elasticsearch
+    participant Neo as Neo4j
 
-### System
-- Automated background processing
-- AI/ML query processing
-- Job queue management
-- Data indexing and graphing
-- Audit logging
+    IO->>FE: Select case and choose file
+    FE->>BE: POST /api/upload (multipart)
+    BE->>BE: Validate file format
+    BE->>PG: Create ProcessingJob record
+    BE->>Queue: Enqueue processing task
+    BE-->>FE: Return job ID + status
+    FE-->>IO: Show "Processing..." status
+
+    Queue->>Worker: Dequeue task
+    Worker->>Worker: Parse UFDR file
+    Worker->>Worker: Extract entities (NER)
+    Worker->>PG: Store structured records
+    Worker->>ES: Index messages + calls + contacts
+    Worker->>Neo: Build communication graph
+    Worker->>PG: Update job status → COMPLETED
+
+    FE->>BE: Poll job status
+    BE-->>FE: Status: COMPLETED
+    FE-->>IO: Show "Processing Complete" ✅
+```
+
+**Postconditions:**
+- Evidence data is searchable via natural language queries
+- Communication network graph is populated
+- Processing job marked as COMPLETED
+
+---
+
+### UC-12: Execute Natural Language Query
+
+**Actor:** Investigating Officer
+
+**Preconditions:**
+- Officer has access to the case
+- Case has processed evidence data
+
+**Main Flow:**
+
+```mermaid
+sequenceDiagram
+    participant IO as 🔍 IO
+    participant FE as Frontend
+    participant BE as Backend
+    participant AI as AI Service
+    participant LLM as Ollama/Gemini
+
+    IO->>FE: Type query in natural language
+    FE->>BE: POST /api/query/case/:caseId
+    BE->>AI: Forward query + case context
+    AI->>LLM: Decompose query into sub-queries
+    LLM-->>AI: Structured search parameters
+
+    par Search in parallel
+        AI->>AI: Search PostgreSQL
+        AI->>AI: Search Elasticsearch
+        AI->>AI: Search Neo4j
+        AI->>AI: Search Vector DB
+    end
+
+    AI->>AI: Rank and deduplicate results
+    AI->>LLM: Synthesize answer with evidence
+    LLM-->>AI: Generated answer + citations
+    AI->>AI: Calculate confidence score
+    AI-->>BE: Result with answer, evidence, score
+    BE->>BE: Save to query history
+    BE-->>FE: Return formatted response
+    FE-->>IO: Display answer + evidence cards
+```
+
+---
+
+### UC-23: Run Forensic Acquisition
+
+**Actor:** Investigating Officer (via forensixd CLI)
+
+**Preconditions:**
+- forensixd binary is available on the machine
+- Device is connected via USB and trusted
+- Officer has valid credentials and case assignment
+
+**Main Flow:**
+
+```mermaid
+sequenceDiagram
+    participant Officer as 🔍 IO
+    participant CLI as forensixd
+    participant USB as USB Device
+    participant Browser as Browser
+    participant API as Backend API
+
+    Officer->>CLI: forensixd (launch interactive)
+    CLI->>CLI: Display menu → Select "Acquire"
+    CLI->>Browser: Open login page
+    Officer->>Browser: Enter credentials
+    Browser-->>CLI: Return JWT + encryption key
+
+    CLI->>API: Fetch assigned cases
+    API-->>CLI: List of cases
+    Officer->>CLI: Select target case
+
+    CLI->>USB: Scan USB ports
+    USB-->>CLI: Device detected (platform, model)
+    Officer->>CLI: Enter authorization details
+
+    Officer->>CLI: Choose level + profile
+    CLI->>USB: Begin extraction
+    
+    loop For each artifact
+        USB-->>CLI: Artifact data
+        CLI->>CLI: Hash (MD5 + SHA-256)
+        CLI->>API: Stream artifact (encrypted)
+    end
+
+    CLI->>CLI: Compute Merkle root
+    CLI->>CLI: Write UFDR + DFXML + HTML Report
+    CLI-->>Officer: Display summary table
+```
+
+---
+
+### UC-16: Run Anomaly Detection
+
+**Actor:** Investigating Officer
+
+**Main Flow:**
+
+```mermaid
+sequenceDiagram
+    participant IO as 🔍 IO
+    participant FE as Frontend
+    participant BE as Backend
+    participant AI as AI Service
+
+    IO->>FE: Open AI Analysis panel
+    IO->>FE: Click "Run Anomaly Detection"
+    FE->>BE: POST /api/analysis/anomaly
+    BE->>AI: Forward analysis request
+
+    AI->>AI: Extract graph features from Neo4j
+    AI->>AI: Build temporal feature vectors
+    AI->>AI: Run Isolation Forest model
+    AI->>AI: Run Autoencoder scoring
+    AI->>AI: Aggregate anomaly scores
+
+    AI-->>BE: Anomaly results with confidence
+    BE-->>FE: Formatted anomaly response
+    FE-->>IO: Display anomaly cards with severity
+```
+
+---
+
+## Investigation Workflow — Complete Lifecycle
+
+The following diagram shows the typical end-to-end flow of a forensic investigation through the platform:
+
+```mermaid
+stateDiagram-v2
+    [*] --> CaseCreation: Admin creates case
+
+    state CaseCreation {
+        [*] --> CreateCase: Define case details
+        CreateCase --> AssignOfficer: Set FIR, priority, assign IO
+        AssignOfficer --> CaseOpen: Case status: OPEN
+    }
+
+    CaseOpen --> EvidenceCollection: IO begins investigation
+
+    state EvidenceCollection {
+        [*] --> DeviceExtraction: Use forensixd CLI
+        [*] --> FileUpload: Upload UFDR file
+        DeviceExtraction --> DataStreamed: Artifacts streamed to platform
+        FileUpload --> DataProcessed: Background parsing complete
+    }
+
+    DataStreamed --> Investigation
+    DataProcessed --> Investigation
+
+    state Investigation {
+        [*] --> NLQuery: Ask natural language questions
+        NLQuery --> ReviewResults: Review AI answers
+        ReviewResults --> BookmarkEvidence: Save key evidence
+        ReviewResults --> ExploreGraph: Visual network analysis
+        ReviewResults --> RunML: Run anomaly/predictive analysis
+        RunML --> ReviewResults
+        ExploreGraph --> ReviewResults
+        BookmarkEvidence --> NLQuery: Iterate
+    }
+
+    Investigation --> ReportGeneration: Sufficient evidence gathered
+
+    state ReportGeneration {
+        [*] --> SelectTemplate: Choose report type
+        SelectTemplate --> GeneratePDF: Generate court-ready PDF
+        GeneratePDF --> DownloadReport: Download for legal proceedings
+    }
+
+    ReportGeneration --> SupervisorReview: Submit for review
+
+    state SupervisorReview {
+        [*] --> ReviewCase: Supervisor reviews findings
+        ReviewCase --> Approve: Case reviewed ✅
+        ReviewCase --> Feedback: Request more evidence
+    }
+
+    Feedback --> Investigation: IO iterates
+    Approve --> CaseClosed: Case status: CLOSED
+    CaseClosed --> [*]
+```

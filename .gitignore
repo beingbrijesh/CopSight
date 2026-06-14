@@ -56,7 +56,8 @@ coverage/
 *.pdf
 .DS_Store
 Presentation PPTs
-graphify-out/*
+graphify-out/
+.graphify_venv/
 prompts/*
 .graphifyignore
 skills-lock.json
