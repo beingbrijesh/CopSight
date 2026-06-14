@@ -5,8 +5,18 @@ on:
     branches: [ "main", "master" ]
     tags:
       - 'v*'
+    paths:
+      - 'forensixd/**'
+      - 'forensixd.spec'
+      - 'setup.py'
+      - '.github/workflows/build.yml'
   pull_request:
     branches: [ "main", "master" ]
+    paths:
+      - 'forensixd/**'
+      - 'forensixd.spec'
+      - 'setup.py'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 env:
