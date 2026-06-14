@@ -52,7 +52,7 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller
+        pip install pyinstaller Pillow
         pip install -e .
       # Assuming your project has a setup.py or pyproject.toml
       # If you use requirements.txt instead, you can uncomment the line below:
