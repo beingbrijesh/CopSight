@@ -33,6 +33,12 @@ streamQueue.process(async (job) => {
   logger.info(`Stream Worker processing job ID: ${job.id}`);
   try {
     const { caseId, deviceId, artifacts, userId } = job.data;
+
+    // Validate caseId to prevent PostgreSQL NaN column errors
+    if (!caseId || isNaN(parseInt(caseId))) {
+      logger.error(`Invalid caseId in job ${job.id}: ${caseId}`);
+      return { success: false, error: 'Invalid caseId' };
+    }
     
     // 1. Ensure Device exists
     const [device] = await Device.findOrCreate({
@@ -181,7 +187,11 @@ streamQueue.process(async (job) => {
       logger.error('Elasticsearch indexing for stream failed:', error);
     }
     
-    await indexToAIService(parseInt(caseId), parsedData, allEntities);
+    if (process.env.AUTO_PROCESS_TEXT === 'true') {
+      await indexToAIService(parseInt(caseId), parsedData, allEntities);
+    } else {
+      logger.info(`Skipped automatic AI ingestion for case ${caseId} (AUTO_PROCESS_TEXT is not true)`);
+    }
     
     logger.info(`Successfully streamed and processed ${artifacts.length} artifacts`);
     return { success: true, count: artifacts.length };

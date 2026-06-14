@@ -271,9 +271,9 @@ class RAGPipeline:
             
             from qdrant_client.http import models as rest
             
-            results = await db_manager.qdrant_client.search(
+            results = await db_manager.qdrant_client.query_points(
                 collection_name="copsight_embeddings",
-                query_vector=query_embedding,
+                query=query_embedding,
                 limit=50,
                 query_filter=rest.Filter(
                     must=[
@@ -288,7 +288,7 @@ class RAGPipeline:
             # Format results
             formatted_results = []
             
-            for hit in results:
+            for hit in results.points:
                 # Cosine similarity is natively supported by Qdrant, score is directly the similarity
                 similarity = max(0.0, hit.score)
                 
