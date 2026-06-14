@@ -390,7 +390,7 @@ graph TB
 ### Step 1 — Start Database Services
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/beingbrijesh/CopSight
 cd CopSight
 
 # Start all databases (PostgreSQL, Elasticsearch, Neo4j, Redis, ChromaDB)
