@@ -160,7 +160,7 @@ class DeviceDetector:
             serial: Optional[str] = None
             try:
                 serial = dev.serial_number  # type: ignore[attr-defined]
-            except usb.core.USBError:
+            except (usb.core.USBError, ValueError, NotImplementedError):
                 pass
 
             matched.append(
