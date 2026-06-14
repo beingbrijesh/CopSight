@@ -42,7 +42,13 @@ class ApiStreamWriter:
             ''')
 
     def append_artifact(self, artifact):
-        sha256 = artifact.hashes.get("SHA-256")
+        sha256 = None
+        if hasattr(artifact, 'hashes') and artifact.hashes:
+            if hasattr(artifact.hashes, 'sha256'):
+                sha256 = artifact.hashes.sha256
+            elif isinstance(artifact.hashes, dict):
+                sha256 = artifact.hashes.get("sha256") or artifact.hashes.get("SHA-256")
+        
         if sha256:
             if sha256 in self._seen_hashes:
                 return

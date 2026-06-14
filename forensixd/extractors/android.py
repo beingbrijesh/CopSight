@@ -394,7 +394,7 @@ class AndroidExtractor(AbstractExtractor):
                         for file_path in files:
                             # Filter media files if requested
                             if not extract_media and file_path.suffix.lower() in [
-                                '.jpg', '.jpeg', '.png', '.mp4', '.mp3', '.ogg', '.tgs', '.webp', '.gif', '.nomedia', '.opus', '.wav'
+                                '.jpg', '.jpeg', '.png', '.mp4', '.mp3', '.ogg', '.tgs', '.webp', '.gif', '.nomedia', '.opus', '.wav', '.pdf', '.avi', '.mkv', '.mov', '.heic'
                             ]:
                                 file_path.unlink(missing_ok=True)
                                 continue
