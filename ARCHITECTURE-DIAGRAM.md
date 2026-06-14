@@ -9,50 +9,50 @@ This document provides a comprehensive view of the CopSight AI platform architec
 ```mermaid
 graph TB
     subgraph Clients["🖥️ CLIENT LAYER"]
-        Browser["Web Browser<br/><small>React 19 · TypeScript · Vite<br/>Port 5173</small>"]
-        ForensixdCLI["forensixd CLI<br/><small>Standalone Executable<br/>Windows · macOS · Linux</small>"]
+        Browser["Web Browser<br/>React 19 · TypeScript · Vite<br/>Port 5173"]
+        ForensixdCLI["forensixd CLI<br/>Standalone Executable<br/>Windows · macOS · Linux"]
     end
 
     subgraph Presentation["📱 PRESENTATION LAYER"]
         direction LR
-        Pages["Pages<br/><small>Landing · Login · Admin<br/>IO · Supervisor</small>"]
-        Components["Components<br/><small>NetworkGraph · Timeline<br/>Alerts · AnomalyDetection<br/>PredictiveAnalytics</small>"]
-        State["State & Routing<br/><small>Zustand · React Router v6<br/>TailwindCSS · D3.js</small>"]
+        Pages["Pages<br/>Landing · Login · Admin<br/>IO · Supervisor"]
+        Components["Components<br/>NetworkGraph · Timeline<br/>Alerts · AnomalyDetection<br/>PredictiveAnalytics"]
+        State["State & Routing<br/>Zustand · React Router v6<br/>TailwindCSS · D3.js"]
     end
 
     subgraph Application["⚙️ APPLICATION LAYER"]
-        Backend["Node.js API Gateway<br/><small>Express.js · Port 8080</small>"]
-        AIService["Unified API Gateway (AI Bridge)<br/><small>FastAPI · Port 8005<br/>Cross-Domain Router</small>"]
+        Backend["Node.js API Gateway<br/>Express.js · Port 8080"]
+        AIService["Unified API Gateway (AI Bridge)<br/>FastAPI · Port 8005<br/>Cross-Domain Router"]
     end
 
     subgraph BackendDetail["Node.js Internals"]
-        Middleware["Middleware<br/><small>Helmet · CORS · Auth<br/>RBAC · Rate Limiting</small>"]
-        Routes["Routes<br/><small>auth · users · cases · upload<br/>query · bookmarks · reports<br/>cross-case · alerts · graph<br/>analysis · ingest · notifications<br/>integration · performance</small>"]
-        Controllers["Controllers<br/><small>auth · user · case · upload<br/>query · bookmark · report<br/>graph · notification</small>"]
-        Services["Services<br/><small>Parser · NER · Search<br/>Graph · AI · Reports<br/>Cache · Alert · Cross-Case<br/>Performance Monitor</small>"]
-        Workers["Workers<br/><small>Processing Worker<br/>Stream Worker<br/>Bull Queue</small>"]
+        Middleware["Middleware<br/>Helmet · CORS · Auth<br/>RBAC · Rate Limiting"]
+        Routes["Routes<br/>auth · users · cases · upload<br/>query · bookmarks · reports<br/>cross-case · alerts · graph<br/>analysis · ingest · notifications<br/>integration · performance"]
+        Controllers["Controllers<br/>auth · user · case · upload<br/>query · bookmark · report<br/>graph · notification"]
+        Services["Services<br/>Parser · NER · Search<br/>Graph · AI · Reports<br/>Cache · Alert · Cross-Case<br/>Performance Monitor"]
+        Workers["Workers<br/>Processing Worker<br/>Stream Worker<br/>Bull Queue"]
     end
 
     subgraph AIDetail["AI Service Internals"]
-        AIRouters["API Routers<br/><small>Query · Embeddings<br/>Analysis · Indexing</small>"]
-        ModelRegistry["Unified Model Registry<br/><small>Model Bundle Management<br/>Memory & State Loading</small>"]
-        ExecutionEngines["Execution Engines<br/><small>Anomaly Execution Engine<br/>Deep Learning Analytics Hub<br/>Evidence Processing Pipeline</small>"]
-        RAGService["RAG Pipeline<br/><small>Retrieval & Synthesis</small>"]
-        AIWorker["Async Worker<br/><small>Background Jobs</small>"]
+        AIRouters["API Routers<br/>Query · Embeddings<br/>Analysis · Indexing"]
+        ModelRegistry["Unified Model Registry<br/>Model Bundle Management<br/>Memory & State Loading"]
+        ExecutionEngines["Execution Engines<br/>Anomaly Execution Engine<br/>Deep Learning Analytics Hub<br/>Evidence Processing Pipeline"]
+        RAGService["RAG Pipeline<br/>Retrieval & Synthesis"]
+        AIWorker["Async Worker<br/>Background Jobs"]
     end
 
     subgraph Data["🗄️ DATA LAYER"]
-        PG["PostgreSQL<br/><small>Port 5433<br/>Relational Data</small>"]
-        ES["Elasticsearch<br/><small>Port 9201<br/>Full-Text Search</small>"]
-        Neo["Neo4j<br/><small>Port 7688<br/>Graph Relations</small>"]
-        Redis["Redis<br/><small>Port 6380<br/>Queue & Cache</small>"]
-        Chroma["ChromaDB<br/><small>Port 8006<br/>Vector Embeddings</small>"]
-        Qdrant["Qdrant Cloud<br/><small>Production Vectors</small>"]
+        PG["PostgreSQL<br/>Port 5433<br/>Relational Data"]
+        ES["Elasticsearch<br/>Port 9201<br/>Full-Text Search"]
+        Neo["Neo4j<br/>Port 7688<br/>Graph Relations"]
+        Redis["Redis<br/>Port 6380<br/>Queue & Cache"]
+        Chroma["ChromaDB<br/>Port 8006<br/>Vector Embeddings"]
+        Qdrant["Qdrant Cloud<br/>Production Vectors"]
     end
 
     subgraph LLM["🧠 LLM INFERENCE"]
-        Ollama["Ollama<br/><small>Port 11434<br/>nomic-embed-text<br/>llama3.2</small>"]
-        Gemini["Google Gemini<br/><small>Cloud API<br/>Optional</small>"]
+        Ollama["Ollama<br/>Port 11434<br/>nomic-embed-text<br/>llama3.2"]
+        Gemini["Google Gemini<br/>Cloud API<br/>Optional"]
     end
 
     Browser -->|"HTTPS · REST · JWT"| Presentation
@@ -87,22 +87,22 @@ The `forensixd` extraction engine operates as a standalone tool with its own mod
 ```mermaid
 graph LR
     subgraph CLI["CLI Layer"]
-        Main["cli.py<br/><small>Click CLI + Interactive Shell</small>"]
+        Main["cli.py<br/>Click CLI + Interactive Shell"]
     end
 
     subgraph Core["Core Engine"]
-        Session["ForensicSession<br/><small>Session lifecycle<br/>Artifact registration</small>"]
-        Detector["DeviceDetector<br/><small>USB device scanning<br/>Platform identification</small>"]
-        Auth["AuthManager<br/><small>Browser-based login<br/>JWT token management</small>"]
-        Hasher["IntegrityHasher<br/><small>MD5 + SHA-256<br/>Merkle root</small>"]
-        Logger["AuditLogger<br/><small>JSONL chain-of-custody<br/>Tamper detection</small>"]
+        Session["ForensicSession<br/>Session lifecycle<br/>Artifact registration"]
+        Detector["DeviceDetector<br/>USB device scanning<br/>Platform identification"]
+        Auth["AuthManager<br/>Browser-based login<br/>JWT token management"]
+        Hasher["IntegrityHasher<br/>MD5 + SHA-256<br/>Merkle root"]
+        Logger["AuditLogger<br/>JSONL chain-of-custody<br/>Tamper detection"]
     end
 
     subgraph Extractors["Platform Extractors"]
-        Android["AndroidExtractor<br/><small>ADB Protocol</small>"]
-        iOS["iOSExtractor<br/><small>pymobiledevice3</small>"]
-        Windows["WindowsExtractor<br/><small>Direct / Image</small>"]
-        DiskImg["DiskImageExtractor<br/><small>E01 / DD / Raw</small>"]
+        Android["AndroidExtractor<br/>ADB Protocol"]
+        iOS["iOSExtractor<br/>pymobiledevice3"]
+        Windows["WindowsExtractor<br/>Direct / Image"]
+        DiskImg["DiskImageExtractor<br/>E01 / DD / Raw"]
     end
 
     subgraph Parsers["Data Parsers"]
@@ -121,15 +121,15 @@ graph LR
     end
 
     subgraph Writers["Output Writers"]
-        UFDR["UFDRWriter<br/><small>.ufdr package</small>"]
-        DFXML["DFXMLWriter<br/><small>acquisition.dfxml</small>"]
-        Report["ReportWriter<br/><small>HTML report</small>"]
-        APIStream["ApiStreamWriter<br/><small>Encrypted real-time<br/>upload to server</small>"]
+        UFDR["UFDRWriter<br/>.ufdr package"]
+        DFXML["DFXMLWriter<br/>acquisition.dfxml"]
+        Report["ReportWriter<br/>HTML report"]
+        APIStream["ApiStreamWriter<br/>Encrypted real-time<br/>upload to server"]
     end
 
     subgraph Legal["Legal Compliance"]
-        AuthZ["AuthorizationManager<br/><small>Court order · Consent<br/>Examiner ID</small>"]
-        CoC["ChainOfCustody<br/><small>Event logging<br/>Hash verification</small>"]
+        AuthZ["AuthorizationManager<br/>Court order · Consent<br/>Examiner ID"]
+        CoC["ChainOfCustody<br/>Event logging<br/>Hash verification"]
     end
 
     Main --> Core
@@ -154,13 +154,13 @@ graph LR
 ```mermaid
 graph TD
     subgraph Middleware["Request Pipeline"]
-        Helmet["Helmet<br/><small>Security Headers</small>"]
-        CORS["CORS<br/><small>Origin Control</small>"]
-        JWT["JWT Auth<br/><small>Token Validation</small>"]
-        RBAC["RBAC<br/><small>Role Check</small>"]
-        CaseAccess["Case Access<br/><small>Assignment Check</small>"]
-        RateLimit["Rate Limiter<br/><small>auth · search · upload · AI</small>"]
-        PerfMon["Performance<br/><small>Request Metrics</small>"]
+        Helmet["Helmet<br/>Security Headers"]
+        CORS["CORS<br/>Origin Control"]
+        JWT["JWT Auth<br/>Token Validation"]
+        RBAC["RBAC<br/>Role Check"]
+        CaseAccess["Case Access<br/>Assignment Check"]
+        RateLimit["Rate Limiter<br/>auth · search · upload · AI"]
+        PerfMon["Performance<br/>Request Metrics"]
     end
 
     subgraph Routes["Route Groups"]
@@ -182,15 +182,15 @@ graph TD
     end
 
     subgraph ServiceLayer["Business Logic"]
-        Parser["UFDR Parser<br/><small>XML · JSON parsing</small>"]
-        NER["NER Engine<br/><small>Entity extraction<br/>Phone · Email · ID · URL · Crypto</small>"]
-        SearchSvc["Search Service<br/><small>Elasticsearch queries</small>"]
-        GraphSvc["Graph Service<br/><small>Neo4j operations</small>"]
-        AISvc["AI Client<br/><small>FastAPI bridge</small>"]
-        ReportGen["Report Generator<br/><small>PDFKit rendering</small>"]
-        CacheSvc["Cache Service<br/><small>Redis caching</small>"]
-        AlertSvc["Alert Service<br/><small>Rule engine</small>"]
-        CrossCaseSvc["Cross-Case Service<br/><small>Entity correlation</small>"]
+        Parser["UFDR Parser<br/>XML · JSON parsing"]
+        NER["NER Engine<br/>Entity extraction<br/>Phone · Email · ID · URL · Crypto"]
+        SearchSvc["Search Service<br/>Elasticsearch queries"]
+        GraphSvc["Graph Service<br/>Neo4j operations"]
+        AISvc["AI Client<br/>FastAPI bridge"]
+        ReportGen["Report Generator<br/>PDFKit rendering"]
+        CacheSvc["Cache Service<br/>Redis caching"]
+        AlertSvc["Alert Service<br/>Rule engine"]
+        CrossCaseSvc["Cross-Case Service<br/>Entity correlation"]
     end
 
     Middleware --> Routes --> ServiceLayer
@@ -282,9 +282,9 @@ graph LR
 ```mermaid
 graph TD
     subgraph Shell["App Shell"]
-        AppShell["AppShell<br/><small>Layout + Navigation</small>"]
-        Navbar["Navbar<br/><small>Role-based menu</small>"]
-        Notifications["NotificationBell<br/><small>Real-time alerts</small>"]
+        AppShell["AppShell<br/>Layout + Navigation"]
+        Navbar["Navbar<br/>Role-based menu"]
+        Notifications["NotificationBell<br/>Real-time alerts"]
     end
 
     subgraph AdminPages["Admin Views"]
@@ -295,19 +295,19 @@ graph TD
 
     subgraph IOPages["Investigating Officer Views"]
         IODash["IODashboard"]
-        CaseDetail["CaseDetail<br/><small>Upload · Process · Query</small>"]
-        QueryUI["QueryInterface<br/><small>NL Query + Results</small>"]
-        NetworkViz["NetworkGraph<br/><small>Interactive D3 Graph</small>"]
-        Bookmarks["Bookmarks<br/><small>Evidence Management</small>"]
-        Reports["ReportGenerator<br/><small>PDF Templates</small>"]
-        Entities["EntitiesView<br/><small>Entity Browser</small>"]
+        CaseDetail["CaseDetail<br/>Upload · Process · Query"]
+        QueryUI["QueryInterface<br/>NL Query + Results"]
+        NetworkViz["NetworkGraph<br/>Interactive D3 Graph"]
+        Bookmarks["Bookmarks<br/>Evidence Management"]
+        Reports["ReportGenerator<br/>PDF Templates"]
+        Entities["EntitiesView<br/>Entity Browser"]
     end
 
     subgraph AIComponents["AI Analysis Components"]
-        AnomalyUI["AnomalyDetection<br/><small>ML Results Display</small>"]
-        PredictiveUI["PredictiveAnalytics<br/><small>Risk Scores & Leads</small>"]
-        CrossCase["CrossCaseConnections<br/><small>Shared Entity Discovery</small>"]
-        AdvancedAI["AdvancedAIFeatures<br/><small>Deep Analysis Dashboard</small>"]
+        AnomalyUI["AnomalyDetection<br/>ML Results Display"]
+        PredictiveUI["PredictiveAnalytics<br/>Risk Scores & Leads"]
+        CrossCase["CrossCaseConnections<br/>Shared Entity Discovery"]
+        AdvancedAI["AdvancedAIFeatures<br/>Deep Analysis Dashboard"]
     end
 
     subgraph SharedComponents["Shared Components"]
@@ -336,18 +336,18 @@ graph TD
 
 ```mermaid
 flowchart LR
-    Push["Git Push<br/><small>main/master</small>"] --> Trigger["GitHub Actions<br/><small>build.yml</small>"]
+    Push["Git Push<br/>main/master"] --> Trigger["GitHub Actions<br/>build.yml"]
 
     subgraph Build["Cross-Platform Build"]
         direction TB
-        Linux["Ubuntu<br/><small>Linux Binary</small>"]
-        Windows["Windows<br/><small>.exe Executable</small>"]
-        macOS["macOS<br/><small>Universal Binary</small>"]
+        Linux["Ubuntu<br/>Linux Binary"]
+        Windows["Windows<br/>.exe Executable"]
+        macOS["macOS<br/>Universal Binary"]
     end
 
     Trigger --> Build
     Build --> Artifacts["Upload Artifacts"]
-    Artifacts -->|"Tagged Release"| Release["GitHub Release<br/><small>Downloadable Executables</small>"]
+    Artifacts -->|"Tagged Release"| Release["GitHub Release<br/>Downloadable Executables"]
 
     style Push fill:#e94560,color:#fff
     style Build fill:#0f3460,color:#fff

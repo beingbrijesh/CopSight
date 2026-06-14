@@ -48,15 +48,15 @@ The ML pipeline operates asynchronously via the ARQ background worker, pulling d
 ```mermaid
 flowchart TD
     subgraph Layer1["Data Layer (Post-Extraction)"]
-        Neo["Neo4j<br/><i>Graph Topology</i>"]
-        PG["PostgreSQL<br/><i>Temporal Metadata</i>"]
-        ES["Elasticsearch<br/><i>Textual Evidence</i>"]
+        Neo["Neo4j<br/>Graph Topology"]
+        PG["PostgreSQL<br/>Temporal Metadata"]
+        ES["Elasticsearch<br/>Textual Evidence"]
     end
 
     subgraph Layer2["Feature Engineering"]
-        Neo -->|Cypher| GraphFeats["Graph Features<br/><i>Centrality, Degree, Triads</i>"]
-        PG -->|SQL| TemporalFeats["Temporal Features<br/><i>Avg. Frequency, Latency</i>"]
-        ES -->|REST| TextFeats["Text Features<br/><i>TF-IDF, NER Density</i>"]
+        Neo -->|Cypher| GraphFeats["Graph Features<br/>Centrality, Degree, Triads"]
+        PG -->|SQL| TemporalFeats["Temporal Features<br/>Avg. Frequency, Latency"]
+        ES -->|REST| TextFeats["Text Features<br/>TF-IDF, NER Density"]
         
         GraphFeats & TemporalFeats & TextFeats --> Tensor["Merged Feature Tensor"]
     end
@@ -67,8 +67,8 @@ flowchart TD
     end
 
     subgraph Layer4["Visualization (Frontend)"]
-        AIService -->|Anomaly Flags| NetworkGraph["3D Graph UI<br/><i>Red/Pulse Glow for high risk</i>"]
-        AIService -->|Link Probabilities| IntelligencePanel["Advanced AI Dashboard<br/><i>Predictive Leads List</i>"]
+        AIService -->|Anomaly Flags| NetworkGraph["3D Graph UI<br/>Red/Pulse Glow for high risk"]
+        AIService -->|Link Probabilities| IntelligencePanel["Advanced AI Dashboard<br/>Predictive Leads List"]
     end
 
     style Layer1 fill:#0f3460,color:#fff

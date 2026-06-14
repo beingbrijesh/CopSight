@@ -16,7 +16,7 @@ graph TB
     ForensixdTool(("🔧 forensixd<br/>CLI Tool"))
 
     subgraph System["CopSight AI Platform"]
-        Core["Core System<br/><small>Forensic Investigation & Analysis</small>"]
+        Core["Core System<br/>Forensic Investigation & Analysis"]
     end
 
     Admin -->|"User Management<br/>Case Creation<br/>System Configuration"| Core
@@ -43,8 +43,8 @@ How the major subsystems interact with data stores:
 
 ```mermaid
 flowchart TD
-    Users["Users<br/><small>Admin · IO · Supervisor</small>"]
-    Forensixd["forensixd CLI<br/><small>Device Extraction Tool</small>"]
+    Users["Users<br/>Admin · IO · Supervisor"]
+    Forensixd["forensixd CLI<br/>Device Extraction Tool"]
 
     P1["1.0<br/>Authentication &<br/>Session Management"]
     P2["2.0<br/>User & Case<br/>Management"]
@@ -123,40 +123,40 @@ How `forensixd` acquires data from a physical device:
 
 ```mermaid
 flowchart TD
-    Start["forensixd acquire<br/><small>Command Invocation</small>"]
+    Start["forensixd acquire<br/>Command Invocation"]
 
     subgraph Auth["Authentication Phase"]
-        BrowserAuth["Open Browser Login<br/><small>CopSight AI web UI</small>"]
-        GetToken["Receive JWT Token<br/><small>+ Encryption Key</small>"]
-        FetchCases["Fetch Assigned Cases<br/><small>from Backend API</small>"]
+        BrowserAuth["Open Browser Login<br/>CopSight AI web UI"]
+        GetToken["Receive JWT Token<br/>+ Encryption Key"]
+        FetchCases["Fetch Assigned Cases<br/>from Backend API"]
         SelectCase["Officer Selects Case"]
     end
 
     subgraph Detection["Device Detection Phase"]
-        USBScan["USB Device Scan<br/><small>pyusb enumeration</small>"]
-        PlatformID["Platform Identification<br/><small>Android · iOS · Windows</small>"]
-        DeviceInfo["Capture Device Info<br/><small>Model · Serial · OS Version<br/>Root/Jailbreak Status</small>"]
+        USBScan["USB Device Scan<br/>pyusb enumeration"]
+        PlatformID["Platform Identification<br/>Android · iOS · Windows"]
+        DeviceInfo["Capture Device Info<br/>Model · Serial · OS Version<br/>Root/Jailbreak Status"]
     end
 
     subgraph Legal["Legal Authorization Phase"]
-        CaseAuth["Case Metadata<br/><small>Case Number · Court Order Ref</small>"]
-        ConsentCapture["Consent Capture<br/><small>Court Order · Voluntary · Emergency</small>"]
+        CaseAuth["Case Metadata<br/>Case Number · Court Order Ref"]
+        ConsentCapture["Consent Capture<br/>Court Order · Voluntary · Emergency"]
         ExaminerID["Examiner Identification"]
     end
 
     subgraph Extraction["Data Extraction Phase"]
-        LevelSelect["Select Extraction Level<br/><small>Logical · File System · Physical</small>"]
-        ProfileSelect["Select Profile<br/><small>Textual · Media · Everything</small>"]
-        RunExtractor["Run Platform Extractor<br/><small>Yield Artifacts</small>"]
-        HashArtifact["Hash Each Artifact<br/><small>MD5 + SHA-256</small>"]
+        LevelSelect["Select Extraction Level<br/>Logical · File System · Physical"]
+        ProfileSelect["Select Profile<br/>Textual · Media · Everything"]
+        RunExtractor["Run Platform Extractor<br/>Yield Artifacts"]
+        HashArtifact["Hash Each Artifact<br/>MD5 + SHA-256"]
     end
 
     subgraph Output["Output Phase"]
-        StreamAPI["Stream to Server<br/><small>Encrypted real-time upload</small>"]
-        WriteDFXML["Write DFXML<br/><small>acquisition.dfxml</small>"]
-        WriteUFDR["Write UFDR Package<br/><small>{session_id}.ufdr</small>"]
-        WriteHTML["Generate HTML Report<br/><small>report.html</small>"]
-        MerkleRoot["Compute Merkle Root<br/><small>Session integrity hash</small>"]
+        StreamAPI["Stream to Server<br/>Encrypted real-time upload"]
+        WriteDFXML["Write DFXML<br/>acquisition.dfxml"]
+        WriteUFDR["Write UFDR Package<br/>{session_id}.ufdr"]
+        WriteHTML["Generate HTML Report<br/>report.html"]
+        MerkleRoot["Compute Merkle Root<br/>Session integrity hash"]
     end
 
     Start --> Auth --> Detection --> Legal --> Extraction --> Output
@@ -177,39 +177,39 @@ How uploaded UFDR files are processed into searchable evidence:
 
 ```mermaid
 flowchart TD
-    IO["Investigating Officer<br/><small>Uploads UFDR File</small>"]
+    IO["Investigating Officer<br/>Uploads UFDR File"]
 
     subgraph Upload["Upload Phase"]
-        Validate["Validate File Format<br/><small>XML or JSON</small>"]
-        Store["Store File on Disk<br/><small>backend-node/uploads/</small>"]
-        CreateJob["Create Processing Job<br/><small>Track status</small>"]
-        QueueJob["Queue Job<br/><small>Bull Queue → Redis</small>"]
+        Validate["Validate File Format<br/>XML or JSON"]
+        Store["Store File on Disk<br/>backend-node/uploads/"]
+        CreateJob["Create Processing Job<br/>Track status"]
+        QueueJob["Queue Job<br/>Bull Queue → Redis"]
     end
 
     subgraph Processing["Background Processing (Worker)"]
-        ParseFile["Parse UFDR File<br/><small>Extract raw data objects</small>"]
-        ExtractMsg["Extract Messages<br/><small>SMS · WhatsApp · Telegram</small>"]
-        ExtractCalls["Extract Call Logs<br/><small>Duration · Direction · Time</small>"]
-        ExtractContacts["Extract Contacts<br/><small>Names · Numbers · Emails</small>"]
+        ParseFile["Parse UFDR File<br/>Extract raw data objects"]
+        ExtractMsg["Extract Messages<br/>SMS · WhatsApp · Telegram"]
+        ExtractCalls["Extract Call Logs<br/>Duration · Direction · Time"]
+        ExtractContacts["Extract Contacts<br/>Names · Numbers · Emails"]
     end
 
     subgraph NER["Entity Extraction"]
-        Phones["📞 Phone Numbers<br/><small>International classification</small>"]
+        Phones["📞 Phone Numbers<br/>International classification"]
         Emails["📧 Email Addresses"]
-        IDs["🆔 Indian IDs<br/><small>Aadhaar · PAN · Passport</small>"]
+        IDs["🆔 Indian IDs<br/>Aadhaar · PAN · Passport"]
         URLs["🔗 URLs"]
-        Crypto["₿ Crypto Addresses<br/><small>Bitcoin · Ethereum</small>"]
+        Crypto["₿ Crypto Addresses<br/>Bitcoin · Ethereum"]
         IPs["🌐 IP Addresses"]
     end
 
     subgraph Indexing["Parallel Database Indexing"]
-        IndexPG["PostgreSQL<br/><small>Structured records</small>"]
-        IndexES["Elasticsearch<br/><small>Full-text index<br/>3 indices</small>"]
-        IndexNeo["Neo4j<br/><small>Communication graph<br/>Nodes & Relationships</small>"]
-        IndexVec["Vector DB<br/><small>Semantic embeddings</small>"]
+        IndexPG["PostgreSQL<br/>Structured records"]
+        IndexES["Elasticsearch<br/>Full-text index<br/>3 indices"]
+        IndexNeo["Neo4j<br/>Communication graph<br/>Nodes & Relationships"]
+        IndexVec["Vector DB<br/>Semantic embeddings"]
     end
 
-    Complete["✅ Processing Complete<br/><small>Status: COMPLETED</small>"]
+    Complete["✅ Processing Complete<br/>Status: COMPLETED"]
 
     IO --> Upload
     Upload --> Processing
@@ -233,33 +233,33 @@ How natural language queries are transformed into evidence-backed answers:
 
 ```mermaid
 flowchart TD
-    IO["🔍 Investigating Officer<br/><small>Natural Language Query</small>"]
+    IO["🔍 Investigating Officer<br/>Natural Language Query"]
 
     subgraph Backend["Backend Processing"]
-        SendToAI["Forward to AI Service<br/><small>POST /api/query</small>"]
+        SendToAI["Forward to AI Service<br/>POST /api/query"]
     end
 
     subgraph AIService["AI Service — RAG Pipeline"]
-        Decompose["1. Query Decomposition<br/><small>LLM breaks query into<br/>structured sub-queries</small>"]
-        LLM1[("LLM<br/><small>Ollama/Gemini</small>")]
+        Decompose["1. Query Decomposition<br/>LLM breaks query into<br/>structured sub-queries"]
+        LLM1[("LLM<br/>Ollama/Gemini")]
 
         subgraph ParallelSearch["2. Parallel Multi-Database Search"]
             direction LR
-            PGSearch["PostgreSQL<br/><small>Devices · Sources<br/>Structured metadata</small>"]
-            ESSearch["Elasticsearch<br/><small>Messages · Calls · Contacts<br/>Full-text matching</small>"]
-            NeoSearch["Neo4j<br/><small>Relationships · Patterns<br/>Graph traversal</small>"]
-            VecSearch["Vector Search<br/><small>Semantic similarity<br/>Embedding match</small>"]
+            PGSearch["PostgreSQL<br/>Devices · Sources<br/>Structured metadata"]
+            ESSearch["Elasticsearch<br/>Messages · Calls · Contacts<br/>Full-text matching"]
+            NeoSearch["Neo4j<br/>Relationships · Patterns<br/>Graph traversal"]
+            VecSearch["Vector Search<br/>Semantic similarity<br/>Embedding match"]
         end
 
-        Rank["3. Rank & Deduplicate<br/><small>Relevance scoring<br/>Remove duplicates</small>"]
-        Synthesize["4. Answer Synthesis<br/><small>LLM generates answer<br/>with evidence citations</small>"]
-        LLM2[("LLM<br/><small>Ollama/Gemini</small>")]
-        Score["5. Confidence Scoring<br/><small>0.0 – 1.0 scale</small>"]
+        Rank["3. Rank & Deduplicate<br/>Relevance scoring<br/>Remove duplicates"]
+        Synthesize["4. Answer Synthesis<br/>LLM generates answer<br/>with evidence citations"]
+        LLM2[("LLM<br/>Ollama/Gemini")]
+        Score["5. Confidence Scoring<br/>0.0 – 1.0 scale"]
     end
 
     subgraph Response["Response"]
         SaveHistory["Save to Query History"]
-        ReturnResult["Return Result<br/><small>Answer + Evidence + Score</small>"]
+        ReturnResult["Return Result<br/>Answer + Evidence + Score"]
     end
 
     IO --> Backend --> Decompose
@@ -283,31 +283,31 @@ How the anomaly detection and predictive analytics engines process case data:
 
 ```mermaid
 flowchart TD
-    Trigger["Analysis Triggered<br/><small>POST /api/analysis</small>"]
+    Trigger["Analysis Triggered<br/>POST /api/analysis"]
 
     subgraph Orchestration["ML Model Orchestration"]
-        Registry["Unified Model Registry<br/><small>Loads pre-trained models<br/>Manages model bundle state</small>"]
+        Registry["Unified Model Registry<br/>Loads pre-trained models<br/>Manages model bundle state"]
     end
 
     subgraph FeatureEng["Feature Engineering Branches"]
-        DecisionTreeFeats["Decision Tree Features<br/><small>Statistical aggregations</small>"]
-        TemporalFeats["Sequential Time-Series<br/><small>Temporal frequency formatting</small>"]
-        DNNFeats["Deep Neural Network Tensors<br/><small>Graph & Entity embeddings</small>"]
+        DecisionTreeFeats["Decision Tree Features<br/>Statistical aggregations"]
+        TemporalFeats["Sequential Time-Series<br/>Temporal frequency formatting"]
+        DNNFeats["Deep Neural Network Tensors<br/>Graph & Entity embeddings"]
     end
 
     subgraph Execution["Specialized Execution Engines"]
-        AnomalyEngine["Anomaly Execution Engine<br/><small>Delegates model inferences</small>"]
-        DeepLearningHub["Deep Learning Analytics Hub<br/><small>Coordinates multiple subsystems</small>"]
+        AnomalyEngine["Anomaly Execution Engine<br/>Delegates model inferences"]
+        DeepLearningHub["Deep Learning Analytics Hub<br/>Coordinates multiple subsystems"]
         
-        XGB["XGBoost Classification<br/><small>Evidence profiling</small>"]
-        LSTMAE["LSTM Autoencoder Evaluation<br/><small>Time-series anomaly scoring</small>"]
-        DNN["DNN Inference<br/><small>Advanced pattern mapping</small>"]
+        XGB["XGBoost Classification<br/>Evidence profiling"]
+        LSTMAE["LSTM Autoencoder Evaluation<br/>Time-series anomaly scoring"]
+        DNN["DNN Inference<br/>Advanced pattern mapping"]
     end
 
     subgraph Results["Analysis Results"]
-        AnomalyFlags["🚩 Anomaly Flags<br/><small>Suspicious patterns<br/>with confidence scores</small>"]
-        Predictions["🔮 Predictions<br/><small>Hidden links · Risk levels<br/>Next-step forecasts</small>"]
-        Patterns["📊 Patterns<br/><small>Temporal · Spatial<br/>Frequency clusters</small>"]
+        AnomalyFlags["🚩 Anomaly Flags<br/>Suspicious patterns<br/>with confidence scores"]
+        Predictions["🔮 Predictions<br/>Hidden links · Risk levels<br/>Next-step forecasts"]
+        Patterns["📊 Patterns<br/>Temporal · Spatial<br/>Frequency clusters"]
     end
 
     Trigger --> Registry
@@ -338,22 +338,22 @@ How the platform assembles court-ready PDF reports:
 
 ```mermaid
 flowchart TD
-    IO["Investigating Officer<br/><small>Select template & sections</small>"]
+    IO["Investigating Officer<br/>Select template & sections"]
 
     subgraph Gather["Data Aggregation"]
         direction LR
-        CaseInfo["Case Info<br/><small>PostgreSQL</small>"]
-        DeviceInfo["Device Data<br/><small>PostgreSQL</small>"]
-        Queries["Query History<br/><small>PostgreSQL</small>"]
-        Bookmarks["Bookmarked Evidence<br/><small>PostgreSQL</small>"]
-        Evidence["Evidence<br/><small>Elasticsearch</small>"]
-        Network["Network Data<br/><small>Neo4j</small>"]
+        CaseInfo["Case Info<br/>PostgreSQL"]
+        DeviceInfo["Device Data<br/>PostgreSQL"]
+        Queries["Query History<br/>PostgreSQL"]
+        Bookmarks["Bookmarked Evidence<br/>PostgreSQL"]
+        Evidence["Evidence<br/>Elasticsearch"]
+        Network["Network Data<br/>Neo4j"]
     end
 
-    Template["Apply Template<br/><small>Full Report · Executive Summary<br/>Evidence Report · Custom</small>"]
+    Template["Apply Template<br/>Full Report · Executive Summary<br/>Evidence Report · Custom"]
 
     subgraph Generate["PDF Generation (PDFKit)"]
-        Header["Header & Footer<br/><small>Agency branding</small>"]
+        Header["Header & Footer<br/>Agency branding"]
         CaseSection["Case Overview"]
         EvidenceSection["Evidence Tables"]
         TimelineSection["Timeline View"]
@@ -361,7 +361,7 @@ flowchart TD
         BookmarkSection["Bookmarked Items"]
     end
 
-    Store["Store Report<br/><small>File system + metadata</small>"]
+    Store["Store Report<br/>File system + metadata"]
     Audit["Log to Audit Trail"]
     Download["📥 Download PDF"]
 

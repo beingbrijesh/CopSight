@@ -16,19 +16,19 @@ graph TD
     end
 
     subgraph Proxy["Reverse Proxy / WAF"]
-        Nginx["Nginx / Traefik<br/><small>TLS Termination</small>"]
+        Nginx["Nginx / Traefik<br/>TLS Termination"]
     end
 
     subgraph AppNode["Node 1: Application Node"]
-        Backend["Node.js API Gateway<br/><small>Docker</small>"]
-        Frontend["Static Asset Server<br/><small>Nginx</small>"]
-        BullWorker["Background Job Worker<br/><small>Docker</small>"]
+        Backend["Node.js API Gateway<br/>Docker"]
+        Frontend["Static Asset Server<br/>Nginx"]
+        BullWorker["Background Job Worker<br/>Docker"]
     end
 
     subgraph AINode["Node 2: GPU/AI Node"]
-        AIService["FastAPI AI Service<br/><small>Docker</small>"]
-        Ollama["Ollama LLM Engine<br/><small>Native</small>"]
-        ARQWorker["ARQ Background Worker<br/><small>Docker</small>"]
+        AIService["FastAPI AI Service<br/>Docker"]
+        Ollama["Ollama LLM Engine<br/>Native"]
+        ARQWorker["ARQ Background Worker<br/>Docker"]
     end
 
     subgraph DataNode["Node 3: Database Cluster"]
@@ -40,8 +40,8 @@ graph TD
     end
 
     subgraph Cloud["External Services (Optional)"]
-        Qdrant["Qdrant Cloud<br/><small>Managed Vectors</small>"]
-        Gemini["Google Gemini API<br/><small>Cloud LLM</small>"]
+        Qdrant["Qdrant Cloud<br/>Managed Vectors"]
+        Gemini["Google Gemini API<br/>Cloud LLM"]
     end
 
     Clients -->|"HTTPS"| Nginx

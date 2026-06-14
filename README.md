@@ -72,33 +72,33 @@ CopSight AI is an end-to-end digital forensics platform that enables law enforce
 ```mermaid
 graph TB
     subgraph ClientLayer["🖥️ Client Layer"]
-        Browser["Web Browser<br/><i>React 19 + Vite</i>"]
-        CLI["forensixd CLI<br/><i>Standalone Executable</i>"]
+        Browser["Web Browser<br/>React 19 + Vite"]
+        CLI["forensixd CLI<br/>Standalone Executable"]
     end
 
     subgraph AppLayer["⚙️ Application Layer"]
-        Backend["Node.js API Gateway<br/><i>Express.js · Port 8080</i>"]
-        AIService["AI/ML Service<br/><i>FastAPI · Port 8005</i>"]
+        Backend["Node.js API Gateway<br/>Express.js · Port 8080"]
+        AIService["AI/ML Service<br/>FastAPI · Port 8005"]
     end
 
     subgraph WorkerLayer["🔄 Background Workers"]
-        BullWorker["Bull Queue Worker<br/><i>File Processing · Indexing</i>"]
-        ARQWorker["ARQ Worker<br/><i>Async AI Tasks</i>"]
-        StreamWorker["Stream Worker<br/><i>Real-time Ingestion</i>"]
+        BullWorker["Bull Queue Worker<br/>File Processing · Indexing"]
+        ARQWorker["ARQ Worker<br/>Async AI Tasks"]
+        StreamWorker["Stream Worker<br/>Real-time Ingestion"]
     end
 
     subgraph DataLayer["🗄️ Data Layer"]
-        PG["PostgreSQL<br/><i>Relational Data</i>"]
-        ES["Elasticsearch<br/><i>Full-Text Search</i>"]
-        Neo["Neo4j<br/><i>Graph Relations</i>"]
-        Redis["Redis<br/><i>Queue & Cache</i>"]
-        Chroma["ChromaDB<br/><i>Vector Embeddings</i>"]
-        Qdrant["Qdrant Cloud<br/><i>Production Vectors</i>"]
+        PG["PostgreSQL<br/>Relational Data"]
+        ES["Elasticsearch<br/>Full-Text Search"]
+        Neo["Neo4j<br/>Graph Relations"]
+        Redis["Redis<br/>Queue & Cache"]
+        Chroma["ChromaDB<br/>Vector Embeddings"]
+        Qdrant["Qdrant Cloud<br/>Production Vectors"]
     end
 
     subgraph LLMLayer["🧠 LLM Inference"]
-        Ollama["Ollama<br/><i>Local LLM</i>"]
-        Gemini["Google Gemini<br/><i>Cloud LLM</i>"]
+        Ollama["Ollama<br/>Local LLM"]
+        Gemini["Google Gemini<br/>Cloud LLM"]
     end
 
     Browser -->|"REST + JWT"| Backend
@@ -159,18 +159,18 @@ When a forensic data file is uploaded, the platform executes a multi-stage proce
 
 ```mermaid
 flowchart TD
-    Upload["📁 UFDR File Upload"] --> Validate["Validate Format<br/><i>XML / JSON</i>"]
-    Validate --> Queue["Add to Bull Queue<br/><i>Redis-backed</i>"]
-    Queue --> Parse["Parse File<br/><i>Extract Messages, Calls, Contacts</i>"]
-    Parse --> NER["Entity Extraction<br/><i>Phone Numbers, Emails, IDs,<br/>Crypto Addresses, URLs</i>"]
+    Upload["📁 UFDR File Upload"] --> Validate["Validate Format<br/>XML / JSON"]
+    Validate --> Queue["Add to Bull Queue<br/>Redis-backed"]
+    Queue --> Parse["Parse File<br/>Extract Messages, Calls, Contacts"]
+    Parse --> NER["Entity Extraction<br/>Phone Numbers, Emails, IDs,<br/>Crypto Addresses, URLs"]
     NER --> Parallel
 
     subgraph Parallel["Parallel Indexing"]
         direction LR
-        PG["PostgreSQL<br/><i>Structured Storage</i>"]
-        ES["Elasticsearch<br/><i>Full-Text Index</i>"]
-        Neo4j["Neo4j<br/><i>Communication Graph</i>"]
-        Vec["Vector DB<br/><i>Semantic Embeddings</i>"]
+        PG["PostgreSQL<br/>Structured Storage"]
+        ES["Elasticsearch<br/>Full-Text Index"]
+        Neo4j["Neo4j<br/>Communication Graph"]
+        Vec["Vector DB<br/>Semantic Embeddings"]
     end
 
     Parallel --> Done["✅ Processing Complete"]
@@ -186,26 +186,26 @@ Natural language queries are processed through a multi-stage Retrieval-Augmented
 
 ```mermaid
 flowchart TD
-    Query["🗣️ Natural Language Query<br/><i>'Find all suspicious money transfers'</i>"] --> Decompose
+    Query["🗣️ Natural Language Query<br/>'Find all suspicious money transfers'"] --> Decompose
 
     subgraph AI["AI Processing"]
-        Decompose["Query Decomposition<br/><i>LLM breaks query into sub-queries</i>"]
+        Decompose["Query Decomposition<br/>LLM breaks query into sub-queries"]
         Decompose --> Search
 
         subgraph Search["Parallel Multi-Database Search"]
             direction LR
-            S1["PostgreSQL<br/><i>Devices, Sources</i>"]
-            S2["Elasticsearch<br/><i>Messages, Calls</i>"]
-            S3["Neo4j<br/><i>Relationships</i>"]
-            S4["Vector Search<br/><i>Semantic Match</i>"]
+            S1["PostgreSQL<br/>Devices, Sources"]
+            S2["Elasticsearch<br/>Messages, Calls"]
+            S3["Neo4j<br/>Relationships"]
+            S4["Vector Search<br/>Semantic Match"]
         end
 
-        Search --> Rank["Rank & Deduplicate<br/><i>Relevance Scoring</i>"]
-        Rank --> Synthesize["Answer Synthesis<br/><i>LLM generates answer with citations</i>"]
+        Search --> Rank["Rank & Deduplicate<br/>Relevance Scoring"]
+        Rank --> Synthesize["Answer Synthesis<br/>LLM generates answer with citations"]
         Synthesize --> Confidence["Confidence Scoring"]
     end
 
-    Confidence --> Result["📋 Result<br/><i>Answer + Evidence + Confidence</i>"]
+    Confidence --> Result["📋 Result<br/>Answer + Evidence + Confidence"]
 
     style Query fill:#533483,color:#fff
     style AI fill:#1a1a2e,stroke:#0f3460,color:#fff
@@ -223,14 +223,14 @@ flowchart TD
 ```mermaid
 flowchart TD
     Start["forensixd acquire"] --> Auth["Authenticate via<br/>Web Browser Login"]
-    Auth --> Cases["Select Investigation Case<br/><i>From assigned cases</i>"]
-    Cases --> Detect["USB Device Detection<br/><i>Auto-detect platform</i>"]
-    Detect --> Consent["Legal Authorization<br/><i>Case number, Court order,<br/>Consent type, Examiner ID</i>"]
-    Consent --> Config["Configure Extraction<br/><i>Level: Logical / File System / Physical<br/>Profile: Textual / Media / Everything</i>"]
-    Config --> Extract["Run Extraction<br/><i>Platform-specific extractor</i>"]
-    Extract --> Stream["Real-Time Streaming<br/><i>Encrypted upload to server</i>"]
-    Extract --> Local["Local Outputs<br/><i>UFDR + DFXML + HTML Report</i>"]
-    Stream --> Verify["Chain of Custody Verification<br/><i>Merkle Root Hash</i>"]
+    Auth --> Cases["Select Investigation Case<br/>From assigned cases"]
+    Cases --> Detect["USB Device Detection<br/>Auto-detect platform"]
+    Detect --> Consent["Legal Authorization<br/>Case number, Court order,<br/>Consent type, Examiner ID"]
+    Consent --> Config["Configure Extraction<br/>Level: Logical / File System / Physical<br/>Profile: Textual / Media / Everything"]
+    Config --> Extract["Run Extraction<br/>Platform-specific extractor"]
+    Extract --> Stream["Real-Time Streaming<br/>Encrypted upload to server"]
+    Extract --> Local["Local Outputs<br/>UFDR + DFXML + HTML Report"]
+    Stream --> Verify["Chain of Custody Verification<br/>Merkle Root Hash"]
 
     style Start fill:#e94560,color:#fff
     style Auth fill:#0f3460,color:#fff
@@ -277,24 +277,24 @@ The AI service is a full ML platform with multiple analysis engines that work to
 ```mermaid
 graph TB
     subgraph Input["📥 Input Layer"]
-        CaseData["Case Data<br/><i>Messages, Calls, Contacts</i>"]
-        GraphData["Graph Data<br/><i>Neo4j Relationships</i>"]
+        CaseData["Case Data<br/>Messages, Calls, Contacts"]
+        GraphData["Graph Data<br/>Neo4j Relationships"]
     end
 
     subgraph MLEngine["🧠 ML Engine"]
-        RAG["RAG Pipeline<br/><i>Query → Search → Synthesize</i>"]
-        Anomaly["Anomaly Detector<br/><i>Isolation Forest · Autoencoders</i>"]
-        Predictive["Predictive Analytics<br/><i>Risk Scoring · Lead Generation</i>"]
-        Pattern["Pattern Recognition<br/><i>Temporal · Spatial · Frequency</i>"]
-        Evidence["Evidence Classifier<br/><i>ML-based Classification</i>"]
-        DeepLearn["Deep Learning Analyzer<br/><i>LSTM · Neural Networks</i>"]
-        GraphMap["Graph Mapper<br/><i>Community Detection · Centrality</i>"]
+        RAG["RAG Pipeline<br/>Query → Search → Synthesize"]
+        Anomaly["Anomaly Detector<br/>Isolation Forest · Autoencoders"]
+        Predictive["Predictive Analytics<br/>Risk Scoring · Lead Generation"]
+        Pattern["Pattern Recognition<br/>Temporal · Spatial · Frequency"]
+        Evidence["Evidence Classifier<br/>ML-based Classification"]
+        DeepLearn["Deep Learning Analyzer<br/>LSTM · Neural Networks"]
+        GraphMap["Graph Mapper<br/>Community Detection · Centrality"]
     end
 
     subgraph Output["📊 Output Layer"]
-        Answers["AI Answers<br/><i>with Evidence Citations</i>"]
-        Alerts["Anomaly Alerts<br/><i>Flagged Patterns</i>"]
-        Leads["Investigation Leads<br/><i>Risk Scores & Predictions</i>"]
+        Answers["AI Answers<br/>with Evidence Citations"]
+        Alerts["Anomaly Alerts<br/>Flagged Patterns"]
+        Leads["Investigation Leads<br/>Risk Scores & Predictions"]
     end
 
     Input --> MLEngine
@@ -521,9 +521,9 @@ flowchart LR
     end
 
     subgraph Roles["Role Hierarchy"]
-        Admin["Admin<br/><i>Full System Access</i>"]
-        Supervisor["Supervisor<br/><i>Read-Only Oversight</i>"]
-        IO["Investigating Officer<br/><i>Case-Level Access</i>"]
+        Admin["Admin<br/>Full System Access"]
+        Supervisor["Supervisor<br/>Read-Only Oversight"]
+        IO["Investigating Officer<br/>Case-Level Access"]
     end
 
     RBAC --> Admin & Supervisor & IO
@@ -693,6 +693,14 @@ pre-commit install -t pre-push
 | [QUICK-START.md](QUICK-START.md) | 5-minute setup guide |
 | [OLLAMA-SETUP.md](OLLAMA-SETUP.md) | LLM installation and configuration |
 | [FORENSIC_ML_BLUEPRINT.md](FORENSIC_ML_BLUEPRINT.md) | ML model architecture and training guide |
+
+## ✨ Contributors
+
+<a href="https://github.com/beingbrijesh/CopSight/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=beingbrijesh/CopSight" alt="Contributors" />
+</a>
+
+*Thank you to everyone who has contributed to CopSight AI!*
 
 ---
 
