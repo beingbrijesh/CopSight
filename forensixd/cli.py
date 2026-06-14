@@ -5,15 +5,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from forensixd.core.device_detector import DeviceDetector
-from forensixd.core.session import ForensicSession
-from forensixd.core.models import ExtractionLevel
-from forensixd.core.exceptions import ForensixdError, AuthorizationError
-from forensixd.extractors.base import ExtractorRegistry
-from forensixd.legal.authorization import AuthorizationManager
-from forensixd.writers.dfxml_writer import DFXMLWriter
-from forensixd.writers.ufdr_writer import UFDRWriter
-from forensixd.writers.report_writer import ReportWriter
+# Lazy imports to optimize CLI startup time and memory footprint
 
 console = Console()
 
@@ -39,8 +31,16 @@ def acquire(output_dir, level, ufdr_config):
     """Run a full forensic acquisition."""
     console.print(Panel("[bold]forensixd Acquisition[/bold]", subtitle="Law Enforcement Only"))
 
-    # Step 1: detect device
-    from forensixd.core.device_detector import USB_AVAILABLE
+    from forensixd.core.device_detector import USB_AVAILABLE, DeviceDetector
+    from forensixd.core.session import ForensicSession
+    from forensixd.core.models import ExtractionLevel
+    from forensixd.core.exceptions import ForensixdError, AuthorizationError
+    from forensixd.extractors.base import ExtractorRegistry
+    from forensixd.legal.authorization import AuthorizationManager
+    from forensixd.writers.dfxml_writer import DFXMLWriter
+    from forensixd.writers.ufdr_writer import UFDRWriter
+    from forensixd.writers.report_writer import ReportWriter
+    
     if not USB_AVAILABLE:
         console.print("[red]Error: pyusb library is missing or no USB backend is available.[/red]")
         console.print("[yellow]Hint: Run 'pip install pyusb' and ensure libusb is installed (e.g. 'brew install libusb' on macOS).[/yellow]")
@@ -214,6 +214,7 @@ def acquire(output_dir, level, ufdr_config):
 def verify(session_dir):
     """Verify chain-of-custody hashes for a session."""
     from forensixd.core.logger import AuditLogger
+    from forensixd.core.exceptions import ForensixdError
     files = list(Path(session_dir).rglob("*.audit.jsonl"))
     if not files:
         console.print("[red]No audit log found.[/red]")
@@ -231,6 +232,8 @@ def verify(session_dir):
 @click.argument("output_pdf", type=click.Path())
 def pdf(html_path, output_pdf):
     """Convert HTML report to PDF."""
+    from forensixd.writers.report_writer import ReportWriter
+    from forensixd.core.exceptions import ForensixdError
     try:
         out = ReportWriter.generate_pdf(Path(html_path), Path(output_pdf))
         console.print(f"[green]PDF:[/green] {out}")
