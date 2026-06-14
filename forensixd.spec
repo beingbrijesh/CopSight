@@ -24,9 +24,14 @@ import os
 import platform
 
 system = platform.system()
-adb_file = 'platform-tools/adb.exe' if system == 'Windows' else 'platform-tools/adb'
-if os.path.exists(adb_file):
-    datas.append((adb_file, 'platform-tools'))
+if system == 'Windows':
+    for f in ['adb.exe', 'AdbWinApi.dll', 'AdbWinUsbApi.dll']:
+        path = f'platform-tools/{f}'
+        if os.path.exists(path):
+            datas.append((path, 'platform-tools'))
+else:
+    if os.path.exists('platform-tools/adb'):
+        datas.append(('platform-tools/adb', 'platform-tools'))
 
 a = Analysis(
     ['forensixd/cli.py'],
