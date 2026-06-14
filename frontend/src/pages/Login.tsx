@@ -55,8 +55,6 @@ export const Login = () => {
       login(token, user);
       
       // Check for CLI callback
-      const urlParams = new URLSearchParams(window.location.search);
-      const cliCallback = urlParams.get('cli_callback');
       if (cliCallback) {
         try {
           await fetch(cliCallback, {
