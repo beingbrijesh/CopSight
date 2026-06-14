@@ -347,10 +347,17 @@ export const NetworkGraph = () => {
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to load network graph.';
       setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [caseId, threshold]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   // ── Stream Extended Background Graph
   // Use a buffer to prevent rapid state updates from crashing react-force-graph-3d's d3-timer
   const sseBufferRef = useRef<{ nodes: any[], edges: any[], anomalies: any[] }>({ nodes: [], edges: [], anomalies: [] });
-  const flushTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flushSseBuffer = useCallback(() => {
     setData(prev => {
