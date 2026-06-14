@@ -347,14 +347,59 @@ export const NetworkGraph = () => {
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to load network graph.';
       setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [caseId, threshold]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
-
   // ── Stream Extended Background Graph
+  // Use a buffer to prevent rapid state updates from crashing react-force-graph-3d's d3-timer
+  const sseBufferRef = useRef<{ nodes: any[], edges: any[], anomalies: any[] }>({ nodes: [], edges: [], anomalies: [] });
+  const flushTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const flushSseBuffer = useCallback(() => {
+    setData(prev => {
+      const buffer = sseBufferRef.current;
+      if (!buffer.nodes.length && !buffer.edges.length && !buffer.anomalies.length) return prev;
+      
+      const existingNodeIds = new Set(prev.nodes.map(n => n.id));
+      const existingEdgeIds = new Set(prev.edges.map(e => (e as any).id));
+      
+      const newNodes = buffer.nodes.filter(n => !existingNodeIds.has(n.id));
+      const combinedNodes = [...prev.nodes, ...newNodes];
+      const allNodeIds = new Set(combinedNodes.map(n => n.id));
+      
+      const newEdges = buffer.edges.filter(e => {
+        if (existingEdgeIds.has(e.id)) return false;
+        if (e.source == null || e.target == null) return false;
+        const srcId = typeof e.source === 'object' ? e.source.id : e.source;
+        const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
+        return allNodeIds.has(srcId) && allNodeIds.has(tgtId);
+      });
+      
+      const newAnomalies = buffer.anomalies;
+      
+      // Clear buffer
+      sseBufferRef.current = { nodes: [], edges: [], anomalies: [] };
+      
+      if (newNodes.length === 0 && newEdges.length === 0 && newAnomalies.length === 0) return prev;
+      
+      if (newAnomalies.length > 0) {
+        setAnomalySet(oldSet => {
+            const nextSet = new Set(oldSet);
+            newAnomalies.forEach((path: number[]) => {
+              for (let i = 0; i < path.length - 1; i++) {
+                nextSet.add(`${path[i]}-${path[i + 1]}`);
+                nextSet.add(`${path[i + 1]}-${path[i]}`);
+              }
+            });
+            return nextSet;
+        });
+      }
+
+      return {
+        nodes: combinedNodes,
+        edges: [...prev.edges, ...newEdges],
+        anomalies: [...prev.anomalies, ...newAnomalies]
+      };
+    });
+  }, []);
+
   useEffect(() => {
     if (loading || error) return; // Only start SSE after initial load succeeds
     
@@ -369,50 +414,24 @@ export const NetworkGraph = () => {
         const payload = JSON.parse(event.data);
         
         if (payload.type === 'status') {
-          // You could optionally show a small toast or indicator here
           console.log('[Graph Stream]', payload.message);
         } else if (payload.type === 'extended_graph') {
-          setData(prev => {
-            const existingNodeIds = new Set(prev.nodes.map(n => n.id));
-            const existingEdgeIds = new Set(prev.edges.map(e => (e as any).id));
-            
-            const newNodes = payload.nodes.filter((n: any) => !existingNodeIds.has(n.id));
-            const combinedNodes = [...prev.nodes, ...newNodes];
-            const allNodeIds = new Set(combinedNodes.map(n => n.id));
-            
-            const newEdges = payload.edges.filter((e: any) => {
-              if (existingEdgeIds.has(e.id)) return false;
-              // CRITICAL: Prevent react-force-graph crash by dropping orphaned links
-              const srcId = typeof e.source === 'object' ? e.source.id : e.source;
-              const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
-              return allNodeIds.has(srcId) && allNodeIds.has(tgtId);
-            });
-            
-            if (newNodes.length === 0 && newEdges.length === 0) return prev;
-            
-            return {
-              nodes: combinedNodes,
-              edges: [...prev.edges, ...newEdges],
-              anomalies: prev.anomalies
-            };
-          });
+          sseBufferRef.current.nodes.push(...payload.nodes);
+          sseBufferRef.current.edges.push(...payload.edges);
         } else if (payload.type === 'anomalies') {
-          setData(prev => ({
-            ...prev,
-            anomalies: [...prev.anomalies, ...payload.anomalies]
-          }));
-          setAnomalySet(prev => {
-            const newSet = new Set(prev);
-            payload.anomalies.forEach((path: number[]) => {
-              for (let i = 0; i < path.length - 1; i++) {
-                newSet.add(`${path[i]}-${path[i + 1]}`);
-                newSet.add(`${path[i + 1]}-${path[i]}`);
-              }
-            });
-            return newSet;
-          });
+          sseBufferRef.current.anomalies.push(...payload.anomalies);
         } else if (payload.type === 'error' || payload.type === 'done') {
           eventSource.close();
+          flushSseBuffer(); // Flush remaining on done
+          return;
+        }
+
+        // Schedule flush if not already scheduled
+        if (!flushTimeoutRef.current && (payload.type === 'extended_graph' || payload.type === 'anomalies')) {
+          flushTimeoutRef.current = setTimeout(() => {
+            flushSseBuffer();
+            flushTimeoutRef.current = null;
+          }, 800); // Batch updates every 800ms
         }
       } catch {
         console.error('SSE Parsing Error');
@@ -425,8 +444,9 @@ export const NetworkGraph = () => {
 
     return () => {
       eventSource.close();
+      if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
     };
-  }, [caseId, threshold, loading, error]);
+  }, [caseId, threshold, loading, error, flushSseBuffer]);
 
   // ── On-click dynamic neighbor expansion
   const expandNode = useCallback(async (node: GraphNode) => {
