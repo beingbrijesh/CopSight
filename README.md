@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.jpeg" alt="CopSight AI" width="120" />
+  <img src="frontend/public/logo.jpeg" alt="CopSight AI" width="120" />
 </p>
 
 <h1 align="center">CopSight AI</h1>
