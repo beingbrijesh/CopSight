@@ -12,7 +12,7 @@ export const decryptPayload = (req, res, next) => {
       const { ciphertext, iv, tag } = req.body;
       const key = Buffer.from(req.user.sessionEncryptionKey, 'hex');
       
-      const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(iv, 'hex'), key);
+      const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'hex'));
       decipher.setAuthTag(Buffer.from(tag, 'hex'));
 
       let decrypted = decipher.update(ciphertext, 'hex', 'utf8');

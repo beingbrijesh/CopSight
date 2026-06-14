@@ -61,7 +61,7 @@ class UFDRWriter:
         """
         from forensixd.parsers.base import ParserRegistry
 
-        root = etree.Element("CopSight AI")
+        root = etree.Element("CopSight_AI")
         
         device = etree.SubElement(root, "device")
 

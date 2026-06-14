@@ -189,7 +189,13 @@ class ApiStreamWriter:
             response.raise_for_status()
         except requests.RequestException as e:
             status_code = getattr(e.response, "status_code", "Unknown") if hasattr(e, "response") else "Network Error"
-            console.print(f"[yellow]Network error sending batch to backend (Status Code: {status_code}). Queueing offline.[/yellow]")
+            error_details = ""
+            if hasattr(e, "response") and e.response is not None:
+                try:
+                    error_details = f" - {e.response.text}"
+                except Exception:
+                    pass
+            console.print(f"[yellow]Network error sending batch to backend (Status Code: {status_code}{error_details}). Queueing offline.[/yellow]")
             self._queue_offline(self.case_id, self.device_id, batch)
 
     def _queue_offline(self, case_id, device_id, batch):
@@ -231,7 +237,13 @@ class ApiStreamWriter:
                 console.print("[green]Offline chunks synced successfully.[/green]")
         except Exception as e:
             status_code = getattr(getattr(e, "response", None), "status_code", "Unknown")
-            console.print(f"[yellow]Offline sync failed (Status Code: {status_code}), will try again later.[/yellow]")
+            error_details = ""
+            if hasattr(e, "response") and e.response is not None:
+                try:
+                    error_details = f" - {e.response.text}"
+                except Exception:
+                    pass
+            console.print(f"[yellow]Offline sync failed (Status Code: {status_code}{error_details}), will try again later.[/yellow]")
 
     def finalize(self):
         with self.lock:

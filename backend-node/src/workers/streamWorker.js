@@ -78,9 +78,24 @@ streamQueue.process(async (job) => {
       if (artifact.data && artifact.data.method === 'file_upload') {
         const filePath = artifact.data.filePath;
         const mimeType = artifact.data.mimeType || '';
+        // Create an entity for the dashboard visibility
+        recordEntities.push({
+          caseId: parseInt(caseId),
+          evidenceType: sourceType,
+          evidenceId: artifact.data?.id?.toString() || `file_${Date.now()}_${extractedCount}`,
+          entityType: 'File Upload',
+          entityValue: artifact.data.fileName,
+          entityMetadata: {
+            filePath,
+            mimeType,
+            size: artifact.data.size
+          },
+          confidenceScore: 1.0,
+          startPosition: 0
+        });
         
         // Check if it's media
-        if (mimeType.startsWith('image/') || mimeType.startsWith('video/') || filePath.endsWith('.pdf')) {
+        if ((mimeType.startsWith('image/') || mimeType.startsWith('video/') || filePath.endsWith('.pdf')) && process.env.AUTO_PROCESS_MEDIA === 'true') {
           try {
             const FormData = (await import('form-data')).default;
             const fs = await import('fs');
