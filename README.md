@@ -12,9 +12,6 @@
   <img src="https://img.shields.io/badge/react-19-61DAFB" />
   <img src="https://img.shields.io/badge/license-MIT-yellow" />
 </p>
-<p align="center">
-  <a href="https://github.com/beingbrijesh/CopSight">View on GitHub</a>
-</p>
 
 ---
 
