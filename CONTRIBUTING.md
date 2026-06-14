@@ -20,7 +20,7 @@ Understanding the separation between the Node.js API Gateway, the Python AI Serv
 ### 1. Repository Setup
 
 ```bash
-git clone https://github.com/your-org/CopSight.git
+git clone https://github.com/beingbrijesh/CopSight.git
 cd CopSight
 
 # Install Python dev dependencies (pre-commit, ruff, pytest, etc.)

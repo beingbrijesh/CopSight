@@ -22,7 +22,7 @@ Ensure you have the following installed on your machine:
 ### 1. Clone and Setup
 
 ```bash
-git clone https://github.com/your-org/CopSight.git
+git clone https://github.com/beingbrijesh/CopSight.git
 cd CopSight
 ```
 
