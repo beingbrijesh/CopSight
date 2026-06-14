@@ -166,7 +166,8 @@ class ApiStreamWriter:
                 console.print(f"[dim]Uploaded file: {file_path.name}[/dim]")
                 
         except requests.RequestException as e:
-            console.print(f"[yellow]Network error uploading file {file_path.name}: {e}[/yellow]")
+            status_code = getattr(e.response, "status_code", "Unknown") if hasattr(e, "response") else "Network Error"
+            console.print(f"[yellow]Network error uploading file {file_path.name} (Status Code: {status_code}).[/yellow]")
         finally:
             if self.session_encryption_key and upload_path != file_path and upload_path.exists():
                 upload_path.unlink()
@@ -187,7 +188,8 @@ class ApiStreamWriter:
             response = requests.post(url, json=encrypted_payload, headers=headers, timeout=10)
             response.raise_for_status()
         except requests.RequestException as e:
-            console.print(f"[yellow]Network error sending batch to backend. Queueing offline. ({e})[/yellow]")
+            status_code = getattr(e.response, "status_code", "Unknown") if hasattr(e, "response") else "Network Error"
+            console.print(f"[yellow]Network error sending batch to backend (Status Code: {status_code}). Queueing offline.[/yellow]")
             self._queue_offline(self.case_id, self.device_id, batch)
 
     def _queue_offline(self, case_id, device_id, batch):
@@ -228,7 +230,8 @@ class ApiStreamWriter:
                     
                 console.print("[green]Offline chunks synced successfully.[/green]")
         except Exception as e:
-            console.print(f"[yellow]Offline sync failed, will try again later. ({e})[/yellow]")
+            status_code = getattr(getattr(e, "response", None), "status_code", "Unknown")
+            console.print(f"[yellow]Offline sync failed (Status Code: {status_code}), will try again later.[/yellow]")
 
     def finalize(self):
         with self.lock:

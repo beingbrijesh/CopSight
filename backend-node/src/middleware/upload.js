@@ -37,14 +37,13 @@ const storage = multer.diskStorage({
 
 // File filter
 const fileFilter = (req, file, cb) => {
-  // Accept forensic archives, text, media, and backups
-  const allowedExtensions = ['.xml', '.json', '.zip', '.ufd', '.ufdr', '.dfxml', '.csv', '.txt', '.log', '.pdf', '.png', '.jpg', '.jpeg', '.mp4', '.avi', '.mov', '.ab', '.db', '.sqlite'];
+  const dangerousExtensions = ['.exe', '.bat', '.cmd', '.sh', '.vbs', '.ps1', '.msi', '.php', '.jsp', '.cgi', '.pl', '.jar'];
   const ext = path.extname(file.originalname).toLowerCase();
   
-  if (allowedExtensions.includes(ext) || ext === '') {
-    cb(null, true);
+  if (dangerousExtensions.includes(ext)) {
+    cb(new Error(`Security Error: Uploading executable or script files (${ext}) is prohibited.`), false);
   } else {
-    cb(new Error(`Invalid file type. Allowed: ${allowedExtensions.join(', ')}`), false);
+    cb(null, true);
   }
 };
 

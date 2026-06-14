@@ -331,7 +331,7 @@ class AndroidExtractor(AbstractExtractor):
         subprocess.run([adb_cmd, "kill-server"], capture_output=True)
         subprocess.run([adb_cmd, "start-server"], capture_output=True)
         
-        devices_out = subprocess.run([adb_cmd, "devices"], capture_output=True, text=True).stdout
+        devices_out = subprocess.run([adb_cmd, "devices"], capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
         for line in devices_out.splitlines()[1:]:
             line = line.strip()
             if not line:
@@ -377,11 +377,12 @@ class AndroidExtractor(AbstractExtractor):
             
             while True:
                 try:
-                    local_dest = adb_pull_dir / Path(remote_path).name
+                    safe_name = str(Path(remote_path)).strip('/').replace('/', '_').replace('\\', '_')
+                    local_dest = adb_pull_dir / safe_name
                     _logger.info("Executing adb pull %s %s", remote_path, local_dest)
                     result = subprocess.run(
                         [adb_cmd, *adb_target_args, "pull", remote_path, str(local_dest)],
-                        capture_output=True, text=True
+                        capture_output=True, text=True, encoding='utf-8', errors='replace'
                     )
                     
                     if result.returncode == 0 and local_dest.exists():
@@ -453,7 +454,7 @@ class AndroidExtractor(AbstractExtractor):
             while True:
                 backup_proc = subprocess.Popen(
                     [adb_cmd, *adb_target_args, "backup", "-all", "-f", str(backup_file)],
-                    stderr=subprocess.PIPE, text=True
+                    stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace'
                 )
                 
                 prompt_password(
@@ -507,9 +508,9 @@ class AndroidExtractor(AbstractExtractor):
                 _logger.info(f"Querying {uri} to {dest_file}")
                 
                 query_cmd = [adb_cmd, *adb_target_args, "shell", "content", "query", "--uri", uri]
-                query_proc = subprocess.run(query_cmd, capture_output=True, text=True)
+                query_proc = subprocess.run(query_cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
                 
-                if query_proc.returncode == 0 and query_proc.stdout.strip() and "No result found" not in query_proc.stdout:
+                if query_proc.returncode == 0 and query_proc.stdout is not None and query_proc.stdout.strip() and "No result found" not in query_proc.stdout:
                     dest_file.write_text(query_proc.stdout, encoding='utf-8')
                     
                     artifact_t = ArtifactType.MESSAGE
