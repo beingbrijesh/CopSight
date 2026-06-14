@@ -311,10 +311,11 @@ export const NetworkGraph = () => {
       fgRef.current.d3Force('charge').strength(-400);
       // Increase ideal link distance
       fgRef.current.d3Force('link').distance(150);
-      // Re-heat the simulation so it applies the new forces immediately
-      fgRef.current.d3ReheatSimulation();
+      // NOTE: Do NOT call d3ReheatSimulation() here. react-force-graph automatically 
+      // reheats on data change. Calling it manually during a React state update 
+      // corrupts the d3-timer and causes the "reading 'tick'" crash on mobile browsers!
     }
-  }, [data]);
+  }, [data.nodes.length]); // Only re-apply forces if node count changes significantly
 
   // ── Configure Force Layout for 2D Modal to prevent clutter
   useEffect(() => {
@@ -322,9 +323,8 @@ export const NetworkGraph = () => {
       // Very strong repulsion for the 2D view since the screen is flat
       fg2dRef.current.d3Force('charge').strength(-800);
       fg2dRef.current.d3Force('link').distance(150);
-      fg2dRef.current.d3ReheatSimulation();
     }
-  }, [modalGraphData]);
+  }, [modalGraphData?.nodes.length]);
 
   // ── Fetch graph data
   const fetchData = useCallback(async () => {
