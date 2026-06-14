@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ForceGraph3D from 'react-force-graph-3d';
 import ForceGraph2D from 'react-force-graph-2d';
 import * as THREE from 'three';
-import { Search, Loader2, RefreshCw, AlertTriangle, ExternalLink, FolderOpen } from 'lucide-react';
+import { Search, Loader2, RefreshCw, AlertTriangle, ExternalLink, FolderOpen, ChevronUp, ChevronDown } from 'lucide-react';
 
 import { api } from '../../lib/api';
 import { useThemeStore } from '../../store/themeStore';
@@ -275,6 +275,7 @@ export const NetworkGraph = () => {
   // Track anomalous edges
   const [anomalySet, setAnomalySet] = useState<Set<string>>(new Set());
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
+  const [isLegendExpanded, setIsLegendExpanded] = useState(false);
 
   // 2D Modal states
   const [modalGraphData, setModalGraphData] = useState<GraphData | null>(null);
@@ -728,18 +729,29 @@ export const NetworkGraph = () => {
           {/* ── 3D Graph Canvas */}
           <div className="flex-1 bg-gray-50 dark:bg-transparent rounded-xl border border-slate-200 dark:border-white/10 relative overflow-hidden" ref={containerRef}>
             {/* Legend */}
-            <div className="absolute bottom-4 left-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-300 dark:border-white/10 p-3 rounded-xl shadow-xl text-xs z-10 backdrop-blur-sm">
-              <p className="font-semibold text-slate-600 dark:text-slate-300 mb-2">Legend</p>
-              {Object.entries(NODE_PALETTE).filter(([k]) => k !== 'Default').map(([type, color]) => (
-                <div key={type} className="flex items-center gap-2 mb-1">
-                  <div className="w-2.5 h-2.5 rounded-full ring-1 ring-white/20" style={{ backgroundColor: color }} />
-                  <span className="text-slate-500 dark:text-slate-400">{type}</span>
-                </div>
-              ))}
-              <div className="mt-2 pt-2 border-t border-slate-300 dark:border-white/10 flex items-center gap-2">
-                <div className="w-5 h-0.5 bg-red-500" />
-                <span className="text-red-400">Anomalous Cycle</span>
+            <div className="absolute bottom-4 left-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-300 dark:border-white/10 p-3 rounded-xl shadow-xl text-xs z-10 backdrop-blur-sm transition-all duration-300">
+              <div 
+                className="flex items-center justify-between cursor-pointer group"
+                onClick={() => setIsLegendExpanded(!isLegendExpanded)}
+              >
+                <p className="font-semibold text-slate-600 dark:text-slate-300 select-none">Legend</p>
+                {isLegendExpanded ? <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-blue-500 ml-3" /> : <ChevronUp className="w-4 h-4 text-slate-500 group-hover:text-blue-500 ml-3" />}
               </div>
+              
+              {isLegendExpanded && (
+                <div className="mt-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  {Object.entries(NODE_PALETTE).filter(([k]) => k !== 'Default').map(([type, color]) => (
+                    <div key={type} className="flex items-center gap-2 mb-1">
+                      <div className="w-2.5 h-2.5 rounded-full ring-1 ring-white/20" style={{ backgroundColor: color }} />
+                      <span className="text-slate-500 dark:text-slate-400">{type}</span>
+                    </div>
+                  ))}
+                  <div className="mt-2 pt-2 border-t border-slate-300 dark:border-white/10 flex items-center gap-2">
+                    <div className="w-5 h-0.5 bg-red-500" />
+                    <span className="text-red-400">Anomalous Cycle</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Hint */}
@@ -833,15 +845,15 @@ export const NetworkGraph = () => {
 
           {/* ── AI Evidence Sidebar */}
           {isSidebarOpen && (
-            <div className="w-full md:w-96 flex-shrink-0 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-slate-200 dark:border-white/10 flex flex-col overflow-hidden min-h-0 relative">
+            <div className="fixed inset-0 z-50 md:relative md:inset-auto md:z-auto w-full md:w-96 flex-shrink-0 glass-panel bg-gray-50/95 dark:bg-slate-900/95 md:bg-white/70 md:dark:bg-white/5 backdrop-blur-3xl md:backdrop-blur-xl md:rounded-xl border-l md:border border-slate-200 dark:border-white/10 flex flex-col overflow-hidden min-h-0">
               <button 
                 onClick={() => setIsSidebarOpen(false)}
-                className="absolute top-3 right-3 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:bg-slate-700 rounded-full w-6 h-6 flex items-center justify-center transition z-10"
+                className="absolute top-3 right-3 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:bg-slate-700 rounded-full w-8 h-8 md:w-6 md:h-6 flex items-center justify-center transition z-10"
                 title="Close AI Assistant"
               >
                 ✕
               </button>
-              <div className="px-4 py-3 border-b border-slate-200 dark:border-white/10 flex items-center gap-2 pr-10">
+              <div className="px-4 py-3 md:py-3 py-4 border-b border-slate-200 dark:border-white/10 flex items-center gap-2 pr-12">
                 <Search className="w-4 h-4 text-purple-400" />
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white">AI Intelligence Panel</h2>
               </div>
@@ -940,32 +952,32 @@ export const NetworkGraph = () => {
 
       {/* ── 2D Local Graph Modal ── */}
       {modalGraphData && modalNode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-8" onClick={(e) => {
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md md:p-4 sm:p-8" onClick={(e) => {
            if (e.target === e.currentTarget) setModalGraphData(null);
         }}>
-          <div className="bg-gray-50 dark:bg-transparent border border-slate-300 dark:border-white/10 rounded-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden relative shadow-2xl">
+          <div className="bg-gray-50 dark:bg-slate-950 md:dark:bg-transparent md:border border-slate-300 dark:border-white/10 md:rounded-2xl w-full h-full md:max-w-6xl md:h-[85vh] flex flex-col overflow-hidden relative shadow-2xl">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-white/10 flex justify-between items-center glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl">
+            <div className="px-4 md:px-6 py-4 border-b border-slate-200 dark:border-white/10 flex justify-between items-start md:items-center glass-panel bg-white/90 dark:bg-slate-900/90 md:bg-white/70 md:dark:bg-white/5 backdrop-blur-xl flex-col md:flex-row gap-4">
               <div>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full ring-2 ring-white/20" style={{ backgroundColor: getNodeColor(modalNode) }} />
-                  {modalNode.label} <span className="text-sm font-bold text-slate-400 dark:text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md">{modalNode.type}</span>
+                <h3 className="text-lg md:text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full ring-2 ring-white/20 flex-shrink-0" style={{ backgroundColor: getNodeColor(modalNode) }} />
+                  <span className="truncate">{modalNode.label}</span> <span className="text-xs md:text-sm font-bold text-slate-400 dark:text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md flex-shrink-0">{modalNode.type}</span>
                 </h3>
-                <p className="text-sm text-blue-400 mt-1 font-medium">Showing 1-hop local connections. Click any node to analyze.</p>
+                <p className="text-xs md:text-sm text-blue-500 md:text-blue-400 mt-1 font-medium">Showing 1-hop local connections. Click any node to analyze.</p>
               </div>
-              <button onClick={() => setModalGraphData(null)} className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:bg-slate-700 border border-slate-300 dark:border-white/10 rounded-lg transition">
+              <button onClick={() => setModalGraphData(null)} className="w-full md:w-auto px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:bg-slate-700 border border-slate-300 dark:border-white/10 rounded-lg transition">
                 Close Focus View
               </button>
             </div>
             
             {/* Modal Canvas */}
-            <div className="flex-1 relative bg-transparent flex items-center justify-center" onClick={() => {
+            <div className="flex-1 relative bg-transparent flex items-center justify-center overflow-hidden" onClick={() => {
                if (contextMenu.visible) setContextMenu(prev => ({ ...prev, visible: false }));
             }}>
               <ForceGraph2D
                 ref={fg2dRef}
-                width={Math.min(window.innerWidth - 64, 1152)}
-                height={window.innerHeight * 0.85 - 80}
+                width={window.innerWidth >= 768 ? Math.min(window.innerWidth - 64, 1152) : window.innerWidth}
+                height={window.innerWidth >= 768 ? window.innerHeight * 0.85 - 80 : window.innerHeight - 120}
                 backgroundColor={isDarkMode ? "#000000" : "#f8fafc"}
                 graphData={{ nodes: modalGraphData.nodes, links: modalGraphData.edges }}
                 nodeLabel={(n: any) => `${(n as GraphNode).label}\nType: ${(n as GraphNode).type}`}
