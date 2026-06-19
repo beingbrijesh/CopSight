@@ -7,6 +7,7 @@ This document provides a comprehensive view of the CopSight AI platform architec
 ## High-Level System Architecture
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 graph TB
     subgraph Clients["🖥️ CLIENT LAYER"]
         Browser["Web Browser<br/>React 19 · TypeScript · Vite<br/>Port 5173"]
@@ -85,6 +86,7 @@ graph TB
 The `forensixd` extraction engine operates as a standalone tool with its own modular architecture:
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 graph LR
     subgraph CLI["CLI Layer"]
         Main["cli.py<br/>Click CLI + Interactive Shell"]
@@ -152,6 +154,7 @@ graph LR
 ## Backend Service Architecture
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 graph TD
     subgraph Middleware["Request Pipeline"]
         Helmet["Helmet<br/>Security Headers"]
@@ -207,6 +210,7 @@ graph TD
 ### PostgreSQL — Relational Data
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 erDiagram
     users ||--o{ cases : "assigned_to"
     users ||--o{ sessions : "has"
@@ -258,6 +262,7 @@ erDiagram
 ### Neo4j — Graph Schema
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 graph LR
     Case["🗂️ Case"] -->|HAS_DEVICE| Device["📱 Device"]
     Device -->|HAS_NUMBER| Phone["📞 PhoneNumber"]
@@ -280,6 +285,7 @@ graph LR
 ## Frontend Component Architecture
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 graph TD
     subgraph Shell["App Shell"]
         AppShell["AppShell<br/>Layout + Navigation"]
@@ -335,6 +341,7 @@ graph TD
 ## CI/CD Pipeline
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 flowchart LR
     Push["Git Push<br/>main/master"] --> Trigger["GitHub Actions<br/>build.yml"]
 

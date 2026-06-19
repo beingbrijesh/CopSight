@@ -61,9 +61,10 @@ class Settings(BaseSettings):
     OLLAMA_HOST: str = "http://localhost:11434"
     EMBEDDING_MODEL: str = "nomic-embed-text"
     EMBEDDING_DIM: int = 384
-    LLM_MODEL: str = "llama3.2"
-    LLM_TEMPERATURE: float = 0.7
-    LLM_MAX_TOKENS: int = 2000
+    # Using Llama 3.2 3B Instruct (4-bit quantized) - Best balance of speed, low memory (~2GB), and json-formatting capability
+    LLM_MODEL: str = "llama3.2:3b"
+    LLM_TEMPERATURE: float = 0.2  # Lowered temperature for more deterministic/faster JSON generation
+    LLM_MAX_TOKENS: int = 1500
     
     # External APIs (Auto-Detected)
     OPENAI_API_KEY: str | None = None

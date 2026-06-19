@@ -18,6 +18,7 @@ This document maps all system actors to their use cases, showing how each role i
 ## Complete Use Case Diagram
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 graph TB
     Admin(("👨‍💼 Admin"))
     IO(("🔍 Investigating<br/>Officer"))
@@ -171,6 +172,7 @@ graph TB
 **Main Flow:**
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 sequenceDiagram
     participant IO as 🔍 IO
     participant FE as Frontend
@@ -220,6 +222,7 @@ sequenceDiagram
 **Main Flow:**
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 sequenceDiagram
     participant IO as 🔍 IO
     participant FE as Frontend
@@ -264,6 +267,7 @@ sequenceDiagram
 **Main Flow:**
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 sequenceDiagram
     participant Officer as 🔍 IO
     participant CLI as forensixd
@@ -308,6 +312,7 @@ sequenceDiagram
 **Main Flow:**
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 sequenceDiagram
     participant IO as 🔍 IO
     participant FE as Frontend
@@ -337,6 +342,7 @@ sequenceDiagram
 The following diagram shows the typical end-to-end flow of a forensic investigation through the platform:
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 stateDiagram-v2
     [*] --> CaseCreation: Admin creates case
 

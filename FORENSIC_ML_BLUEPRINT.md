@@ -46,6 +46,7 @@ CopSight AI has moved beyond concept into implementation. The following models a
 The ML pipeline operates asynchronously via the ARQ background worker, pulling data from the multi-database architecture.
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 flowchart TD
     subgraph Layer1["Data Layer (Post-Extraction)"]
         Neo["Neo4j<br/>Graph Topology"]
@@ -88,6 +89,7 @@ The ML Inference Engine is fully integrated into the existing FastAPI Unified AP
 - **Execution Engines**: Specialized engines (e.g., the Anomaly Execution Engine or Deep Learning Analytics Hub) do not manage models directly. Instead, they handle data preprocessing, feature engineering, and delegate inference execution to the registry's loaded models.
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 graph TB
     subgraph Frontend["React Client"]
         UI["Advanced AI Dashboard"]

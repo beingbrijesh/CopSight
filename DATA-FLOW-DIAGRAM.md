@@ -9,6 +9,7 @@ This document traces how data moves through the CopSight AI platform — from in
 The system boundary and all external actors interacting with the platform:
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 graph TB
     Admin(("👨‍💼 Admin"))
     IO(("🔍 Investigating<br/>Officer"))
@@ -42,6 +43,7 @@ graph TB
 How the major subsystems interact with data stores:
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 flowchart TD
     Users["Users<br/>Admin · IO · Supervisor"]
     Forensixd["forensixd CLI<br/>Device Extraction Tool"]
@@ -122,6 +124,7 @@ flowchart TD
 How `forensixd` acquires data from a physical device:
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 flowchart TD
     Start["forensixd acquire<br/>Command Invocation"]
 
@@ -176,6 +179,7 @@ flowchart TD
 How uploaded UFDR files are processed into searchable evidence:
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 flowchart TD
     IO["Investigating Officer<br/>Uploads UFDR File"]
 
@@ -232,6 +236,7 @@ flowchart TD
 How natural language queries are transformed into evidence-backed answers:
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 flowchart TD
     IO["🔍 Investigating Officer<br/>Natural Language Query"]
 
@@ -282,6 +287,7 @@ flowchart TD
 How the anomaly detection and predictive analytics engines process case data:
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 flowchart TD
     Trigger["Analysis Triggered<br/>POST /api/analysis"]
 
@@ -337,6 +343,7 @@ flowchart TD
 How the platform assembles court-ready PDF reports:
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '24px'}}}%%
 flowchart TD
     IO["Investigating Officer<br/>Select template & sections"]
 
