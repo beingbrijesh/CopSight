@@ -15,11 +15,13 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Pre-pull the Llama 3.2 3B model (4-bit quantization, ~2GB) during build
-RUN ollama serve & \
+# We use a loop to wait for the server, and "|| true" to ensure kill doesn't crash the build step
+RUN mkdir -p /app/ollama_models && \
+    ollama serve & \
     OLLAMA_PID=$! && \
-    sleep 5 && \
+    for i in 1 2 3 4 5 6 7 8 9 10; do curl -s -f http://localhost:11434 > /dev/null && break || sleep 2; done && \
     ollama pull llama3.2:3b && \
-    kill $OLLAMA_PID
+    kill $OLLAMA_PID || true
 
 COPY . .
 
