@@ -3,8 +3,10 @@ FROM python:3.11-slim
 # Install curl
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Install Ollama
-RUN curl -fsSL https://ollama.com/install.sh | sh
+# Install Ollama manually to avoid install.sh failing on slim images
+RUN curl -L https://ollama.com/download/ollama-linux-amd64.tgz -o ollama-linux-amd64.tgz && \
+    tar -C /usr -xzf ollama-linux-amd64.tgz && \
+    rm ollama-linux-amd64.tgz
 
 WORKDIR /app
 
