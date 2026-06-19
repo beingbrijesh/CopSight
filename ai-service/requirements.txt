@@ -26,7 +26,7 @@ spacy>=3.7.2
 nltk>=3.8.1
 
 # Utilities
-numpy>=1.26.3
+numpy>=1.26.3,<2.0.0
 pandas>=2.1.4
 python-dotenv>=1.0.0
 httpx>=0.25.2
