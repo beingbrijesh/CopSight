@@ -1,11 +1,15 @@
 FROM python:3.11-slim
 
-# Copy the official Ollama binary directly from their official docker image
+# Copy the official Ollama binary AND its backend runners (llama-server)
 # This avoids all network, script, and tarball errors during build
-COPY --from=ollama/ollama:latest /bin/ollama /usr/bin/ollama
+COPY --from=ollama/ollama:latest /usr/bin/ollama /usr/bin/ollama
+COPY --from=ollama/ollama:latest /usr/lib/ollama /usr/lib/ollama
 
-# Install curl (required for health checks in entrypoint.sh and build)
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Install curl (required for health checks) and tzdata (for timezone)
+RUN apt-get update && apt-get install -y curl tzdata && rm -rf /var/lib/apt/lists/*
+
+# Set timezone to IST
+ENV TZ="Asia/Kolkata"
 
 WORKDIR /app
 
@@ -15,13 +19,14 @@ ENV OLLAMA_MODELS=/app/ollama_models
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-pull the Llama 3.2 3B model (4-bit quantization, ~2GB) during build
+# Pre-pull BOTH the Llama 3.2 3B model (~2GB) and the embedding model (~270MB) during build
 # We use a loop to wait for the server, and "|| true" to ensure kill doesn't crash the build step
 RUN mkdir -p /app/ollama_models && \
     ollama serve & \
     OLLAMA_PID=$! && \
     for i in 1 2 3 4 5 6 7 8 9 10; do curl -s -f http://localhost:11434 > /dev/null && break || sleep 2; done && \
     ollama pull llama3.2:3b && \
+    ollama pull nomic-embed-text && \
     kill $OLLAMA_PID || true
 
 COPY . .
