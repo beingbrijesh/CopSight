@@ -1,12 +1,11 @@
 FROM python:3.11-slim
 
-# Install curl
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Copy the official Ollama binary directly from their official docker image
+# This avoids all network, script, and tarball errors during build
+COPY --from=ollama/ollama:latest /bin/ollama /usr/bin/ollama
 
-# Install Ollama manually to avoid install.sh failing on slim images
-RUN curl -L https://ollama.com/download/ollama-linux-amd64.tgz -o ollama-linux-amd64.tgz && \
-    tar -C /usr -xzf ollama-linux-amd64.tgz && \
-    rm ollama-linux-amd64.tgz
+# Install curl (required for health checks in entrypoint.sh and build)
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
