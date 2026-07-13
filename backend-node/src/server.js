@@ -24,7 +24,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { connectDatabase } from './config/database.js';
-import { testDatabaseConnections, closeDatabaseConnections, neo4jDriver } from './config/databases.js';
+import { testDatabaseConnections, closeDatabaseConnections } from './config/databases.js';
 import { initializeIndices } from './services/search/elasticsearchService.js';
 import logger from './config/logger.js';
 import aiClient from './services/ai/aiClient.js';
@@ -199,14 +199,35 @@ const startServer = async () => {
             isAIServerDown = true;
           }
 
-          // 2. Neo4j keepalive — prevents Aura Free from pausing due to inactivity
+          // 2. Neo4j keepalive — HTTP based ping to prevent Aura Free from pausing
           try {
-            const session = neo4jDriver.session();
-            await session.run('RETURN 1 AS alive');
-            await session.close();
-            logger.info('[KEEPALIVE] ✅ Neo4j ping successful.');
+            const neo4jUri = process.env.NEO4J_URI || 'bolt://localhost:7687';
+            const neo4jUser = process.env.NEO4J_USER || 'neo4j';
+            const neo4jPass = process.env.NEO4J_PASSWORD || 'password';
+            
+            // Convert neo4j URI to HTTP API endpoint
+            let httpUrl = neo4jUri.replace('bolt://', 'http://').replace('neo4j://', 'http://').replace('neo4j+s://', 'https://');
+            if (!httpUrl.endsWith('/')) httpUrl += '/';
+            
+            const authHeader = 'Basic ' + Buffer.from(`${neo4jUser}:${neo4jPass}`).toString('base64');
+            
+            const neo4jResp = await fetch(`${httpUrl}db/neo4j/tx/commit`, {
+              method: 'POST',
+              headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify({ statements: [{ statement: "RETURN 1 AS alive" }] })
+            });
+            
+            if (neo4jResp.ok) {
+              logger.info('[KEEPALIVE] ✅ Neo4j HTTP ping successful.');
+            } else {
+              logger.warn(`[KEEPALIVE] ⚠️ Neo4j HTTP ping returned ${neo4jResp.status}`);
+            }
           } catch (neo4jErr) {
-            logger.warn(`[KEEPALIVE] ⚠️ Neo4j ping failed: ${neo4jErr.message} — instance may be paused`);
+            logger.warn(`[KEEPALIVE] ⚠️ Neo4j HTTP ping failed: ${neo4jErr.message} — instance may be paused`);
           }
 
           // 3. Fail-over Logic: If AI is down, Ping Qdrant
