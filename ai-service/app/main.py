@@ -150,6 +150,30 @@ async def lifespan(app: FastAPI):
                     else:
                         logger.info("[STEALTH KEEPALIVE] ⏭️ Skipping Qdrant ping (no credentials configured).")
 
+                # 5. Neo4j keepalive — runs every loop cycle to prevent Aura Free from pausing
+                try:
+                    if db_manager.neo4j:
+                        async with db_manager.neo4j.session() as session:
+                            await session.run("RETURN 1 AS alive")
+                        logger.info("[KEEPALIVE] ✅ Neo4j ping successful.")
+                    else:
+                        # Driver is None — try to reconnect
+                        logger.warning("[KEEPALIVE] Neo4j driver is not connected. Attempting reconnect...")
+                        from neo4j import AsyncGraphDatabase
+                        db_manager.neo4j = AsyncGraphDatabase.driver(
+                            settings.NEO4J_URI,
+                            auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD),
+                            connection_timeout=30,
+                            keep_alive=True,
+                            max_connection_lifetime=200,
+                            max_connection_pool_size=50,
+                        )
+                        await db_manager.neo4j.verify_connectivity()
+                        logger.info("[KEEPALIVE] ✅ Neo4j reconnected successfully.")
+                except Exception as neo4j_err:
+                    logger.warning(f"[KEEPALIVE] ⚠️ Neo4j ping failed: {neo4j_err} — instance may be paused or restarting")
+                    db_manager.neo4j = None  # Mark as disconnected so next cycle retries
+
             except Exception as e:
                 logger.error(f"[STEALTH KEEPALIVE] ❌ Keep-Alive Ping Failed: {e}")
 

@@ -24,7 +24,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { connectDatabase } from './config/database.js';
-import { testDatabaseConnections, closeDatabaseConnections } from './config/databases.js';
+import { testDatabaseConnections, closeDatabaseConnections, neo4jDriver } from './config/databases.js';
 import { initializeIndices } from './services/search/elasticsearchService.js';
 import logger from './config/logger.js';
 import aiClient from './services/ai/aiClient.js';
@@ -199,7 +199,17 @@ const startServer = async () => {
             isAIServerDown = true;
           }
 
-          // 2. Fail-over Logic: If AI is down, Ping Qdrant
+          // 2. Neo4j keepalive — prevents Aura Free from pausing due to inactivity
+          try {
+            const session = neo4jDriver.session();
+            await session.run('RETURN 1 AS alive');
+            await session.close();
+            logger.info('[KEEPALIVE] ✅ Neo4j ping successful.');
+          } catch (neo4jErr) {
+            logger.warn(`[KEEPALIVE] ⚠️ Neo4j ping failed: ${neo4jErr.message} — instance may be paused`);
+          }
+
+          // 3. Fail-over Logic: If AI is down, Ping Qdrant
           if (isAIServerDown && process.env.QDRANT_URL && process.env.QDRANT_API_KEY) {
             try {
               logger.info('[STEALTH KEEPALIVE] AI is offline. Executing fail-over ping to Qdrant...');
