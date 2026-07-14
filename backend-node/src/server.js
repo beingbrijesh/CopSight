@@ -211,6 +211,7 @@ const startServer = async () => {
             
             const authHeader = 'Basic ' + Buffer.from(`${neo4jUser}:${neo4jPass}`).toString('base64');
             
+            logger.info('[KEEPALIVE] 🔄 Pinging Neo4j Database via HTTP...');
             const neo4jResp = await fetch(`${httpUrl}db/neo4j/tx/commit`, {
               method: 'POST',
               headers: {
