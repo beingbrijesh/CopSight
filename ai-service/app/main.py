@@ -150,34 +150,6 @@ async def lifespan(app: FastAPI):
                     else:
                         logger.info("[STEALTH KEEPALIVE] ⏭️ Skipping Qdrant ping (no credentials configured).")
 
-                # 5. Neo4j keepalive — HTTP based ping to prevent Aura Free from pausing
-                try:
-                    import base64
-                    neo4j_uri = settings.NEO4J_URI
-                    http_url = neo4j_uri.replace("bolt://", "http://").replace("neo4j://", "http://").replace("neo4j+s://", "https://")
-                    if not http_url.endswith("/"):
-                        http_url += "/"
-                        
-                    auth_str = f"{settings.NEO4J_USER}:{settings.NEO4J_PASSWORD}"
-                    auth_b64 = base64.b64encode(auth_str.encode()).decode()
-                    
-                    async with httpx.AsyncClient(timeout=10, verify=False) as client:
-                        neo4j_resp = await client.post(
-                            f"{http_url}db/neo4j/tx/commit",
-                            headers={
-                                "Authorization": f"Basic {auth_b64}",
-                                "Content-Type": "application/json",
-                                "Accept": "application/json"
-                            },
-                            json={"statements": [{"statement": "RETURN 1 AS alive"}]}
-                        )
-                        if neo4j_resp.status_code in [200, 201]:
-                            logger.info("[KEEPALIVE] ✅ Neo4j HTTP ping successful.")
-                        else:
-                            logger.warning(f"[KEEPALIVE] ⚠️ Neo4j HTTP ping returned {neo4j_resp.status_code}")
-                except Exception as neo4j_err:
-                    logger.warning(f"[KEEPALIVE] ⚠️ Neo4j HTTP ping failed: {neo4j_err}")
-
             except Exception as e:
                 logger.error(f"[STEALTH KEEPALIVE] ❌ Keep-Alive Ping Failed: {e}")
 
