@@ -101,8 +101,11 @@ jobs:
         elif [ "$RUNNER_OS" == "macOS" ]; then
           mv dist/forensixd dist/forensixd-macos-arm64-$APP_VERSION
           cd dist
-          hdiutil create -volname "CopSight" -srcfolder CopSight.app -ov -format UDZO CopSight-macOS-$APP_VERSION.dmg
-          rm -rf CopSight.app
+          mkdir CopSight_dmg_stage
+          mv CopSight.app CopSight_dmg_stage/
+          ln -s /Applications CopSight_dmg_stage/Applications
+          hdiutil create -volname "CopSight" -srcfolder CopSight_dmg_stage -ov -format UDZO CopSight-macOS-$APP_VERSION.dmg
+          rm -rf CopSight_dmg_stage
         fi
 
     - name: Upload Artifacts
