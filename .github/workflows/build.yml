@@ -91,12 +91,27 @@ jobs:
       shell: bash
       run: pyinstaller forensixd.spec --noconfirm
 
+    - name: Prepare Release Assets
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          mv dist/forensixd dist/forensixd-linux-amd64
+        elif [ "$RUNNER_OS" == "Windows" ]; then
+          mv dist/forensixd.exe dist/forensixd-windows-amd64.exe
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          mv dist/forensixd dist/forensixd-macos-arm64
+          cd dist
+          zip -r CopSight-macOS.zip CopSight.app
+          rm -rf CopSight.app
+        fi
+
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: forensixd-${{ runner.os }}-${{ env.APP_VERSION }}
         path: |
           dist/forensixd*
+          dist/CopSight*
 
   release:
     needs: build
