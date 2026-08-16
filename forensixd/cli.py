@@ -15,14 +15,18 @@ console = Console()
 def main(ctx):
     """forensixd — Forensic Data Extraction for Law Enforcement."""
     if ctx.invoked_subcommand is None:
-        console.print("[cyan]   _____            _____ _       _     _   [/cyan]")
-        console.print("[cyan]  / ____|          / ____(_)     | |   | |  [/cyan]")
-        console.print("[cyan] | |     ___  _ __| (___  _  __ _| |__ | |_ [/cyan]")
-        console.print("[cyan] | |    / _ \\| '_ \\\\___ \\| |/ _` | '_ \\| __|[/cyan]")
-        console.print("[cyan] | |___| (_) | |_) |____) | | (_| | | | | |_ [/cyan]")
-        console.print("[cyan]  \\_____\\___/| .__/|_____/|_|\\__, |_| |_|\\__|[/cyan]")
-        console.print("[cyan]             | |              __/ |         [/cyan]")
-        console.print("[cyan]             |_|             |___/          [/cyan]\n")
+        console.clear()
+        if console.width >= 65:
+            console.print("[cyan]   _____            _____ _       _     _   [/cyan]")
+            console.print("[cyan]  / ____|          / ____(_)     | |   | |  [/cyan]")
+            console.print("[cyan] | |     ___  _ __| (___  _  __ _| |__ | |_ [/cyan]")
+            console.print("[cyan] | |    / _ \\| '_ \\\\___ \\| |/ _` | '_ \\| __|[/cyan]")
+            console.print("[cyan] | |___| (_) | |_) |____) | | (_| | | | | |_ [/cyan]")
+            console.print("[cyan]  \\_____\\___/| .__/|_____/|_|\\__, |_| |_|\\__|[/cyan]")
+            console.print("[cyan]             | |              __/ |         [/cyan]")
+            console.print("[cyan]             |_|             |___/          [/cyan]\n")
+        else:
+            console.print("[cyan][bold]CopSight[/bold] — Forensic Data Extraction[/cyan]\n")
         interactive_mode()
 
 @main.command()
@@ -424,7 +428,8 @@ def interactive_mode():
         import readline
     except ImportError:
         pass
-    console.print(Panel("[bold green]CopSight Interactive Shell[/bold green]", subtitle="Select an operation by entering the corresponding number"))
+    subtitle = "Select an operation" if console.width < 80 else "Select an operation by entering the corresponding number"
+    console.print(Panel("[bold green]CopSight Interactive Shell[/bold green]", subtitle=subtitle))
     while True:
         try:
             console.print("\n[bold cyan]Available Features:[/bold cyan]")
