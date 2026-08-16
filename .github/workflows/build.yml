@@ -95,13 +95,13 @@ jobs:
       shell: bash
       run: |
         if [ "$RUNNER_OS" == "Linux" ]; then
-          mv dist/forensixd dist/forensixd-linux-amd64
+          mv dist/forensixd dist/forensixd-linux-amd64-$APP_VERSION
         elif [ "$RUNNER_OS" == "Windows" ]; then
-          mv dist/forensixd.exe dist/forensixd-windows-amd64.exe
+          mv dist/forensixd.exe dist/forensixd-windows-amd64-$APP_VERSION.exe
         elif [ "$RUNNER_OS" == "macOS" ]; then
-          mv dist/forensixd dist/forensixd-macos-arm64
+          mv dist/forensixd dist/forensixd-macos-arm64-$APP_VERSION
           cd dist
-          zip -r CopSight-macOS.zip CopSight.app
+          hdiutil create -volname "CopSight" -srcfolder CopSight.app -ov -format UDZO CopSight-macOS-$APP_VERSION.dmg
           rm -rf CopSight.app
         fi
 
