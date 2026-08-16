@@ -100,12 +100,6 @@ jobs:
           mv dist/forensixd.exe dist/forensixd-windows-amd64-$APP_VERSION.exe
         elif [ "$RUNNER_OS" == "macOS" ]; then
           mv dist/forensixd dist/forensixd-macos-arm64-$APP_VERSION
-          cd dist
-          mkdir CopSight_dmg_stage
-          mv CopSight.app CopSight_dmg_stage/
-          ln -s /Applications CopSight_dmg_stage/Applications
-          hdiutil create -volname "CopSight" -srcfolder CopSight_dmg_stage -ov -format UDZO CopSight-macOS-$APP_VERSION.dmg
-          rm -rf CopSight_dmg_stage
         fi
 
     - name: Upload Artifacts
@@ -114,7 +108,6 @@ jobs:
         name: forensixd-${{ runner.os }}-${{ env.APP_VERSION }}
         path: |
           dist/forensixd*
-          dist/CopSight*
 
   release:
     needs: build
