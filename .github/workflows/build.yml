@@ -94,65 +94,16 @@ jobs:
           powershell Compress-Archive -Path forensixd-windows-amd64-$APP_VERSION.exe -DestinationPath forensixd-windows-amd64-$APP_VERSION.zip
           rm forensixd-windows-amd64-$APP_VERSION.exe
         elif [ "$RUNNER_OS" == "macOS" ]; then
-          # 1. Create .app bundle directory structure
-          mkdir -p CopSight.app/Contents/MacOS
-          mkdir -p CopSight.app/Contents/Resources
+          cd ..
+          python scripts/build_macos_bundle.py dist/forensixd "$APP_VERSION"
+          cd dist
           
-          # 2. Move binary into bundle
-          mv forensixd CopSight.app/Contents/MacOS/forensixd
-          chmod +x CopSight.app/Contents/MacOS/forensixd
-          
-          # 3. Copy official logo icon
-          cp ../forensixd/logo.icns CopSight.app/Contents/Resources/logo.icns
-          
-          # 4. Create launcher executable that invokes Terminal
-          cat << 'EOF' > CopSight.app/Contents/MacOS/CopSight
-#!/bin/bash
-DIR="$(cd "$(dirname "$0")" && pwd)"
-BIN="$DIR/forensixd"
-open -a Terminal "$BIN"
-EOF
-          chmod +x CopSight.app/Contents/MacOS/CopSight
-          
-          # 5. Create Info.plist with icon and bundle info
-          RAW_VER="${APP_VERSION#v}"
-          cat << EOF > CopSight.app/Contents/Info.plist
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key>
-    <string>CopSight</string>
-    <key>CFBundleIconFile</key>
-    <string>logo.icns</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.copsight.app</string>
-    <key>CFBundleName</key>
-    <string>CopSight</string>
-    <key>CFBundleDisplayName</key>
-    <string>CopSight</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>$RAW_VER</string>
-    <key>CFBundleVersion</key>
-    <string>$RAW_VER</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>11.0</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-</dict>
-</plist>
-EOF
-
-          # 6. Create DMG package with Applications shortcut
           mkdir dmg_stage
           cp -R CopSight.app dmg_stage/
           ln -s /Applications dmg_stage/Applications
           hdiutil create -volname "CopSight" -srcfolder dmg_stage -ov -format UDZO CopSight-macOS-$APP_VERSION.dmg
           rm -rf dmg_stage
           
-          # 7. Create ZIP package
           zip -r -y CopSight-macOS-$APP_VERSION.zip CopSight.app
           rm -rf CopSight.app
         fi
