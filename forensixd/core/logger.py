@@ -136,31 +136,30 @@ class AuditLogger:
             failure or parse error — this method never raises.
         """
         try:
-            with self._lock:
-                lines = self._log_path.read_text(encoding="utf-8").splitlines()
-
             expected_prev: str = "0" * 64
+            
+            with self._lock:
+                with self._log_path.open("r", encoding="utf-8") as f:
+                    for raw in f:
+                        raw = raw.strip()
+                        if not raw:
+                            continue
 
-            for raw in lines:
-                raw = raw.strip()
-                if not raw:
-                    continue
+                        entry: dict[str, Any] = json.loads(raw)
 
-                entry: dict[str, Any] = json.loads(raw)
+                        # Extract the stored hash before recomputing.
+                        stored_hash: str = entry.pop("line_hash")
 
-                # Extract the stored hash before recomputing.
-                stored_hash: str = entry.pop("line_hash")
+                        # Validate prev_hash linkage.
+                        if entry.get("prev_hash") != expected_prev:
+                            return False
 
-                # Validate prev_hash linkage.
-                if entry.get("prev_hash") != expected_prev:
-                    return False
+                        # Recompute and compare.
+                        computed: str = _sha256_of(entry)
+                        if computed != stored_hash:
+                            return False
 
-                # Recompute and compare.
-                computed: str = _sha256_of(entry)
-                if computed != stored_hash:
-                    return False
-
-                expected_prev = stored_hash
+                        expected_prev = stored_hash
 
         except Exception:  # noqa: BLE001
             return False

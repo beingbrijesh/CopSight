@@ -19,12 +19,23 @@ class AuthCallbackHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass # Suppress HTTP logs
         
-    def do_OPTIONS(self):
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
+    def _set_cors_headers(self):
+        expected_origin = getattr(self.server, 'expected_origin', 'http://localhost:5173')
+        # If the request comes from the expected origin, allow it
+        origin = self.headers.get('Origin', '')
+        if origin == expected_origin:
+            self.send_header('Access-Control-Allow-Origin', expected_origin)
+        else:
+            # Fallback (will be rejected by browser if origin mismatches)
+            self.send_header('Access-Control-Allow-Origin', expected_origin)
+            
         self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.send_header('Access-Control-Allow-Private-Network', 'true')
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self._set_cors_headers()
         self.end_headers()
 
     def do_POST(self):
@@ -45,7 +56,7 @@ class AuthCallbackHandler(BaseHTTPRequestHandler):
                     self.server.session_encryption_key = data['sessionEncryptionKey']
                 
                 self.send_response(200)
-                self.send_header('Access-Control-Allow-Origin', '*')
+                self._set_cors_headers()
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 self.wfile.write(b'{"success": true}')
@@ -54,7 +65,7 @@ class AuthCallbackHandler(BaseHTTPRequestHandler):
                 threading.Thread(target=self.server.shutdown).start()
             else:
                 self.send_response(400)
-                self.send_header('Access-Control-Allow-Origin', '*')
+                self._set_cors_headers()
                 self.end_headers()
                 self.wfile.write(b'{"error": "Missing token or sessionEncryptionKey"}')
         except Exception as e:
@@ -71,11 +82,17 @@ def authenticate_via_browser(login_url: str = "http://localhost:5173/login") -> 
     Opens browser for login and runs a local server to catch the JWT token and AES encryption key.
     """
     import base64
+    import urllib.parse
+    
+    parsed_url = urllib.parse.urlparse(login_url)
+    expected_origin = f"{parsed_url.scheme}://{parsed_url.netloc}"
+    
     callback_url = "http://localhost:54321"
     b64_callback = base64.b64encode(callback_url.encode('utf-8')).decode('utf-8')
     server = AuthHTTPServer(('localhost', 54321), AuthCallbackHandler)
     server.token = None
     server.session_encryption_key = None
+    server.expected_origin = expected_origin
 
     url_to_open = f"{login_url}?cli_callback={b64_callback}"
     console.print(f"\n[cyan]Opening browser for authentication...[/cyan]")

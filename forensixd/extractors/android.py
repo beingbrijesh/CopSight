@@ -74,28 +74,65 @@ __all__ = ["AndroidExtractor", "ADB_AVAILABLE"]
 _logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Path → ArtifactType lookup table
+# Path → ArtifactType lookup tables and Extension constants
 # ---------------------------------------------------------------------------
 
-#: Ordered ``(path_prefix, ArtifactType)`` pairs for logical extraction.
-#: The first prefix that matches wins.
-_LOGICAL_PATHS: list[tuple[str, ArtifactType]] = [
-    ("/sdcard/DCIM/", ArtifactType.MEDIA),
-    ("/sdcard/Download/", ArtifactType.APP_DATA),
-    ("/sdcard/WhatsApp/", ArtifactType.MESSAGE),
-    ("/sdcard/Android/media/com.whatsapp/WhatsApp/", ArtifactType.MESSAGE),
-    ("/sdcard/Telegram/", ArtifactType.MESSAGE),
-    ("/sdcard/Android/media/org.telegram.messenger/", ArtifactType.MESSAGE),
-    ("/sdcard/Android/data/org.telegram.messenger/", ArtifactType.MESSAGE),
+#: Paths for textual extraction (chat databases, message backups, call logs).
+_TEXTUAL_LOGICAL_PATHS: list[tuple[str, ArtifactType]] = [
+    ("/sdcard/WhatsApp/Databases/", ArtifactType.MESSAGE),
+    ("/sdcard/WhatsApp/Backups/", ArtifactType.MESSAGE),
+    ("/sdcard/Android/media/com.whatsapp/WhatsApp/Databases/", ArtifactType.MESSAGE),
+    ("/sdcard/Android/media/com.whatsapp/WhatsApp/Backups/", ArtifactType.MESSAGE),
     ("/sdcard/Signal/Backups/", ArtifactType.MESSAGE),
     ("/sdcard/Documents/Signal/Backups/", ArtifactType.MESSAGE),
     ("/sdcard/CallLogs/", ArtifactType.CALL_LOG),
+    ("/sdcard/Android/data/org.telegram.messenger/", ArtifactType.MESSAGE),
 ]
+
+#: Paths for media extraction (images, videos, audio, downloads, app media).
+_MEDIA_LOGICAL_PATHS: list[tuple[str, ArtifactType]] = [
+    ("/sdcard/DCIM/", ArtifactType.MEDIA),
+    ("/sdcard/Pictures/", ArtifactType.MEDIA),
+    ("/sdcard/Movies/", ArtifactType.MEDIA),
+    ("/sdcard/Music/", ArtifactType.MEDIA),
+    ("/sdcard/Recordings/", ArtifactType.MEDIA),
+    ("/sdcard/Audio/", ArtifactType.MEDIA),
+    ("/sdcard/Download/", ArtifactType.MEDIA),
+    ("/sdcard/WhatsApp/Media/", ArtifactType.MEDIA),
+    ("/sdcard/Android/media/com.whatsapp/WhatsApp/Media/", ArtifactType.MEDIA),
+    ("/sdcard/Telegram/Telegram Images/", ArtifactType.MEDIA),
+    ("/sdcard/Telegram/Telegram Video/", ArtifactType.MEDIA),
+    ("/sdcard/Telegram/Telegram Documents/", ArtifactType.MEDIA),
+    ("/sdcard/Telegram/Telegram Audio/", ArtifactType.MEDIA),
+    ("/sdcard/Android/media/org.telegram.messenger/", ArtifactType.MEDIA),
+]
+
+#: Ordered ``(path_prefix, ArtifactType)`` pairs for logical extraction.
+_LOGICAL_PATHS: list[tuple[str, ArtifactType]] = _TEXTUAL_LOGICAL_PATHS + _MEDIA_LOGICAL_PATHS
 
 #: Root-only paths used by file-system extraction.
 _FS_PATHS: list[tuple[str, ArtifactType]] = [
     ("/data/data/", ArtifactType.APP_DATA),
 ]
+
+#: Media and binary document / asset extensions.
+_MEDIA_EXTENSIONS: set[str] = {
+    # Images
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff", ".tif", ".heic", ".heif", ".raw", ".jfif", ".svg", ".ico",
+    # Videos
+    ".mp4", ".mkv", ".mov", ".avi", ".wmv", ".flv", ".webm", ".3gp", ".m4v", ".ts", ".blipdownload",
+    # Audio
+    ".mp3", ".ogg", ".opus", ".wav", ".m4a", ".aac", ".flac", ".wma", ".amr", ".mid", ".midi",
+    # Documents / Presentations / Spreadsheets / Web assets
+    ".pdf", ".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls",
+    ".woff", ".woff2", ".ttf", ".otf", ".eot",
+    ".css", ".js", ".html", ".htm", ".parquet",
+}
+
+#: Ignored metadata and junk filenames.
+_IGNORED_FILENAMES: set[str] = {
+    ".nomedia", ".ds_store", "thumbs.db", "desktop.ini"
+}
 
 
 def _artifact_type_for_path(path: str) -> ArtifactType:
@@ -368,13 +405,23 @@ class AndroidExtractor(AbstractExtractor):
 
         extract_media = profile in ["all", "media"]
         extract_textual = profile in ["all", "textual"]
+        extract_deleted = profile in ["all", "deleted"]
 
-        for remote_path, artifact_type in _LOGICAL_PATHS:
-            if not extract_media and artifact_type == ArtifactType.MEDIA:
-                continue
-            if not extract_textual and artifact_type != ArtifactType.MEDIA:
-                continue
-            
+        if profile == "deleted":
+            paths_to_pull = _TEXTUAL_LOGICAL_PATHS + [
+                ("/sdcard/DCIM/.thumbnails/", ArtifactType.MEDIA),
+                ("/sdcard/Pictures/.thumbnails/", ArtifactType.MEDIA),
+            ]
+        elif extract_textual and extract_media:
+            paths_to_pull = _TEXTUAL_LOGICAL_PATHS + _MEDIA_LOGICAL_PATHS
+        elif extract_textual:
+            paths_to_pull = _TEXTUAL_LOGICAL_PATHS
+        elif extract_media:
+            paths_to_pull = _MEDIA_LOGICAL_PATHS
+        else:
+            paths_to_pull = []
+
+        for remote_path, artifact_type in paths_to_pull:
             while True:
                 try:
                     safe_name = str(Path(remote_path)).strip('/').replace('/', '_').replace('\\', '_')
@@ -393,10 +440,20 @@ class AndroidExtractor(AbstractExtractor):
                             files = [local_dest]
                             
                         for file_path in files:
-                            # Filter media files if requested
-                            if not extract_media and file_path.suffix.lower() in [
-                                '.jpg', '.jpeg', '.png', '.mp4', '.mp3', '.ogg', '.tgs', '.webp', '.gif', '.nomedia', '.opus', '.wav', '.pdf', '.avi', '.mkv', '.mov', '.heic'
-                            ]:
+                            # Skip OS metadata / junk / hidden files
+                            if (
+                                file_path.name.lower() in _IGNORED_FILENAMES
+                                or file_path.name.startswith("._")
+                                or file_path.suffix.lower() == ".nomedia"
+                            ):
+                                file_path.unlink(missing_ok=True)
+                                continue
+
+                            # Profile-specific filtering
+                            if profile == "textual" and file_path.suffix.lower() in _MEDIA_EXTENSIONS:
+                                file_path.unlink(missing_ok=True)
+                                continue
+                            elif profile == "media" and file_path.suffix.lower() not in _MEDIA_EXTENSIONS:
                                 file_path.unlink(missing_ok=True)
                                 continue
 
@@ -496,45 +553,93 @@ class AndroidExtractor(AbstractExtractor):
         # 3. Extract native Content Providers (SMS, Call Logs, Contacts)
         if extract_textual:
             _logger.info("Extracting native Android content providers (SMS, Call Logs, Contacts)")
-        providers = {
-            "sms": "content://sms/",
-            "call_logs": "content://call_log/calls",
-            "contacts": "content://contacts/phones"
-        }
-        
-        for name, uri in providers.items():
-            try:
-                dest_file = adb_pull_dir / f"{name}.csv"
-                _logger.info(f"Querying {uri} to {dest_file}")
-                
-                query_cmd = [adb_cmd, *adb_target_args, "shell", "content", "query", "--uri", uri]
-                query_proc = subprocess.run(query_cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
-                
-                if query_proc.returncode == 0 and query_proc.stdout is not None and query_proc.stdout.strip() and "No result found" not in query_proc.stdout:
-                    dest_file.write_text(query_proc.stdout, encoding='utf-8')
+            providers = {
+                "sms": "content://sms/",
+                "call_logs": "content://call_log/calls",
+                "contacts": "content://contacts/phones"
+            }
+            
+            for name, uri in providers.items():
+                try:
+                    dest_file = adb_pull_dir / f"{name}.csv"
+                    _logger.info(f"Querying {uri} to {dest_file}")
                     
-                    artifact_t = ArtifactType.MESSAGE
-                    if name == "call_logs":
-                        artifact_t = ArtifactType.CALL_LOG
-                    elif name == "contacts":
-                        artifact_t = ArtifactType.CONTACT
+                    query_cmd = [adb_cmd, *adb_target_args, "shell", "content", "query", "--uri", uri]
+                    query_proc = subprocess.run(query_cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
+                    
+                    if query_proc.returncode == 0 and query_proc.stdout is not None and query_proc.stdout.strip() and "No result found" not in query_proc.stdout:
+                        dest_file.write_text(query_proc.stdout, encoding='utf-8')
                         
-                    hashes = HashEngine.hash_file(dest_file)
-                    artifact = Artifact(
-                        artifact_type=artifact_t,
-                        source_app="adb_content_provider",
-                        source_path=str(dest_file),
-                        acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
-                        hashes=hashes,
-                        data={"method": "adb_shell_content", "uri": uri},
-                        device=self._device,
-                    )
-                    session.register_artifact(artifact)
-                    yield artifact
-                else:
-                    _logger.info(f"No data returned for {uri} or query failed: {query_proc.stderr}")
-            except Exception as exc:
-                _logger.warning(f"Failed to query {uri}: {exc}", exc_info=True)
+                        artifact_t = ArtifactType.MESSAGE
+                        if name == "call_logs":
+                            artifact_t = ArtifactType.CALL_LOG
+                        elif name == "contacts":
+                            artifact_t = ArtifactType.CONTACT
+                            
+                        hashes = HashEngine.hash_file(dest_file)
+                        artifact = Artifact(
+                            artifact_type=artifact_t,
+                            source_app="adb_content_provider",
+                            source_path=str(dest_file),
+                            acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+                            hashes=hashes,
+                            data={"method": "adb_shell_content", "uri": uri},
+                            device=self._device,
+                        )
+                        session.register_artifact(artifact)
+                        yield artifact
+                    else:
+                        _logger.info(f"No data returned for {uri} or query failed: {query_proc.stderr}")
+                except Exception as exc:
+                    _logger.warning(f"Failed to query {uri}: {exc}", exc_info=True)
+
+        # 4. Deleted Artifact Carving Pass (when profile == 'deleted' or 'all')
+        if extract_deleted:
+            _logger.info("Executing Forensic Deleted Record & File Carving Pass...")
+            from forensixd.recovery.file_carver import FileSignatureCarver
+            from forensixd.recovery.sqlite_carver import SQLiteFreelistCarver
+            from forensixd.recovery.thumbnail_carver import ThumbnailCacheCarver
+
+            recovered_dir = session.output_dir / "recovered_deleted"
+            recovered_dir.mkdir(parents=True, exist_ok=True)
+
+            # A. Carve deleted records from all extracted SQLite databases & WALs
+            sqlite_carver = SQLiteFreelistCarver()
+            recovered_records = sqlite_carver.carve_all_databases_in_dir(adb_pull_dir, recovered_dir / "databases")
+            for rec in recovered_records:
+                art_type = ArtifactType.MESSAGE
+                if rec.record_type == "call_log":
+                    art_type = ArtifactType.CALL_LOG
+                elif rec.record_type == "contact":
+                    art_type = ArtifactType.CONTACT
+
+                artifact = Artifact(
+                    artifact_type=art_type,
+                    source_app=f"sqlite_carver_{rec.record_type}",
+                    source_path=f"{rec.source_db}#offset={rec.offset}",
+                    acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+                    hashes=HashEngine.hash_bytes(rec.raw_text.encode("utf-8", errors="replace")),
+                    data={"method": "sqlite_freelist_carve", "fields": rec.fields, "recovered": True},
+                    device=self._device,
+                )
+                session.register_artifact(artifact)
+                yield artifact
+
+            # B. Carve media files and thumbnails
+            thumb_carver = ThumbnailCacheCarver()
+            carved_media = thumb_carver.carve_thumbnail_directory(adb_pull_dir, recovered_dir / "media")
+            for carved in carved_media:
+                artifact = Artifact(
+                    artifact_type=ArtifactType.MEDIA,
+                    source_app="file_signature_carver",
+                    source_path=str(carved.output_path),
+                    acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+                    hashes=HashEngine.hash_file(carved.output_path),
+                    data={"method": "signature_carving", "file_type": carved.file_type, "offset": carved.offset, "recovered": True},
+                    device=self._device,
+                )
+                session.register_artifact(artifact)
+                yield artifact
 
     def _fs_extract(self, session: ForensicSession, profile: str = "all") -> Iterator[Artifact]:
         """Yield artefacts from protected application-data paths (root required).

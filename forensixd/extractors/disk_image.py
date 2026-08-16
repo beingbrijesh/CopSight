@@ -279,6 +279,35 @@ class DiskImageExtractor(AbstractExtractor):
 
         yield from self._walk_image(session)
 
+        if profile in ("all", "deleted"):
+            from forensixd.recovery.file_carver import FileSignatureCarver
+            from forensixd.recovery.sqlite_carver import SQLiteFreelistCarver
+            
+            recovered_dir = session.output_dir / "recovered_deleted"
+            recovered_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Carve files from the raw image
+            carver = FileSignatureCarver()
+            carved_files = carver.carve_file_or_stream(self._image_path, recovered_dir / "carved_media")
+            for carved in carved_files:
+                hashes = HashEngine.hash_file(carved.output_path)
+                artifact = Artifact(
+                    artifact_type=ArtifactType.MEDIA,
+                    source_app="disk_image_carver",
+                    source_path=str(carved.output_path),
+                    acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+                    hashes=hashes,
+                    data={
+                        "image_path": str(self._image_path),
+                        "offset": carved.offset,
+                        "file_type": carved.file_type,
+                        "recovered": True,
+                    },
+                    device=self._device,
+                )
+                session.register_artifact(artifact)
+                yield artifact
+
     def disconnect(self) -> None:
         """No-op disconnect — included for interface compliance.
 
@@ -335,9 +364,21 @@ class DiskImageExtractor(AbstractExtractor):
         assert self._device is not None  # guaranteed by extract()
         assert self._image_path is not None  # guaranteed by extract()
 
-        # Open the raw image.
+        # Open the raw image or E01.
         try:
-            img: pytsk3.Img_Info = pytsk3.Img_Info(str(self._image_path))  # type: ignore[name-defined]
+            if self._image_path.suffix.lower() == ".e01":
+                from forensixd.extractors.e01_wrapper import EWFImgInfo, EWF_AVAILABLE
+                if not EWF_AVAILABLE:
+                    raise ExtractionError(
+                        "pyewf is required to read E01 images. Install it via pip or use the bundled binary.",
+                        context={"platform": Platform.DISK_IMAGE.value}
+                    )
+                import pyewf # type: ignore[import-untyped]
+                ewf_handle = pyewf.handle()
+                ewf_handle.open([str(self._image_path)])
+                img: pytsk3.Img_Info = EWFImgInfo(ewf_handle) # type: ignore[name-defined]
+            else:
+                img: pytsk3.Img_Info = pytsk3.Img_Info(str(self._image_path))  # type: ignore[name-defined]
         except Exception as exc:
             raise ExtractionError(
                 f"Failed to open disk image '{self._image_path}': {exc}",
