@@ -87,12 +87,9 @@ jobs:
         cd dist
         if [ "$RUNNER_OS" == "Linux" ]; then
           mv forensixd forensixd-linux-amd64-$APP_VERSION
-          zip forensixd-linux-amd64-$APP_VERSION.zip forensixd-linux-amd64-$APP_VERSION
-          rm forensixd-linux-amd64-$APP_VERSION
+          chmod +x forensixd-linux-amd64-$APP_VERSION
         elif [ "$RUNNER_OS" == "Windows" ]; then
           mv forensixd.exe forensixd-windows-amd64-$APP_VERSION.exe
-          powershell Compress-Archive -Path forensixd-windows-amd64-$APP_VERSION.exe -DestinationPath forensixd-windows-amd64-$APP_VERSION.zip
-          rm forensixd-windows-amd64-$APP_VERSION.exe
         elif [ "$RUNNER_OS" == "macOS" ]; then
           cd ..
           python scripts/build_macos_bundle.py dist/forensixd "$APP_VERSION"
@@ -113,8 +110,8 @@ jobs:
       with:
         name: forensixd-${{ runner.os }}-${{ env.APP_VERSION }}
         path: |
-          dist/*.zip
-          dist/*.dmg
+          dist/forensixd*
+          dist/CopSight*
 
   release:
     needs: build
