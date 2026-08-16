@@ -104,9 +104,10 @@ jobs:
           powershell Compress-Archive -Path forensixd-windows-amd64-$APP_VERSION.exe -DestinationPath forensixd-windows-amd64-$APP_VERSION.zip
           rm forensixd-windows-amd64-$APP_VERSION.exe
         elif [ "$RUNNER_OS" == "macOS" ]; then
-          mv forensixd forensixd-macos-arm64-$APP_VERSION
-          zip forensixd-macos-arm64-$APP_VERSION.zip forensixd-macos-arm64-$APP_VERSION
-          rm forensixd-macos-arm64-$APP_VERSION
+          mv forensixd forensixd-macos-arm64-$APP_VERSION.command
+          chmod +x forensixd-macos-arm64-$APP_VERSION.command
+          zip forensixd-macos-arm64-$APP_VERSION.zip forensixd-macos-arm64-$APP_VERSION.command
+          rm forensixd-macos-arm64-$APP_VERSION.command
         fi
 
     - name: Upload Artifacts
