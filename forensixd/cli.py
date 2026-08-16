@@ -11,7 +11,7 @@ console = Console()
 
 @click.group(invoke_without_command=True)
 @click.pass_context
-@click.version_option("0.1.0", prog_name="forensixd")
+@click.version_option("2.0.15", prog_name="forensixd")
 def main(ctx):
     """forensixd — Forensic Data Extraction for Law Enforcement."""
     if ctx.invoked_subcommand is None:
