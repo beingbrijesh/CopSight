@@ -27,7 +27,8 @@ def main(ctx):
 @click.option("--output-dir","-o", required=False, type=click.Path())
 @click.option("--level","-l", type=click.Choice(["logical","file_system","physical"]), default=None)
 @click.option("--ufdr-config", type=click.Path(), default=None)
-def acquire(output_dir, level, ufdr_config):
+@click.option("--profile", type=click.Choice(["textual", "media", "all", "deleted"]), default=None)
+def acquire(output_dir, level, ufdr_config, profile):
     """Run a full forensic acquisition."""
     console.print(Panel("[bold]forensixd Acquisition[/bold]", subtitle="Law Enforcement Only"))
 
@@ -122,18 +123,21 @@ def acquire(output_dir, level, ufdr_config):
     if not level:
         level = Prompt.ask("[bold]Extraction level[/bold]", choices=["logical", "file_system", "physical"], default="logical")
         
-    profile_input = Prompt.ask(
-        "[bold]Extraction Profile[/bold]\n"
-        "  [1] Textual Only (SMS, Calls, Contacts, Backups)\n"
-        "  [2] Media Only (Images, Videos, PDFs)\n"
-        "  [3] Everything (Active Data)\n"
-        "  [4] Deleted Recovery & Carving (Deleted Chats, SMS, Freelist DBs, Carved Media)\n"
-        "Select an option", 
-        choices=["1", "2", "3", "4"], 
-        default="1"
-    )
-    profile_map = {"1": "textual", "2": "media", "3": "all", "4": "deleted"}
-    extraction_profile = profile_map[profile_input]
+    if not profile:
+        profile_input = Prompt.ask(
+            "[bold]Extraction Profile[/bold]\n"
+            "  [1] Textual Only (SMS, Calls, Contacts, Backups)\n"
+            "  [2] Media Only (Images, Videos, PDFs)\n"
+            "  [3] Everything (Active Data)\n"
+            "  [4] Deleted Recovery & Carving (Deleted Chats, SMS, Freelist DBs, Carved Media)\n"
+            "Select an option", 
+            choices=["1", "2", "3", "4"], 
+            default="1"
+        )
+        profile_map = {"1": "textual", "2": "media", "3": "all", "4": "deleted"}
+        extraction_profile = profile_map[profile_input]
+    else:
+        extraction_profile = profile
 
     if ufdr_config is None:
         ufdr_config = Prompt.ask("[bold]CopSight AI config path[/bold] (optional, press Enter to skip)", default="")
@@ -439,10 +443,14 @@ def interactive_mode():
                 args = ["acquire"]
                     
             elif choice == "2":
-                target_path = Prompt.ask("Path to image, database, or directory to carve")
-                out_dir = Prompt.ask("Output directory for carved files", default="./recovered_output")
-                if target_path.strip():
-                    args = ["carve", target_path.strip(), "-o", out_dir.strip()]
+                source = Prompt.ask("Recover from [1] Connected Device or [2] Local File/Image?", choices=["1", "2"], default="1")
+                if source == "1":
+                    args = ["acquire", "--profile", "deleted"]
+                else:
+                    target_path = Prompt.ask("Path to image, database, or directory to carve")
+                    out_dir = Prompt.ask("Output directory for carved files", default="./recovered_output")
+                    if target_path.strip():
+                        args = ["carve", target_path.strip(), "-o", out_dir.strip()]
 
             elif choice == "3":
                 session_dir = Prompt.ask("Session directory")
