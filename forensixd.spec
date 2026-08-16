@@ -73,5 +73,17 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='forensixd/logo.ico'
+    icon='forensixd/logo.icns' if system == 'Darwin' else 'forensixd/logo.ico'
 )
+
+if system == 'Darwin':
+    app = BUNDLE(
+        exe,
+        name='CopSight.app',
+        icon='forensixd/logo.icns',
+        bundle_identifier='com.copsight.app',
+        info_plist={
+            'CFBundleShortVersionString': '2.0.15',
+            'LSUIElement': True, # Runs without a dock icon if it's purely CLI
+        }
+    )

@@ -15,12 +15,14 @@ console = Console()
 def main(ctx):
     """forensixd — Forensic Data Extraction for Law Enforcement."""
     if ctx.invoked_subcommand is None:
-        console.print("[cyan]  ____            ____  _       _     _   [/cyan]")
-        console.print("[cyan] / ___|___  _ __ / ___|(_) __ _| |__ | |_ [/cyan]")
-        console.print("[cyan]| |   / _ \\| '_ \\\\___ \\| |/ _` | '_ \\| __|[/cyan]")
-        console.print("[cyan]| |__| (_) | |_) |___) | | (_| | | | | |_ [/cyan]")
-        console.print("[cyan] \\____\\___/| .__/|____/|_|\\__, |_| |_|\\__|[/cyan]")
-        console.print("[cyan]           |_|            |___/           [/cyan]\n")
+        console.print("[cyan]   _____            _____ _       _     _   [/cyan]")
+        console.print("[cyan]  / ____|          / ____(_)     | |   | |  [/cyan]")
+        console.print("[cyan] | |     ___  _ __| (___  _  __ _| |__ | |_ [/cyan]")
+        console.print("[cyan] | |    / _ \\| '_ \\\\___ \\| |/ _` | '_ \\| __|[/cyan]")
+        console.print("[cyan] | |___| (_) | |_) |____) | | (_| | | | | |_ [/cyan]")
+        console.print("[cyan]  \\_____\\___/| .__/|_____/|_|\\__, |_| |_|\\__|[/cyan]")
+        console.print("[cyan]             | |              __/ |         [/cyan]")
+        console.print("[cyan]             |_|             |___/          [/cyan]\n")
         interactive_mode()
 
 @main.command()
@@ -30,7 +32,7 @@ def main(ctx):
 @click.option("--profile", type=click.Choice(["textual", "media", "all", "deleted"]), default=None)
 def acquire(output_dir, level, ufdr_config, profile):
     """Run a full forensic acquisition."""
-    console.print(Panel("[bold]forensixd Acquisition[/bold]", subtitle="Law Enforcement Only"))
+    console.print(Panel("[bold]CopSight Acquisition[/bold]", subtitle="Law Enforcement Only"))
 
     from forensixd.core.device_detector import USB_AVAILABLE, DeviceDetector
     from forensixd.core.session import ForensicSession
@@ -253,7 +255,7 @@ def pdf(html_path, output_pdf):
 @click.option("--ufdr-config", type=click.Path(), default=None)
 def import_image(image_path, output_dir, level, ufdr_config):
     """Import and analyze a raw partition dump (.dd, .bin, .E01)."""
-    console.print(Panel("[bold]forensixd Import Raw Image[/bold]", subtitle="Analysis & Reporting Backend"))
+    console.print(Panel("[bold]CopSight Import Raw Image[/bold]", subtitle="Analysis & Reporting Backend"))
     
     from forensixd.core.models import DeviceInfo, Platform, ExtractionLevel
     from forensixd.core.session import ForensicSession
@@ -384,7 +386,7 @@ def carve(input_path, output_dir):
     out_p.mkdir(parents=True, exist_ok=True)
     in_p = Path(input_path)
 
-    console.print(Panel(f"[bold green]forensixd Carving & Deleted Recovery[/bold green]\nTarget: [cyan]{in_p}[/cyan]\nDestination: [yellow]{out_p}[/yellow]"))
+    console.print(Panel(f"[bold green]CopSight Carving & Deleted Recovery[/bold green]\nTarget: [cyan]{in_p}[/cyan]\nDestination: [yellow]{out_p}[/yellow]"))
 
     with Progress(SpinnerColumn(), TextColumn("{task.description}")) as p:
         t = p.add_task("Scanning and carving artifacts...", total=None)
@@ -422,7 +424,7 @@ def interactive_mode():
         import readline
     except ImportError:
         pass
-    console.print(Panel("[bold green]forensixd Interactive Shell[/bold green]", subtitle="Select an operation by entering the corresponding number"))
+    console.print(Panel("[bold green]CopSight Interactive Shell[/bold green]", subtitle="Select an operation by entering the corresponding number"))
     while True:
         try:
             console.print("\n[bold cyan]Available Features:[/bold cyan]")
