@@ -101,7 +101,7 @@ jobs:
           rm forensixd-linux-amd64-$APP_VERSION
         elif [ "$RUNNER_OS" == "Windows" ]; then
           mv forensixd.exe forensixd-windows-amd64-$APP_VERSION.exe
-          zip forensixd-windows-amd64-$APP_VERSION.zip forensixd-windows-amd64-$APP_VERSION.exe
+          powershell Compress-Archive -Path forensixd-windows-amd64-$APP_VERSION.exe -DestinationPath forensixd-windows-amd64-$APP_VERSION.zip
           rm forensixd-windows-amd64-$APP_VERSION.exe
         elif [ "$RUNNER_OS" == "macOS" ]; then
           mv forensixd forensixd-macos-arm64-$APP_VERSION
