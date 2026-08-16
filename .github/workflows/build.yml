@@ -94,12 +94,19 @@ jobs:
     - name: Prepare Release Assets
       shell: bash
       run: |
+        cd dist
         if [ "$RUNNER_OS" == "Linux" ]; then
-          mv dist/forensixd dist/forensixd-linux-amd64-$APP_VERSION
+          mv forensixd forensixd-linux-amd64-$APP_VERSION
+          zip forensixd-linux-amd64-$APP_VERSION.zip forensixd-linux-amd64-$APP_VERSION
+          rm forensixd-linux-amd64-$APP_VERSION
         elif [ "$RUNNER_OS" == "Windows" ]; then
-          mv dist/forensixd.exe dist/forensixd-windows-amd64-$APP_VERSION.exe
+          mv forensixd.exe forensixd-windows-amd64-$APP_VERSION.exe
+          zip forensixd-windows-amd64-$APP_VERSION.zip forensixd-windows-amd64-$APP_VERSION.exe
+          rm forensixd-windows-amd64-$APP_VERSION.exe
         elif [ "$RUNNER_OS" == "macOS" ]; then
-          mv dist/forensixd dist/forensixd-macos-arm64-$APP_VERSION
+          mv forensixd forensixd-macos-arm64-$APP_VERSION
+          zip forensixd-macos-arm64-$APP_VERSION.zip forensixd-macos-arm64-$APP_VERSION
+          rm forensixd-macos-arm64-$APP_VERSION
         fi
 
     - name: Upload Artifacts
@@ -107,7 +114,7 @@ jobs:
       with:
         name: forensixd-${{ runner.os }}-${{ env.APP_VERSION }}
         path: |
-          dist/forensixd*
+          dist/*.zip
 
   release:
     needs: build
