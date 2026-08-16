@@ -83,7 +83,7 @@ if system == 'Darwin':
         icon='forensixd/logo.icns',
         bundle_identifier='com.copsight.app',
         info_plist={
-            'CFBundleShortVersionString': '2.0.15',
+            'CFBundleShortVersionString': '2.0.16',
             'LSUIElement': True, # Runs without a dock icon if it's purely CLI
         }
     )
