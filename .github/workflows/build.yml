@@ -80,6 +80,13 @@ jobs:
           unzip platform-tools.zip
         fi
 
+    - name: Extract Version
+      id: extract_version
+      shell: bash
+      run: |
+        VERSION=$(grep '^version = ' pyproject.toml | cut -d '"' -f 2)
+        echo "APP_VERSION=v$VERSION" >> $GITHUB_ENV
+
     - name: Build with PyInstaller
       shell: bash
       run: pyinstaller forensixd.spec --noconfirm
@@ -87,7 +94,7 @@ jobs:
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: forensixd-${{ runner.os }}-${{ github.ref_name }}
+        name: forensixd-${{ runner.os }}-${{ env.APP_VERSION }}
         path: |
           dist/forensixd*
 
