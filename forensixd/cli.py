@@ -11,11 +11,19 @@ console = Console()
 
 @click.group(invoke_without_command=True)
 @click.pass_context
-@click.version_option("2.0.22", prog_name="forensixd")
+@click.version_option("2.0.23", prog_name="forensixd")
 def main(ctx):
     """forensixd — Forensic Data Extraction for Law Enforcement."""
     if ctx.invoked_subcommand is None:
-        console.clear()
+        import os
+        if sys.stdout.isatty():
+            if os.name == 'nt':
+                os.system('cls')
+            else:
+                print("\033[3J\033[2J\033[H", end="")
+                sys.stdout.flush()
+        else:
+            console.clear()
         if console.width >= 65:
             console.print("[cyan]   _____            _____ _       _     _   [/cyan]")
             console.print("[cyan]  / ____|          / ____(_)     | |   | |  [/cyan]")
