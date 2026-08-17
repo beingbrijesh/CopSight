@@ -21,7 +21,7 @@
         NSLog(@"Error launching start_services.sh: %@", exception);
     }
 
-    // 2. Create Window
+    // 2. Create Window with Compact Minimum Size (Full Responsiveness)
     NSRect frame = NSMakeRect(100, 100, 1360, 880);
     self.window = [[NSWindow alloc] initWithContentRect:frame
                                               styleMask:(NSWindowStyleMaskTitled |
@@ -34,10 +34,10 @@
     self.window.title = @"CopSight Forensic Workstation";
     self.window.titlebarAppearsTransparent = YES;
     self.window.titleVisibility = NSWindowTitleHidden;
-    self.window.minSize = NSMakeSize(1024, 700);
+    self.window.minSize = NSMakeSize(500, 360);
     [self.window center];
     self.window.releasedWhenClosed = NO;
-    self.window.backgroundColor = [NSColor colorWithRed:0.14 green:0.46 blue:0.71 alpha:1.0];
+    self.window.backgroundColor = [NSColor windowBackgroundColor];
 
     // 3. Create WKWebView
     WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
@@ -46,7 +46,7 @@
     self.webView = [[WKWebView alloc] initWithFrame:self.window.contentView.bounds configuration:config];
     self.webView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
     self.webView.navigationDelegate = self;
-    [self.webView setValue:@NO forKey:@"drawsBackground"];
+    [self.webView setValue:@YES forKey:@"drawsBackground"];
 
     [self.window.contentView addSubview:self.webView];
     [self.window makeKeyAndOrderFront:nil];

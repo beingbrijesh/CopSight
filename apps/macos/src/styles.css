@@ -10,17 +10,29 @@
   color-scheme: dark;
 }
 
-body {
+html, body, #root {
   margin: 0;
   padding: 0;
+  width: 100%;
+  min-height: 100vh;
   background-color: #2475B5; /* Default Light Theme Background */
   color: #f1f5f9;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   transition: background-color 0.3s ease;
+  overflow-x: hidden;
 }
 
-.dark body {
-  background-color: #111111; /* Dark Theme Background */
+.dark, .dark html, .dark body, .dark #root {
+  background-color: #111111 !important; /* Dark Theme Background */
+}
+
+/* Native Window Dragging Regions */
+.titlebar-drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
 }
 
 /* Scrollbar based on theme */

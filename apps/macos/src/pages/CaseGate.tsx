@@ -58,22 +58,22 @@ export const CaseGate: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col p-4 sm:p-8 select-none overflow-y-auto transition-colors duration-300">
+    <div className="min-h-screen w-full flex flex-col p-2 sm:p-4 pt-2 select-none overflow-y-auto transition-colors duration-300">
       
-      {/* Top Floating Pill Header */}
-      <header className="glass-panel rounded-[2.5rem] p-3 sm:px-6 flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-8 shadow-lg">
-        <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-full bg-white p-1 flex items-center justify-center shadow-md ring-2 ring-white/40 overflow-hidden flex-shrink-0">
+      {/* Top Floating Pill Header (Aligned with window traffic lights) */}
+      <header className="glass-panel rounded-full py-2 px-3 sm:px-5 pl-20 sm:pl-24 flex items-center justify-between gap-3 mb-6 shadow-lg titlebar-drag-region">
+        <div className="flex items-center gap-2.5 no-drag">
+          <div className="w-8 h-8 rounded-full bg-white p-1 flex items-center justify-center shadow-md ring-2 ring-white/40 overflow-hidden flex-shrink-0">
             <img src={logoImg} alt="CopSight Logo" className="w-full h-full object-contain rounded-full" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-extrabold text-white uppercase tracking-tight">CopSight AI</h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/20 text-white font-bold">
+              <h1 className="text-sm font-extrabold text-white uppercase tracking-tight">CopSight AI</h1>
+              <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-white/20 text-white font-bold">
                 STAGE 2: CASE SELECTION
               </span>
             </div>
-            <p className="text-[10px] font-mono text-white opacity-75">Assigned Case Repository & Custody Chain</p>
+            <p className="text-[9px] font-mono text-white opacity-75">Assigned Case Repository & Custody Chain</p>
           </div>
         </div>
 

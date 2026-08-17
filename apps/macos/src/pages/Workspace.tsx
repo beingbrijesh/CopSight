@@ -41,17 +41,17 @@ export const Workspace: React.FC = () => {
   const activeDevice = selectedDevice || detectedDevices[0];
 
   return (
-    <div className="min-h-screen w-full flex flex-col select-none overflow-y-auto pb-12 transition-colors duration-300">
+    <div className="min-h-screen w-full flex flex-col select-none overflow-y-auto pb-10 transition-colors duration-300">
       
-      {/* Top Floating Pill Navigation Bar */}
-      <div className="pt-6 px-4 sm:px-8 max-w-[1750px] mx-auto w-full">
+      {/* Top Floating Navigation Bar (Aligned in same line with traffic light controls) */}
+      <div className="pt-2 px-2 sm:px-4 w-full sticky top-0 z-40">
         <ContextHeader
           activeTab={activeTab}
           setActiveTab={setActiveTab}
         />
       </div>
 
-      <main className="flex-1 px-4 sm:px-8 pt-6 max-w-[1750px] w-full mx-auto">
+      <main className="flex-1 px-2 sm:px-4 pt-4 w-full mx-auto max-w-[1800px]">
         
         {/* ========================================================================= */}
         {/* VIEW 1: SIMPLIFIED, INTUITIVE FORENSIC DASHBOARD                          */}
@@ -192,20 +192,20 @@ export const Workspace: React.FC = () => {
             )}
 
             {/* Dashboard 3-Card Core Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6">
               
               {/* Card 1: Connected Device Summary & Radar */}
-              <div className="md:col-span-12 xl:col-span-4 h-[420px]">
+              <div className="md:col-span-12 xl:col-span-4 min-h-[380px] lg:h-[420px]">
                 <DeviceRadar />
               </div>
 
               {/* Card 2: Live Stream & Forensic Telemetry */}
-              <div className="md:col-span-6 xl:col-span-4 h-[420px]">
+              <div className="md:col-span-12 lg:col-span-6 xl:col-span-4 min-h-[380px] lg:h-[420px]">
                 <LiveConsole />
               </div>
 
               {/* Card 3: Quick Acquisition Task Scope */}
-              <div className="md:col-span-6 xl:col-span-4 h-[420px]">
+              <div className="md:col-span-12 lg:col-span-6 xl:col-span-4 min-h-[380px] lg:h-[420px]">
                 <AcquisitionWizard />
               </div>
 
