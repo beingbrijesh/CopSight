@@ -35,7 +35,15 @@ export const Workspace: React.FC = () => {
     daemonClient.checkHealth();
     daemonClient.connectWebSocket();
     daemonClient.scanDevices();
-    return () => daemonClient.disconnect();
+
+    const healthInterval = setInterval(() => {
+      daemonClient.checkHealth();
+    }, 4000);
+
+    return () => {
+      clearInterval(healthInterval);
+      daemonClient.disconnect();
+    };
   }, []);
 
   const activeDevice = selectedDevice || detectedDevices[0];

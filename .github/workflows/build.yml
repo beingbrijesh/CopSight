@@ -130,7 +130,36 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }}
+          name: CopSight ${{ github.ref_name }} — Standalone Forensic Workstation
+          generate_release_notes: true
+          body: |
+            ## 🚀 CopSight Forensic Workstation ${{ github.ref_name }}
+
+            ### ✨ Key Features & Improvements
+            - **Native Cocoa + WebKit Standalone App**: Built-in zero-redirect desktop interface for macOS with integrated live forensic telemetry.
+            - **High-DPI 128px DMG Installer**: Drag-and-drop installation into `/Applications` with large custom icons.
+            - **Resilient Zero-Dependency Engine**: Built-in standard library fallback supporting clean macOS systems without external pip packages.
+            - **Responsive UI Layout**: Dynamic grid reflow for multi-window sizing, dark mode background protection, and perfectly centered parameter badges.
+            - **Hardware Bus Radar**: Real-time USB probe supporting Android (ADB), MediaTek BROM/EDL, and iOS physical/logical triage.
+
+            ---
+
+            ### 📦 Download & Installation (macOS)
+            1. Download **`CopSight-macOS-${{ github.ref_name }}.dmg`** below.
+            2. Double-click the `.dmg` and drag **CopSight.app** to your **Applications** folder.
+            3. If macOS displays a Gatekeeper security prompt on first launch, open Terminal and run:
+               ```bash
+               xattr -cr /Applications/CopSight.app
+               ```
+            4. Launch **CopSight** directly from your Applications or Dock!
+
+            ---
+
+            ### 🛠️ Fixes in this Release
+            - Fixed forensic daemon connection state tracking (preventing transient WebSocket disconnects from marking HTTP engine offline).
+            - Fixed device card label overflow in Device Radar to prevent text spilling out of capsules.
+            - Fixed top floating menu bar vertical clearance below native macOS window traffic lights.
+            - Fixed acquisition step badge centering and responsive font sizing.
           files: release-artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

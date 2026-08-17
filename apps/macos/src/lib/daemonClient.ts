@@ -135,19 +135,18 @@ class DaemonClient {
       };
 
       this.ws.onclose = () => {
-        store.setDaemonConnected(false);
         clearInterval(this.pingInterval);
         if (!this.isIntentionallyClosed) {
           clearTimeout(this.reconnectTimer);
-          this.reconnectTimer = setTimeout(() => this.connectWebSocket(), 3000);
+          this.reconnectTimer = setTimeout(() => this.connectWebSocket(), 5000);
         }
       };
 
       this.ws.onerror = () => {
-        store.setDaemonConnected(false);
+        // WebSocket error should not invalidate HTTP REST connection
       };
     } catch (e) {
-      store.setDaemonConnected(false);
+      // Ignore WebSocket transport error; HTTP health loop handles daemon connection state
     }
   }
 

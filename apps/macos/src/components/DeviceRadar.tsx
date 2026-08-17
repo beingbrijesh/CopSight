@@ -123,35 +123,35 @@ export const DeviceRadar: React.FC = () => {
                 <div
                   key={device.device_id}
                   onClick={() => handleDeviceClick(device)}
-                  className={`p-3.5 rounded-2xl cursor-pointer transition-all border ${
+                  className={`p-3 rounded-2xl cursor-pointer transition-all border ${
                     isSelected
                       ? 'bg-[#FF7A59]/20 dark:bg-white/15 border-[#FF7A59] dark:border-white shadow-md ring-1 ring-[#FF7A59]/50'
                       : 'bg-black/15 dark:bg-white/5 border-white/5 hover:border-white/20'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-xl ${isSelected ? 'bg-[#FF7A59] text-white dark:bg-white dark:text-black' : 'bg-white/10 text-white'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className={`p-2 rounded-xl shrink-0 ${isSelected ? 'bg-[#FF7A59] text-white dark:bg-white dark:text-black' : 'bg-white/10 text-white'}`}>
                         {isIos ? <Smartphone className="w-4 h-4" /> : <HardDrive className="w-4 h-4" />}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-white tracking-wide">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-bold text-white tracking-wide truncate max-w-[120px] sm:max-w-[150px]">
                             {modelName}
                           </span>
-                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-0.5">
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-0.5 shrink-0">
                             <CheckCircle2 className="w-2.5 h-2.5" />
                             Ready
                           </span>
                         </div>
-                        <p className="text-[10px] font-mono opacity-70 truncate max-w-[150px]">
+                        <p className="text-[10px] font-mono opacity-70 truncate max-w-full mt-0.5 text-white/80">
                           SN: {device.serial || device.device_id}
                         </p>
                       </div>
                     </div>
 
                     {isSelected && (
-                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#FF7A59] text-white dark:bg-white dark:text-black">
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#FF7A59] text-white dark:bg-white dark:text-black shrink-0">
                         Active
                       </span>
                     )}
