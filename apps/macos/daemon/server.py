@@ -37,9 +37,15 @@ _active_websockets: Set[WebSocket] = set()
 _loop: asyncio.AbstractEventLoop | None = None
 
 
+_event_log: List[Dict[str, Any]] = []
+
 def _broadcast_event(payload: Dict[str, Any]) -> None:
-    """Thread-safe event dispatcher for connected WebSockets."""
-    global _loop, _active_websockets
+    """Thread-safe event dispatcher for connected WebSockets and polling clients."""
+    global _loop, _active_websockets, _event_log
+    _event_log.append(payload)
+    if len(_event_log) > 1000:
+        _event_log = _event_log[-500:]
+
     if not _active_websockets:
         return
 
@@ -201,7 +207,18 @@ async def reports_endpoint(request: Request) -> JSONResponse:
     """Returns details of the latest output artifacts."""
     if bridge._last_result:
         return JSONResponse({"success": True, "report": bridge._last_result})
-    return JSONResponse({"success": True, "report": None, "message": "No completed sessions yet."})
+async def poll_events_endpoint(request: Request) -> JSONResponse:
+    """HTTP polling fallback for real-time extraction progress and events."""
+    try:
+        since = int(request.query_params.get("since", "0"))
+    except Exception:
+        since = 0
+    return JSONResponse({
+        "success": True,
+        "events": _event_log[since:],
+        "next_idx": len(_event_log),
+        "is_running": bridge.is_running,
+    })
 
 
 async def websocket_events_endpoint(websocket: WebSocket) -> None:
@@ -649,6 +666,7 @@ if HAS_STARLETTE:
             Route("/api/cases/upload-to-cloud", upload_to_cloud_endpoint, methods=["POST"]),
             Route("/api/verify", verify_custody_endpoint, methods=["POST", "GET"]),
             Route("/api/open-folder", open_folder_endpoint, methods=["POST"]),
+            Route("/api/acquire/events/poll", poll_events_endpoint, methods=["GET"]),
             WebSocketRoute("/api/acquire/events", websocket_events_endpoint),
         ]
 
@@ -691,6 +709,20 @@ else:
                     "last_result": bridge._last_result,
                 }).encode("utf-8")
                 self.wfile.write(resp)
+            elif path == "/api/acquire/events/poll":
+                try:
+                    query_params = urllib.parse.parse_qs(parsed.query)
+                    since_idx = int(query_params.get("since", ["0"])[0])
+                except Exception:
+                    since_idx = 0
+                new_events = _event_log[since_idx:]
+                self._send_cors(200)
+                self.wfile.write(json.dumps({
+                    "success": True,
+                    "events": new_events,
+                    "next_idx": len(_event_log),
+                    "is_running": bridge.is_running
+                }).encode("utf-8"))
             elif path == "/api/devices":
                 try:
                     detector = DeviceDetector()
@@ -733,16 +765,52 @@ else:
                 data = {}
 
             if path == "/api/acquire/start":
-                device_id = data.get("device_id", "auto")
-                case_number = data.get("case_number", "CASE-DEMO")
-                officer_id = data.get("officer_id", "IO-OFFICER")
-                bridge.start_acquisition(device_id=device_id, case_number=case_number, officer_id=officer_id)
-                self._send_cors(200)
-                self.wfile.write(json.dumps({"success": True, "message": "Acquisition started"}).encode("utf-8"))
+                if bridge.is_running:
+                    self._send_cors(409)
+                    self.wfile.write(json.dumps({"success": False, "error": "An acquisition session is already running."}).encode("utf-8"))
+                    return
+
+                case_info = data.get("case_info")
+                if not case_info:
+                    case_info = {
+                        "caseNumber": data.get("case_number", "CASE-DEMO"),
+                        "officerName": data.get("officer_id", "IO-OFFICER"),
+                        "title": "Forensic Acquisition"
+                    }
+
+                device_id = data.get("device_id")
+                extraction_level = str(data.get("level", "logical")).lower()
+                profile = str(data.get("profile", "all")).lower()
+                output_dir = data.get("output_dir", "./cases")
+                auth_token = data.get("token")
+                session_encryption_key = data.get("session_encryption_key")
+                stream_url = data.get("stream_url")
+
+                try:
+                    bridge.start_acquisition(
+                        case_info=case_info,
+                        device_id=device_id,
+                        extraction_level=extraction_level,
+                        profile=profile,
+                        output_dir=output_dir,
+                        auth_token=auth_token,
+                        session_encryption_key=session_encryption_key,
+                        stream_url=stream_url,
+                    )
+                    self._send_cors(200)
+                    self.wfile.write(json.dumps({
+                        "success": True,
+                        "message": "Forensic acquisition initiated successfully.",
+                        "caseNumber": case_info.get("caseNumber")
+                    }).encode("utf-8"))
+                except Exception as e:
+                    self._send_cors(500)
+                    self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
+
             elif path == "/api/acquire/cancel":
-                bridge.cancel_acquisition()
+                cancelled = bridge.cancel()
                 self._send_cors(200)
-                self.wfile.write(json.dumps({"success": True, "message": "Acquisition cancelled"}).encode("utf-8"))
+                self.wfile.write(json.dumps({"success": True, "message": "Acquisition cancellation requested" if cancelled else "No active acquisition"}).encode("utf-8"))
             elif path == "/api/open-folder":
                 folder_path = data.get("path", ".")
                 subprocess.Popen(["open", folder_path])

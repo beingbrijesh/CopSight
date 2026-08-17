@@ -34,6 +34,7 @@ export const Workspace: React.FC = () => {
   useEffect(() => {
     daemonClient.checkHealth();
     daemonClient.connectWebSocket();
+    daemonClient.startPollingEvents();
     daemonClient.scanDevices();
 
     const healthInterval = setInterval(() => {

@@ -7,6 +7,8 @@ class DaemonClient {
   private ws: WebSocket | null = null;
   private reconnectTimer: any = null;
   private pingInterval: any = null;
+  private pollInterval: any = null;
+  private eventPollIndex: number = 0;
   private isIntentionallyClosed: boolean = false;
 
   public setBaseUrl(url: string) {
@@ -24,6 +26,26 @@ class DaemonClient {
       useDaemonStore.getState().setDaemonConnected(false);
       return false;
     }
+  }
+
+  public startPollingEvents() {
+    if (this.pollInterval) return;
+    this.pollInterval = setInterval(async () => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        return;
+      }
+      try {
+        const res = await axios.get(`${this.baseUrl}/api/acquire/events/poll?since=${this.eventPollIndex}`, { timeout: 3000 });
+        if (res.data?.success && Array.isArray(res.data.events)) {
+          for (const ev of res.data.events) {
+            this.handleEvent(ev);
+          }
+          this.eventPollIndex = res.data.next_idx ?? (this.eventPollIndex + res.data.events.length);
+        }
+      } catch {
+        // Quietly ignore transient delay
+      }
+    }, 600);
   }
 
   public async scanDevices() {
@@ -203,6 +225,8 @@ class DaemonClient {
   public disconnect() {
     this.isIntentionallyClosed = true;
     clearInterval(this.pingInterval);
+    clearInterval(this.pollInterval);
+    this.pollInterval = null;
     clearTimeout(this.reconnectTimer);
     if (this.ws) {
       this.ws.onopen = null;
