@@ -77,7 +77,7 @@ end quit
 export PATH="/Library/Frameworks/Python.framework/Versions/3.11/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="{str(root_dir)}"
+ROOT_DIR="$DIR/app_core"
 UI_DIR="$DIR/ui"
 
 PYTHON_BIN="{python_bin}"
@@ -95,7 +95,7 @@ export PYTHONPATH="$ROOT_DIR:$PYTHONPATH"
 
 # 1. Daemon check on port 54322 (only start if not already responding)
 if ! curl -s --max-time 1 http://127.0.0.1:54322/health >/dev/null 2>&1; then
-    nohup "$PYTHON_BIN" -m apps.macos.daemon.server --port 54322 > /tmp/copsight_daemon.log 2>&1 &
+    cd "$ROOT_DIR" && nohup "$PYTHON_BIN" -m apps.macos.daemon.server --port 54322 > /tmp/copsight_daemon.log 2>&1 &
 fi
 
 # 2. UI check on port 5174 (only start if not already responding)
@@ -110,13 +110,21 @@ exit 0
         f.write(services_script)
     services_script_path.chmod(0o755)
 
-    # 4. Copy Assets & App Icon into Bundle
-    print("[4/5] Copying web assets and app icon...")
+    # 4. Copy Assets, Python Code Core, & App Icon into Bundle
+    print("[4/5] Copying web assets, core python modules, and app icon...")
     ui_dist_src = macos_app_dir / "dist"
     ui_dist_dst = resources_dir / "ui"
     if ui_dist_dst.exists():
         shutil.rmtree(ui_dist_dst)
     shutil.copytree(ui_dist_src, ui_dist_dst)
+
+    # Bundle core python logic
+    app_core_dst = resources_dir / "app_core"
+    if app_core_dst.exists():
+        shutil.rmtree(app_core_dst)
+    app_core_dst.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(root_dir / "forensixd", app_core_dst / "forensixd", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    shutil.copytree(root_dir / "apps", app_core_dst / "apps", ignore=shutil.ignore_patterns("node_modules", "dist", ".venv", "__pycache__", "*.pyc"))
 
     icon_src = root_dir / "forensixd" / "logo.icns"
     if icon_src.exists():
