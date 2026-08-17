@@ -48,8 +48,8 @@ def main():
     set resourcesDir to (path to me as text) & "Contents:Resources:"
     set scriptPath to POSIX path of resourcesDir & "start_services.sh"
     
-    do shell script "/bin/bash " & quoted form of scriptPath
-    delay 0.5
+    do shell script "/bin/bash " & quoted form of scriptPath & " > /dev/null 2>&1 &"
+    delay 1
     open location "http://localhost:5174"
 end run
 
@@ -72,35 +72,35 @@ end quit
 
     # 3. Write start_services.sh helper into Bundle Resources
     print("[3/5] Installing service lifecycle manager...")
-    python_bin = sys.executable or "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3"
-    services_script = f"""#!/bin/bash
-export PATH="/Library/Frameworks/Python.framework/Versions/3.11/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+    services_script = """#!/bin/bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:/Library/Frameworks/Python.framework/Versions/3.11/bin:/usr/bin:/bin:$PATH"
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$DIR/app_core"
 UI_DIR="$DIR/ui"
 
-PYTHON_BIN="{python_bin}"
-if [ ! -x "$PYTHON_BIN" ]; then
-  if command -v python3 >/dev/null 2>&1; then
-    PYTHON_BIN="$(which python3)"
-  elif [ -x "/opt/homebrew/bin/python3" ]; then
-    PYTHON_BIN="/opt/homebrew/bin/python3"
-  elif [ -x "/usr/local/bin/python3" ]; then
-    PYTHON_BIN="/usr/local/bin/python3"
+PYTHON_BIN=""
+for p in "$ROOT_DIR/forensixd/venv/bin/python3" "/opt/homebrew/bin/python3" "/usr/local/bin/python3" "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3" "$(which python3 2>/dev/null)" "/usr/bin/python3"; do
+  if [ -x "$p" ]; then
+    PYTHON_BIN="$p"
+    break
   fi
+done
+
+if [ -z "$PYTHON_BIN" ]; then
+  PYTHON_BIN="python3"
 fi
 
 export PYTHONPATH="$ROOT_DIR:$PYTHONPATH"
 
 # 1. Daemon check on port 54322 (only start if not already responding)
 if ! curl -s --max-time 1 http://127.0.0.1:54322/health >/dev/null 2>&1; then
-    cd "$ROOT_DIR" && nohup "$PYTHON_BIN" -m apps.macos.daemon.server --port 54322 > /tmp/copsight_daemon.log 2>&1 &
+    cd "$ROOT_DIR" && nohup "$PYTHON_BIN" -m apps.macos.daemon.server --port 54322 </dev/null >/tmp/copsight_daemon.log 2>&1 &
 fi
 
 # 2. UI check on port 5174 (only start if not already responding)
 if ! curl -s --max-time 1 http://127.0.0.1:5174/ >/dev/null 2>&1; then
-    cd "$UI_DIR" && nohup "$PYTHON_BIN" -m http.server 5174 > /tmp/copsight_ui.log 2>&1 &
+    cd "$UI_DIR" && nohup "$PYTHON_BIN" -m http.server 5174 </dev/null >/tmp/copsight_ui.log 2>&1 &
 fi
 
 exit 0

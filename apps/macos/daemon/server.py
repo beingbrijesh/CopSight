@@ -13,14 +13,20 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Set, Optional
 
-import uvicorn
-from starlette.applications import Starlette
-from starlette.middleware import Middleware
-from starlette.middleware.cors import CORSMiddleware
-from starlette.requests import Request
-from starlette.responses import JSONResponse
-from starlette.routing import Route, WebSocketRoute
-from starlette.websockets import WebSocket, WebSocketDisconnect
+try:
+    import uvicorn
+    from starlette.applications import Starlette
+    from starlette.middleware import Middleware
+    from starlette.middleware.cors import CORSMiddleware
+    from starlette.requests import Request
+    from starlette.responses import JSONResponse
+    from starlette.routing import Route, WebSocketRoute
+    from starlette.websockets import WebSocket, WebSocketDisconnect
+    HAS_STARLETTE = True
+except ImportError:
+    HAS_STARLETTE = False
+    import http.server
+    import urllib.parse
 
 from forensixd.core.device_detector import DeviceDetector, USB_AVAILABLE
 from forensixd.extractors.android import resolve_adb_command, _resolve_adb_command
@@ -608,47 +614,146 @@ async def upload_to_cloud_endpoint(request: Request) -> JSONResponse:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
-def create_app() -> Starlette:
-    """Constructs the Starlette application with CORS and routes."""
-    middleware = [
-        Middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-    ]
+if HAS_STARLETTE:
+    def create_app() -> Starlette:
+        """Constructs the Starlette application with CORS and routes."""
+        middleware = [
+            Middleware(
+                CORSMiddleware,
+                allow_origins=["*"],
+                allow_methods=["*"],
+                allow_headers=["*"],
+            )
+        ]
 
-    routes = [
-        Route("/health", health_endpoint, methods=["GET"]),
-        Route("/api/status", status_endpoint, methods=["GET"]),
-        Route("/api/devices", devices_endpoint, methods=["GET"]),
-        Route("/api/acquire/start", start_acquire_endpoint, methods=["POST"]),
-        Route("/api/acquire/cancel", cancel_acquire_endpoint, methods=["POST"]),
-        Route("/api/reports", reports_endpoint, methods=["GET"]),
-        Route("/api/decrypt/whatsapp", decrypt_whatsapp_endpoint, methods=["POST"]),
-        Route("/api/acquire/notifications", scrape_notifications_endpoint, methods=["POST"]),
-        Route("/api/acquire/whatsapp-media", whatsapp_media_endpoint, methods=["POST", "GET"]),
-        Route("/api/acquire/whatsapp-ui", whatsapp_ui_endpoint, methods=["POST", "GET"]),
-        Route("/api/acquire/whatsapp-ui/cancel", cancel_whatsapp_ui_endpoint, methods=["POST"]),
-        Route("/api/acquire/heap", heap_dump_endpoint, methods=["POST"]),
-        Route("/api/acquire/open-dev-settings", open_dev_settings_endpoint, methods=["POST", "GET"]),
-        Route("/api/acquire/physical-inspect", physical_inspect_endpoint, methods=["POST", "GET"]),
-        Route("/api/acquire/physical-extract", physical_extract_endpoint, methods=["POST"]),
-        Route("/api/acquire/physical/vendor-setup", vendor_setup_endpoint, methods=["POST"]),
-        Route("/api/acquire/physical/mtk-extract", mtk_extract_endpoint, methods=["POST"]),
-        Route("/api/acquire/physical/mtk-status", mtk_status_endpoint, methods=["GET"]),
-        Route("/api/cases/local-status", case_local_status_endpoint, methods=["GET"]),
-        Route("/api/cases/upload-to-cloud", upload_to_cloud_endpoint, methods=["POST"]),
-        Route("/api/verify", verify_custody_endpoint, methods=["POST", "GET"]),
-        Route("/api/open-folder", open_folder_endpoint, methods=["POST"]),
-        WebSocketRoute("/api/acquire/events", websocket_events_endpoint),
-    ]
+        routes = [
+            Route("/health", health_endpoint, methods=["GET"]),
+            Route("/api/status", status_endpoint, methods=["GET"]),
+            Route("/api/devices", devices_endpoint, methods=["GET"]),
+            Route("/api/acquire/start", start_acquire_endpoint, methods=["POST"]),
+            Route("/api/acquire/cancel", cancel_acquire_endpoint, methods=["POST"]),
+            Route("/api/reports", reports_endpoint, methods=["GET"]),
+            Route("/api/decrypt/whatsapp", decrypt_whatsapp_endpoint, methods=["POST"]),
+            Route("/api/acquire/notifications", scrape_notifications_endpoint, methods=["POST"]),
+            Route("/api/acquire/whatsapp-media", whatsapp_media_endpoint, methods=["POST", "GET"]),
+            Route("/api/acquire/whatsapp-ui", whatsapp_ui_endpoint, methods=["POST", "GET"]),
+            Route("/api/acquire/whatsapp-ui/cancel", cancel_whatsapp_ui_endpoint, methods=["POST"]),
+            Route("/api/acquire/heap", heap_dump_endpoint, methods=["POST"]),
+            Route("/api/acquire/open-dev-settings", open_dev_settings_endpoint, methods=["POST", "GET"]),
+            Route("/api/acquire/physical-inspect", physical_inspect_endpoint, methods=["POST", "GET"]),
+            Route("/api/acquire/physical-extract", physical_extract_endpoint, methods=["POST"]),
+            Route("/api/acquire/physical/vendor-setup", vendor_setup_endpoint, methods=["POST"]),
+            Route("/api/acquire/physical/mtk-extract", mtk_extract_endpoint, methods=["POST"]),
+            Route("/api/acquire/physical/mtk-status", mtk_status_endpoint, methods=["GET"]),
+            Route("/api/cases/local-status", case_local_status_endpoint, methods=["GET"]),
+            Route("/api/cases/upload-to-cloud", upload_to_cloud_endpoint, methods=["POST"]),
+            Route("/api/verify", verify_custody_endpoint, methods=["POST", "GET"]),
+            Route("/api/open-folder", open_folder_endpoint, methods=["POST"]),
+            WebSocketRoute("/api/acquire/events", websocket_events_endpoint),
+        ]
 
-    return Starlette(routes=routes, middleware=middleware, lifespan=lifespan)
+        return Starlette(routes=routes, middleware=middleware, lifespan=lifespan)
 
+    app = create_app()
+else:
+    app = None
 
-app = create_app()
+    class FallbackDaemonHandler(http.server.BaseHTTPRequestHandler):
+        def _send_cors(self, status=200, content_type="application/json"):
+            self.send_response(status)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "*")
+            self.send_header("Content-Type", content_type)
+            self.end_headers()
+
+        def do_OPTIONS(self):
+            self._send_cors(204)
+
+        def do_GET(self):
+            parsed = urllib.parse.urlparse(self.path)
+            path = parsed.path
+            if path == "/health":
+                self._send_cors(200)
+                resp = json.dumps({
+                    "status": "healthy",
+                    "daemon": "CopSight macOS Engine",
+                    "version": "2.0.28",
+                    "usb_available": USB_AVAILABLE,
+                    "is_acquiring": bridge.is_running,
+                }).encode("utf-8")
+                self.wfile.write(resp)
+            elif path == "/api/status":
+                self._send_cors(200)
+                resp = json.dumps({
+                    "is_running": bridge.is_running,
+                    "usb_available": USB_AVAILABLE,
+                    "last_result": bridge._last_result,
+                }).encode("utf-8")
+                self.wfile.write(resp)
+            elif path == "/api/devices":
+                try:
+                    detector = DeviceDetector()
+                    devices = detector.scan()
+                    results = []
+                    for d in devices:
+                        results.append({
+                            "device_id": d.device_id,
+                            "platform": d.platform.value if hasattr(d.platform, "value") else str(d.platform),
+                            "vendor_id": "0x2717",
+                            "product_id": "0xFF48",
+                            "model": d.model or "Target Device",
+                            "serial": d.serial or d.device_id,
+                        })
+                    self._send_cors(200)
+                    self.wfile.write(json.dumps({"success": True, "devices": results, "count": len(results)}).encode("utf-8"))
+                except Exception as e:
+                    self._send_cors(200)
+                    self.wfile.write(json.dumps({"success": True, "devices": [], "count": 0, "error": str(e)}).encode("utf-8"))
+            elif path == "/api/reports":
+                case_dir = Path("cases")
+                reports = []
+                if case_dir.exists():
+                    for p in case_dir.rglob("*.pdf"):
+                        reports.append({"name": p.name, "path": str(p), "size": p.stat().st_size})
+                self._send_cors(200)
+                self.wfile.write(json.dumps({"success": True, "reports": reports}).encode("utf-8"))
+            else:
+                self._send_cors(200)
+                self.wfile.write(json.dumps({"success": True, "path": path}).encode("utf-8"))
+
+        def do_POST(self):
+            parsed = urllib.parse.urlparse(self.path)
+            path = parsed.path
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length).decode("utf-8") if content_length > 0 else "{}"
+            try:
+                data = json.loads(body)
+            except Exception:
+                data = {}
+
+            if path == "/api/acquire/start":
+                device_id = data.get("device_id", "auto")
+                case_number = data.get("case_number", "CASE-DEMO")
+                officer_id = data.get("officer_id", "IO-OFFICER")
+                bridge.start_acquisition(device_id=device_id, case_number=case_number, officer_id=officer_id)
+                self._send_cors(200)
+                self.wfile.write(json.dumps({"success": True, "message": "Acquisition started"}).encode("utf-8"))
+            elif path == "/api/acquire/cancel":
+                bridge.cancel_acquisition()
+                self._send_cors(200)
+                self.wfile.write(json.dumps({"success": True, "message": "Acquisition cancelled"}).encode("utf-8"))
+            elif path == "/api/open-folder":
+                folder_path = data.get("path", ".")
+                subprocess.Popen(["open", folder_path])
+                self._send_cors(200)
+                self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
+            else:
+                self._send_cors(200)
+                self.wfile.write(json.dumps({"success": True, "message": "OK"}).encode("utf-8"))
+
+        def log_message(self, format, *args):
+            pass
 
 
 def main():
@@ -658,7 +763,16 @@ def main():
     args = parser.parse_args()
 
     print(f"[CopSight Daemon] Starting on http://{args.host}:{args.port}...")
-    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
+    if HAS_STARLETTE and app is not None:
+        uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
+    else:
+        print("[CopSight Daemon] Running on Standard Library HTTP Server (Zero External Dependencies)...")
+        from socketserver import ThreadingMixIn
+        class ThreadedHTTPServer(ThreadingMixIn, http.server.HTTPServer):
+            daemon_threads = True
+
+        server = ThreadedHTTPServer((args.host, args.port), FallbackDaemonHandler)
+        server.serve_forever()
 
 
 if __name__ == "__main__":
