@@ -52,7 +52,7 @@ streamQueue.process(async (job) => {
     // Ensure ProcessingJob exists and update progress
     if (activeProcessingJobId) {
       await ProcessingJob.update(
-        { status: 'processing', progress: 30 },
+        { status: 'processing', progress: 25 },
         { where: { id: activeProcessingJobId } }
       );
     } else {
@@ -60,7 +60,7 @@ streamQueue.process(async (job) => {
         caseId: parseInt(caseId),
         jobType: 'stream_extraction',
         status: 'processing',
-        progress: 30,
+        progress: 25,
         startedAt: new Date()
       });
       activeProcessingJobId = newJob.id;
@@ -82,31 +82,18 @@ streamQueue.process(async (job) => {
     }
     
     const allEntities = [];
+    const sourceTypesMap = {};
+    const fileEntities = [];
     let extractedCount = 0;
     
     for (const artifact of artifacts) {
       const sourceType = artifact.sourceType || 'stream';
 
-      // 3. Ensure DataSource exists and update counts
-      const [dataSource] = await DataSource.findOrCreate({
-        where: { deviceId: device.id, sourceType: sourceType },
-        defaults: {
-          appName: sourceType,
-          totalRecords: 0,
-          processedRecords: 0,
-          status: 'completed'
-        }
-      });
-      await dataSource.increment(['totalRecords', 'processedRecords'], { by: 1 });
-
-      let recordEntities = [];
-      
       // If it's an uploaded file (media, backups, large CSV)
       if (artifact.data && artifact.data.method === 'file_upload') {
         const filePath = artifact.data.filePath;
         const mimeType = artifact.data.mimeType || '';
-        // Create an entity for the dashboard visibility
-        recordEntities.push({
+        fileEntities.push({
           caseId: parseInt(caseId),
           evidenceType: sourceType,
           evidenceId: artifact.data?.id?.toString() || `file_${Date.now()}_${extractedCount}`,
@@ -130,7 +117,7 @@ streamQueue.process(async (job) => {
             
             const form = new FormData();
             form.append('case_id', caseId.toString());
-            form.append('device_id', deviceId.toString());
+            form.append('device_id', (deviceId || device.id).toString());
             form.append('file', fs.createReadStream(filePath), artifact.data.fileName);
             
             const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8001';
@@ -141,71 +128,92 @@ streamQueue.process(async (job) => {
           } catch (err) {
             logger.error(`Failed to forward media to AI Service: ${err.message}`);
           }
-        } else {
-          // Handle other files like CSVs or backups locally if needed
-          logger.info(`Received file upload for ${artifact.data.fileName}, stored at ${filePath}`);
         }
       } else {
         // Standard streaming JSON payload
         let parsedRecords = [artifact.data];
-        
-        // If it's a CSV file, parse it into individual records
         if (artifact.data.content && artifact.data.source_path && artifact.data.source_path.toLowerCase().endsWith('.csv')) {
-           parsedRecords = parseCSV(artifact.data.content);
+          parsedRecords = parseCSV(artifact.data.content);
         }
-        
-        const recordData = {
-          dataSources: [{
-            sourceType: sourceType,
-            data: parsedRecords,
-            totalRecords: parsedRecords.length
-          }]
-        };
-        
-        const extractedEntities = await extractEntities(recordData);
-        
-        recordEntities = extractedEntities.map((entity, idx) => ({
-          caseId: parseInt(caseId),
-          evidenceType: sourceType,
-          evidenceId: artifact.data?.id?.toString() || `stream_${Date.now()}_${extractedCount}_${idx}`,
-          entityType: entity.type,
-          entityValue: entity.value,
-          entityMetadata: entity.metadata || {},
-          confidenceScore: entity.confidence || 0.8,
-          startPosition: entity.startPosition || 0
-        }));
+        if (!sourceTypesMap[sourceType]) {
+          sourceTypesMap[sourceType] = [];
+        }
+        sourceTypesMap[sourceType].push(...parsedRecords);
       }
-      
-      
-      
-      allEntities.push(...recordEntities);
       extractedCount++;
     }
-    
-    if (allEntities.length > 0) {
-      await EntityTag.bulkCreate(allEntities);
+
+    if (fileEntities.length > 0) {
+      allEntities.push(...fileEntities);
     }
-    
-    const sourceTypesMap = {};
-    for (const artifact of artifacts) {
-      const st = artifact.sourceType || 'stream';
-      if (!sourceTypesMap[st]) sourceTypesMap[st] = [];
-      sourceTypesMap[st].push(artifact.data);
+
+    // 2. Batch update DataSources (1 query per source type instead of N individual queries)
+    for (const [sourceType, records] of Object.entries(sourceTypesMap)) {
+      const [dataSource] = await DataSource.findOrCreate({
+        where: { deviceId: device.id, sourceType: sourceType },
+        defaults: {
+          appName: sourceType,
+          totalRecords: 0,
+          processedRecords: 0,
+          status: 'completed'
+        }
+      });
+      await dataSource.increment(
+        { totalRecords: records.length, processedRecords: records.length }
+      );
     }
-    
+
+    // 3. Batch Entity Extraction (single call for entire chunk)
     const dataSources = Object.keys(sourceTypesMap).map(st => ({
       sourceType: st,
       data: sourceTypesMap[st],
       totalRecords: sourceTypesMap[st].length
     }));
-    
+
+    if (dataSources.length > 0) {
+      const parsedData = { dataSources };
+      const extractedEntities = await extractEntities(parsedData);
+      
+      const recordEntities = extractedEntities.map((entity, idx) => ({
+        caseId: parseInt(caseId),
+        evidenceType: entity.sourceType || 'stream',
+        evidenceId: entity.recordId || `stream_${Date.now()}_${idx}`,
+        entityType: entity.type,
+        entityValue: entity.value,
+        entityMetadata: entity.metadata || {},
+        confidenceScore: entity.confidence || 0.8,
+        startPosition: entity.startPosition || 0
+      }));
+      allEntities.push(...recordEntities);
+    }
+
+    if (allEntities.length > 0) {
+      await EntityTag.bulkCreate(allEntities);
+    }
+
+    // Update progress to 65% after NER extraction
+    if (activeProcessingJobId) {
+      await ProcessingJob.update(
+        { progress: 65 },
+        { where: { id: activeProcessingJobId } }
+      );
+    }
+
+    // 4. Batch Indexing to Elasticsearch & AI Service
     const parsedData = { dataSources };
-    
     try {
       await indexToElasticsearch(parseInt(caseId), parsedData, allEntities);
       logger.info('Elasticsearch indexing for stream completed');
     } catch (error) {
       logger.error('Elasticsearch indexing for stream failed:', error);
+    }
+
+    // Update progress to 85% after search indexing
+    if (activeProcessingJobId) {
+      await ProcessingJob.update(
+        { progress: 85 },
+        { where: { id: activeProcessingJobId } }
+      );
     }
     
     if (process.env.AUTO_PROCESS_TEXT === 'true') {

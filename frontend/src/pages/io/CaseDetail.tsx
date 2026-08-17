@@ -60,10 +60,11 @@ export const CaseDetail = () => {
 
   const startPollingJobs = useCallback(() => {
     if (pollingInterval.current) {
-      return;
+      clearInterval(pollingInterval.current);
+      pollingInterval.current = null;
     }
 
-    let currentInterval = 30000;
+    let currentInterval = 2500;
 
     const pollJobs = async () => {
       try {
@@ -74,8 +75,8 @@ export const CaseDetail = () => {
           job.status === 'processing' || job.status === 'pending'
         );
         
-        const hasHighProgress = active.some((job: any) => job.progress >= 80);
-        const newInterval = hasHighProgress ? 5000 : 30000;
+        // Fast 2.5s polling while jobs are active, 15s when idle
+        const newInterval = active.length > 0 ? 2500 : 15000;
         
         if (newInterval !== currentInterval && pollingInterval.current) {
           clearInterval(pollingInterval.current);
@@ -150,40 +151,23 @@ export const CaseDetail = () => {
     setUploadSuccess(false);
     setShowQueryPrompt(false);
     setFileJustProcessed(false);
-    
-    if (!pollingInterval.current) {
-      startPollingJobs();
-    }
 
     try {
       setUploading(true);
-      const response = await uploadAPI.uploadFile(parseInt(caseId!), file, (progress) => {
+      await uploadAPI.uploadFile(parseInt(caseId!), file, (progress) => {
         setUploadProgress(progress);
       });
       
       setUploadSuccess(true);
       setFileJustProcessed(true);
       
-      if (response.data.data.jobId) {
-        const newJob = {
-          id: response.data.data.jobId,
-          status: 'pending',
-          progress: 0,
-          jobType: 'parse_ufdr',
-          created_at: new Date().toISOString()
-        };
-        setActiveJobs([newJob]);
-        
-        setProcessing((prev: any) => ({
-          ...prev,
-          jobs: [newJob, ...(prev?.jobs || [])]
-        }));
-      }
+      // Start fast polling and reload case data from backend
+      startPollingJobs();
+      await loadCaseData();
       
       setTimeout(() => {
-        loadCaseData();
         setUploadSuccess(false);
-      }, 2000);
+      }, 3000);
     } catch (error: any) {
       console.error('Upload failed:', error);
       const errorMessage = error.response?.data?.message || 
@@ -383,7 +367,7 @@ export const CaseDetail = () => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-              Processing
+              Active Ingestion & Processing
             </h2>
             <button
               onClick={loadCaseData}
@@ -394,34 +378,39 @@ export const CaseDetail = () => {
             </button>
           </div>
           <div className="space-y-3">
-            {activeJobs.map((job: any) => (
-              <div key={job.id} className="border border-gray-200 dark:border-white/10 rounded-xl p-4">
+            {Array.from(new Map(activeJobs.map(j => [j.id, j])).values()).map((job: any) => (
+              <div key={job.id} className="border border-blue-100 dark:border-blue-500/20 bg-blue-50/40 dark:bg-blue-500/5 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {job.jobType === 'parse_ufdr' ? 'Parsing UFDR File' :
-                     job.jobType === 'stream_extraction' || job.jobType === 'stream_ingestion' ? 'Live Data Extraction' :
-                     job.jobType === 'artifact_upload' ? 'Processing Artifact Upload' :
-                     job.jobType?.replace('_', ' ')}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300">
+                      Job #{job.id}
+                    </span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {job.jobType === 'parse_ufdr' ? 'UFDR Forensic File Processing' :
+                       job.jobType === 'stream_extraction' || job.jobType === 'stream_ingestion' ? 'Live Extraction Stream Ingestion' :
+                       job.jobType === 'artifact_upload' ? 'Forensic Artifact Upload & Processing' :
+                       job.jobType?.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
                     {job.progress || 0}%
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
-                  <div className="bg-blue-600 h-2 rounded-full transition-all duration-500" style={{ width: `${job.progress || 0}%` }} />
+                  <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${Math.max(job.progress || 0, 5)}%` }} />
                 </div>
-                <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
-                  {job.progress < 30 && 'Parsing data records...'}
-                  {job.progress >= 30 && job.progress < 50 && 'Extracting device and entity information...'}
-                  {job.progress >= 50 && job.progress < 80 && 'Processing data sources & NER...'}
-                  {job.progress >= 80 && 'Finalizing and indexing...'}
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-2 font-medium">
+                  {(job.progress || 0) < 30 && 'Initializing extraction & parsing records...'}
+                  {(job.progress || 0) >= 30 && (job.progress || 0) < 60 && 'Extracting intelligence & entities (NER)...'}
+                  {(job.progress || 0) >= 60 && (job.progress || 0) < 85 && 'Indexing communications to search engine...'}
+                  {(job.progress || 0) >= 85 && 'Finalizing and preparing case data...'}
                 </p>
               </div>
             ))}
           </div>
           <p className="text-xs text-blue-600 dark:text-blue-400 mt-3 flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5" />
-            Processing may take several minutes. You can navigate away and return later.
+            Live ingestion in progress. Real-time telemetry updating automatically.
           </p>
         </div>
       )}

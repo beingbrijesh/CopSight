@@ -31,14 +31,24 @@ router.post('/stream/case/:caseId', decryptPayload, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid payload: artifacts array required' });
     }
 
-    // Create ProcessingJob in database so IO dashboard shows active and recent jobs
-    const processingJob = await ProcessingJob.create({
-      caseId: parseInt(caseId),
-      jobType: 'stream_extraction',
-      status: 'processing',
-      progress: 10,
-      startedAt: new Date()
+    // Reuse existing active stream job if present, otherwise create new one
+    let processingJob = await ProcessingJob.findOne({
+      where: {
+        caseId: parseInt(caseId),
+        jobType: 'stream_extraction',
+        status: 'processing'
+      }
     });
+
+    if (!processingJob) {
+      processingJob = await ProcessingJob.create({
+        caseId: parseInt(caseId),
+        jobType: 'stream_extraction',
+        status: 'processing',
+        progress: 15,
+        startedAt: new Date()
+      });
+    }
 
     if (targetCase.status === 'active') {
       await targetCase.update({ status: 'processing' });
@@ -83,14 +93,24 @@ router.post('/upload/case/:caseId', upload.single('file'), async (req, res) => {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
-    // Create ProcessingJob in database
-    const processingJob = await ProcessingJob.create({
-      caseId: parseInt(caseId),
-      jobType: 'artifact_upload',
-      status: 'processing',
-      progress: 10,
-      startedAt: new Date()
+    // Reuse existing active upload job if present, otherwise create new one
+    let processingJob = await ProcessingJob.findOne({
+      where: {
+        caseId: parseInt(caseId),
+        jobType: 'artifact_upload',
+        status: 'processing'
+      }
     });
+
+    if (!processingJob) {
+      processingJob = await ProcessingJob.create({
+        caseId: parseInt(caseId),
+        jobType: 'artifact_upload',
+        status: 'processing',
+        progress: 15,
+        startedAt: new Date()
+      });
+    }
 
     if (targetCase.status === 'active') {
       await targetCase.update({ status: 'processing' });
