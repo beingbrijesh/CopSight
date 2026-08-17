@@ -140,7 +140,7 @@ html, body, #root {
   color: #fecdd3;
 }
 
-/* Pulse animation on radar */
+/* Pulse & Sweep animation on radar */
 @keyframes radarSweepGlow {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -149,21 +149,23 @@ html, body, #root {
 .radar-sweep-cone {
   background: conic-gradient(
     from 0deg,
-    rgba(255, 255, 255, 0.3) 0deg,
-    rgba(255, 255, 255, 0.05) 45deg,
-    transparent 90deg,
-    transparent 360deg
+    transparent 0deg,
+    transparent 270deg,
+    rgba(255, 122, 89, 0.05) 300deg,
+    rgba(255, 122, 89, 0.18) 335deg,
+    rgba(255, 122, 89, 0.45) 360deg
   );
-  animation: radarSweepGlow 3.5s linear infinite;
+  animation: radarSweepGlow 3s linear infinite;
   transform-origin: center center;
 }
 
 .dark .radar-sweep-cone {
   background: conic-gradient(
     from 0deg,
-    rgba(255, 255, 255, 0.15) 0deg,
-    rgba(255, 255, 255, 0.02) 45deg,
-    transparent 90deg,
-    transparent 360deg
+    transparent 0deg,
+    transparent 270deg,
+    rgba(255, 255, 255, 0.03) 300deg,
+    rgba(255, 255, 255, 0.12) 335deg,
+    rgba(255, 255, 255, 0.4) 360deg
   );
 }
