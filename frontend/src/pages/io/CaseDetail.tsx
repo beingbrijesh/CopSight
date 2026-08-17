@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Activity, SearchCode, CloudUpload, BookmarkCheck, FileBarChart, Loader2, AlertCircle, CheckCircle2, RefreshCw, Network, Brain, Gauge, Link2 } from 'lucide-react';
+import { Activity, SearchCode, CloudUpload, BookmarkCheck, FileBarChart, Loader2, AlertCircle, CheckCircle2, RefreshCw, Network, Brain, Gauge, Link2, X } from 'lucide-react';
 import { caseAPI, uploadAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { CrossCaseConnections } from '../../components/CrossCaseConnections';
@@ -22,6 +22,7 @@ export const CaseDetail = () => {
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [showQueryPrompt, setShowQueryPrompt] = useState(false);
   const [fileJustProcessed, setFileJustProcessed] = useState(false);
+  const [dismissedErrorJobId, setDismissedErrorJobId] = useState<number | null>(null);
   const [activeAITab, setActiveAITab] = useState<AITab>('cross-case');
   const [mountedAITabs, setMountedAITabs] = useState<Set<AITab>>(new Set(['cross-case']));
   const { user } = useAuthStore();
@@ -510,21 +511,31 @@ export const CaseDetail = () => {
       )}
 
       {/* ─── Failed Jobs Alert ─── */}
-      {processing?.jobs && processing.jobs.length > 0 && processing.jobs[0].status === 'failed' && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-5">
+      {processing?.jobs && 
+       processing.jobs.length > 0 && 
+       processing.jobs[0].status === 'failed' && 
+       activeJobs.length === 0 && 
+       dismissedErrorJobId !== processing.jobs[0].id && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-5 relative animate-fade-in">
+          <button 
+            onClick={() => setDismissedErrorJobId(processing.jobs[0].id)}
+            className="absolute top-4 right-4 text-red-400 hover:text-red-600 dark:hover:text-red-200 transition"
+            title="Dismiss error"
+          >
+            <X className="w-5 h-5" />
+          </button>
           <div className="flex items-start gap-3">
             <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-red-900 dark:text-red-300 mb-1">Processing Failed</h3>
+              <h3 className="font-semibold text-red-900 dark:text-red-300 mb-1">Previous Job Failed</h3>
               <p className="text-sm text-red-700 dark:text-red-400 mb-2">
-                {processing.jobs[0].errorMessage || 'An error occurred while processing the file.'}
+                {processing.jobs[0].errorMessage || 'An error occurred while processing.'}
               </p>
               <div className="text-xs text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/20 p-2.5 rounded-lg mt-1">
                 <p className="font-medium mb-1">Common issues:</p>
                 <ul className="list-disc list-inside space-y-0.5">
-                  <li>File must be a valid CopSight/Cellebrite XML export</li>
-                  <li>Ensure the file is not corrupted</li>
-                  <li>Check the correct format (.xml, .ufdr)</li>
+                  <li>Ensure the device connection or uploaded file is valid</li>
+                  <li>Check extraction daemon status or file format (.xml, .ufdr, .dfxml)</li>
                 </ul>
               </div>
             </div>

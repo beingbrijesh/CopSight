@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import Device from '../models/Device.js';
 import ProcessingJob from '../models/ProcessingJob.js';
 import EntityTag from '../models/EntityTag.js';
@@ -178,8 +179,29 @@ export const getCaseProcessingSummary = async (req, res) => {
       ]
     });
 
+    // Auto-timeout stale jobs older than 5 minutes that never completed
+    const staleThreshold = new Date(Date.now() - 5 * 60 * 1000);
+    try {
+      await ProcessingJob.update(
+        {
+          status: 'failed',
+          errorMessage: 'Job timed out or interrupted',
+          completedAt: new Date()
+        },
+        {
+          where: {
+            caseId: parseInt(caseId),
+            status: ['processing', 'pending'],
+            created_at: { [Op.lt]: staleThreshold }
+          }
+        }
+      );
+    } catch (cleanupErr) {
+      logger.warn(`Stale job cleanup warning: ${cleanupErr.message}`);
+    }
+
     const jobs = await ProcessingJob.findAll({
-      where: { caseId },
+      where: { caseId: parseInt(caseId) },
       order: [['created_at', 'DESC']]
     });
 
