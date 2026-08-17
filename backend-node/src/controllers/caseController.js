@@ -428,7 +428,7 @@ export const getCaseChats = async (req, res) => {
     let searchResult = { results: [] };
     try {
       searchResult = await elasticsearchService.searchElasticsearch(parseInt(caseId), '', {
-        limit: 1000, // Fetch up to 1000 for conversation grouping
+        limit: 5000, // Fetch all case messages for comprehensive conversation grouping
         offset: 0
       });
     } catch (esError) {
@@ -442,58 +442,62 @@ export const getCaseChats = async (req, res) => {
     (searchResult.results || []).forEach(hit => {
       const source = hit.source || {};
       const meta = source.metadata || {};
+      const st = (source.sourceType || meta.sourceType || meta.app || '').toLowerCase();
 
-      const st = (source.sourceType || '').toLowerCase();
-      // Skip non-message/non-chat types if they somehow got in
-      if (!st || !['sms', 'chat', 'whatsapp', 'telegram', 'email', 'messages', 'imessage', 'signal', 'stream'].includes(st)) {
+      // Skip dedicated call logs and contact items unless they are chat messages
+      if (st === 'call_log' || st === 'call_logs' || st === 'calls' || st === 'contacts') {
         return;
       }
 
-      // 1. Determine sender and receiver
-      let sender = meta.sender || meta.from || meta.caller || source.phoneNumber || 'Unknown';
-      let receiver = meta.receiver || meta.recipient || meta.to || 'User';
+      // 1. Extract message content from all possible fields
+      const message = source.content || 
+                      meta.body || 
+                      meta.text || 
+                      meta.message || 
+                      meta.msg || 
+                      meta.snippet || 
+                      (typeof meta.content === 'string' ? meta.content : '') || 
+                      '';
 
-      if (st === 'sms' || st === 'messages') {
-        const direction = meta.direction || meta.type || meta.call_type || 'incoming';
-        const phone = source.phoneNumber || meta.address || meta.sender || meta.caller || 'Unknown';
-
-        if (direction === 'incoming') {
-          sender = phone;
-          receiver = 'User (Device)';
-        } else {
-          sender = 'User (Device)';
-          receiver = phone;
-        }
-      } else if (meta.sender || meta.from) {
-        sender = meta.sender || meta.from;
-        receiver = meta.receiver || meta.recipient || meta.to || 'User';
-      } else if (source.phoneNumber) {
-        sender = source.phoneNumber;
-        receiver = 'User';
+      if (!message || message.trim() === '') {
+        return;
       }
 
-      // 2. Extract message content
-      const message = source.content || meta.body || meta.text || meta.message || (typeof meta.content === 'string' ? meta.content : '') || '';
+      // 2. Determine sender, receiver, and direction
+      const direction = (meta.direction || meta.type || meta.call_type || meta.status || '').toString().toLowerCase();
+      const otherParty = meta.recipient || meta.receiver || meta.to || meta.sender || meta.from || meta.address || source.phoneNumber || 'Other';
 
-      if (!message && !source.content) {
-        return;
+      let sender = 'Unknown';
+      let receiver = 'User';
+
+      if (direction === 'incoming' || direction === 'in' || direction === '1' || direction === 'received') {
+        sender = meta.sender || meta.from || meta.address || source.phoneNumber || otherParty;
+        receiver = meta.receiver || meta.to || 'Device Owner';
+      } else if (direction === 'outgoing' || direction === 'out' || direction === '2' || direction === 'sent') {
+        sender = meta.sender || 'Device Owner';
+        receiver = meta.recipient || meta.receiver || meta.to || meta.address || source.phoneNumber || otherParty;
+      } else {
+        sender = meta.sender || meta.from || (source.phoneNumber ? source.phoneNumber : 'User');
+        receiver = meta.receiver || meta.recipient || meta.to || 'Device Owner';
       }
 
       // 3. Create chat object
       const chat = {
         id: hit.id,
-        sender,
-        receiver,
-        message,
-        timestamp: source.timestamp || meta.timestamp || new Date(),
+        sender: sender.trim(),
+        receiver: receiver.trim(),
+        message: message.trim(),
+        timestamp: source.timestamp || meta.timestamp || meta.date || meta.created_at || new Date(),
         dataSourceId: meta.dataSourceId || 0,
-        appName: source.appName || meta.appName || meta.app || meta.channel || st.toUpperCase()
+        appName: source.appName || meta.appName || meta.app || meta.channel || (st ? st.toUpperCase() : 'CHAT')
       };
 
       allChats.push(chat);
 
       // 4. Group into conversations
-      const participants = [sender, receiver].sort();
+      const p1 = chat.sender;
+      const p2 = chat.receiver;
+      const participants = [p1, p2].sort();
       const conversationKey = `${participants[0]} ↔ ${participants[1]}`;
 
       if (!conversations[conversationKey]) {

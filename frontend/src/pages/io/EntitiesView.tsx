@@ -56,6 +56,11 @@ export const EntitiesView = () => {
 
   useEffect(() => {
     loadEntities();
+    loadChats();
+  }, [caseId]);
+
+  useEffect(() => {
+    loadEntities();
   }, [caseId, selectedType, currentPage]);
 
   useEffect(() => {
@@ -116,15 +121,20 @@ export const EntitiesView = () => {
     try {
       const params: any = {
         page: chatPage,
-        limit: 100
+        limit: 500
       };
 
       const response = await caseAPI.getCaseChats(parseInt(caseId!), params);
       const data = response.data.data;
 
-      setConversations(data.conversations);
-      setTotalChats(data.pagination.total);
-      setTotalChatPages(data.pagination.pages);
+      const rawConversations = data.conversations || {};
+      setConversations(rawConversations);
+      
+      const totalCount = data.pagination?.total || 
+                         data.summary?.total || 
+                         Object.values(rawConversations).reduce((acc: number, curr: any) => acc + (curr?.length || 0), 0);
+      setTotalChats(totalCount);
+      setTotalChatPages(data.pagination?.pages || 1);
     } catch (error: any) {
       console.error('Failed to load chats:', error);
 

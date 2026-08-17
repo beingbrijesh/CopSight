@@ -59,25 +59,25 @@ export const indexToElasticsearch = async (caseId, parsedData, entities) => {
 
         for (const record of source.data) {
           // Find entities in this record
-          const recordEntities = entities.filter(e =>
-            record.content?.includes(e.value) ||
-            record.phoneNumber?.includes(e.value)
-          );
+          const content = record.content || record.message || record.body || record.text || record.msg || record.snippet || '';
+          const phoneNumber = record.phoneNumber || record.phone || record.address || record.caller || record.receiver || record.sender || record.recipient || null;
+          const timestamp = record.timestamp || record.date || record.created_at || record.datetime || new Date().toISOString();
+          const appName = record.appName || record.app || record.channel || source.appName || source.sourceType || 'Chat';
 
-          // Extract text content from various possible field names
-          const content = record.content || record.message || record.body || record.text || '';
-          // Extract phone number from various possible field names
-          const phoneNumber = record.phoneNumber || record.phone || record.caller || record.receiver || record.sender || null;
+          const recordEntities = entities.filter(e =>
+            (content && typeof content === 'string' && content.includes(e.value)) ||
+            (phoneNumber && typeof phoneNumber === 'string' && phoneNumber.includes(e.value))
+          );
 
           operations.push(
             { index: { _index: indexName } },
             {
               caseId,
               sourceType: source.sourceType,
-              appName: source.appName,
+              appName,
               content,
               phoneNumber,
-              timestamp: record.timestamp,
+              timestamp,
               entities: recordEntities,
               indexedAt: new Date().toISOString(),
               metadata: record
@@ -146,7 +146,7 @@ export const searchElasticsearch = async (caseId, query, filters = {}) => {
       index: 'copsight-*,ufdr-*',
       body: {
         query: { bool: { must } },
-        size: filters.limit || 100,
+        size: filters.limit || 1000,
         from: filters.offset || 0,
         sort: [{ timestamp: 'desc' }],
         highlight: {
@@ -177,11 +177,9 @@ export const searchElasticsearch = async (caseId, query, filters = {}) => {
  */
 const getIndexName = (sourceType) => {
   const st = (sourceType || '').toLowerCase();
-  if (st === 'sms' || st === 'whatsapp' || st === 'telegram' || st === 'chat' || st === 'messages' || st === 'imessage' || st === 'signal') {
-    return 'copsight-messages';
-  } else if (st === 'call_log' || st === 'call' || st === 'calls' || st === 'call_logs') {
+  if (st.includes('call') || st.includes('phone_call')) {
     return 'copsight-calls';
-  } else if (st === 'contacts' || st === 'contact') {
+  } else if (st.includes('contact')) {
     return 'copsight-contacts';
   }
   return 'copsight-messages';
