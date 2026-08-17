@@ -191,32 +191,76 @@ exit 0
     print(f"[Success] Created macOS ZIP bundle: {zip_path}")
 
     dmg_path = dist_dir / f"CopSight-macOS-v{version}.dmg"
-    dmg_stage = root_dir / "dmg_stage"
-
-    if dmg_stage.exists():
-        shutil.rmtree(dmg_stage)
-    dmg_stage.mkdir(parents=True, exist_ok=True)
-
-    shutil.copytree(app_bundle_dir, dmg_stage / "CopSight.app")
-    
-    # Create symlink to /Applications for standard drag-and-drop installer
-    apps_symlink = dmg_stage / "Applications"
-    if not apps_symlink.exists():
-        try:
-            os.symlink("/Applications", apps_symlink)
-        except Exception as e:
-            print(f"[Notice] Could not create Applications symlink: {e}")
+    rw_dmg = root_dir / "copsight_rw.dmg"
 
     if shutil.which("hdiutil"):
+        if rw_dmg.exists():
+            rw_dmg.unlink()
         if dmg_path.exists():
             dmg_path.unlink()
-        ret = run_cmd(f'hdiutil create -volname "CopSight" -srcfolder "{dmg_stage}" -ov -format UDZO "{dmg_path}"', check=False)
-        if ret == 0 and dmg_path.exists():
-            print(f"[Success] Created macOS DMG installer with Applications drop target: {dmg_path}")
-        else:
-            print("[Notice] DMG creation skipped; CopSight.app & ZIP distribution assets are fully compiled and ready.")
-        if dmg_stage.exists():
-            shutil.rmtree(dmg_stage)
+
+        try:
+            # Unmount any stale volume
+            subprocess.run(["hdiutil", "detach", "/Volumes/CopSight"], capture_output=True)
+
+            # 1. Create temporary read-write HFS+ DMG
+            run_cmd(f'hdiutil create -size 350m -fs HFS+ -volname "CopSight" -ov "{rw_dmg}"')
+
+            # 2. Mount it
+            run_cmd(f'hdiutil attach "{rw_dmg}" -mountpoint /Volumes/CopSight')
+
+            # 3. Copy files & create Applications shortcut
+            shutil.copytree(app_bundle_dir, "/Volumes/CopSight/CopSight.app")
+            os.symlink("/Applications", "/Volumes/CopSight/Applications")
+
+            # 4. AppleScript to set 128px icons and side-by-side position
+            as_finder_layout = '''
+tell application "Finder"
+    tell disk "CopSight"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set the bounds of container window to {300, 200, 840, 560}
+        set theViewOptions to the icon view options of container window
+        set icon size of theViewOptions to 128
+        set text size of theViewOptions to 14
+        set arrangement of theViewOptions to not arranged
+        set position of item "CopSight.app" of container window to {135, 170}
+        set position of item "Applications" of container window to {405, 170}
+        update without registering applications
+        delay 1
+        close
+    end tell
+end tell
+'''
+            subprocess.run(["osascript", "-e", as_finder_layout], check=False)
+            import time
+            time.sleep(1)
+
+            # 5. Detach read-write DMG
+            subprocess.run(["hdiutil", "detach", "/Volumes/CopSight"], check=True)
+
+            # 6. Convert to compressed UDZO DMG
+            run_cmd(f'hdiutil convert "{rw_dmg}" -format UDZO -imagekey zlib-level=9 -o "{dmg_path}"')
+            print(f"[Success] Created high-DPI macOS DMG installer with 128px large icons: {dmg_path}")
+        except Exception as e:
+            print(f"[Notice] Custom Finder DMG layout had notice: {e}. Falling back to standard UDZO DMG.")
+            dmg_stage = root_dir / "dmg_stage"
+            if dmg_stage.exists():
+                shutil.rmtree(dmg_stage)
+            dmg_stage.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(app_bundle_dir, dmg_stage / "CopSight.app")
+            try:
+                os.symlink("/Applications", dmg_stage / "Applications")
+            except Exception:
+                pass
+            run_cmd(f'hdiutil create -volname "CopSight" -srcfolder "{dmg_stage}" -ov -format UDZO "{dmg_path}"', check=False)
+            if dmg_stage.exists():
+                shutil.rmtree(dmg_stage)
+        finally:
+            if rw_dmg.exists():
+                rw_dmg.unlink()
     else:
         print("[Notice] hdiutil not found; CopSight.app & ZIP are fully ready.")
 
