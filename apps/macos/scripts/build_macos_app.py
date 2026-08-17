@@ -123,8 +123,8 @@ exit 0
     if app_core_dst.exists():
         shutil.rmtree(app_core_dst)
     app_core_dst.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(root_dir / "forensixd", app_core_dst / "forensixd", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
-    shutil.copytree(root_dir / "apps", app_core_dst / "apps", ignore=shutil.ignore_patterns("node_modules", "dist", ".venv", "__pycache__", "*.pyc"))
+    shutil.copytree(root_dir / "forensixd", app_core_dst / "forensixd", ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "venv", ".venv", "env"))
+    shutil.copytree(root_dir / "apps", app_core_dst / "apps", ignore=shutil.ignore_patterns("node_modules", "dist", ".venv", "venv", "__pycache__", "*.pyc"))
 
     icon_src = root_dir / "forensixd" / "logo.icns"
     if icon_src.exists():
@@ -175,8 +175,14 @@ exit 0
 
     print(f"[Success] Native CopSight.app bundle created at: {app_bundle_dir}")
 
-    # 5. Build ZIP Release Asset
-    print("[5/5] Packaging ZIP and DMG distribution assets...")
+    # 5. Ad-Hoc Code Signing
+    print("[5/6] Applying ad-hoc cryptographic signature to bundle...")
+    run_cmd(f'xattr -cr "{app_bundle_dir}"')
+    run_cmd(f'codesign --force --deep --sign - "{app_bundle_dir}"')
+    run_cmd(f'codesign --verify --deep --strict "{app_bundle_dir}"')
+
+    # 6. Build ZIP Release Asset
+    print("[6/6] Packaging ZIP and DMG distribution assets...")
     zip_path = dist_dir / f"CopSight-macOS-v{version}.zip"
     if zip_path.exists():
         zip_path.unlink()
@@ -185,20 +191,28 @@ exit 0
     print(f"[Success] Created macOS ZIP bundle: {zip_path}")
 
     dmg_path = dist_dir / f"CopSight-macOS-v{version}.dmg"
-    dmg_stage = dist_dir / "dmg_stage"
+    dmg_stage = root_dir / "dmg_stage"
 
     if dmg_stage.exists():
         shutil.rmtree(dmg_stage)
     dmg_stage.mkdir(parents=True, exist_ok=True)
 
     shutil.copytree(app_bundle_dir, dmg_stage / "CopSight.app")
+    
+    # Create symlink to /Applications for standard drag-and-drop installer
+    apps_symlink = dmg_stage / "Applications"
+    if not apps_symlink.exists():
+        try:
+            os.symlink("/Applications", apps_symlink)
+        except Exception as e:
+            print(f"[Notice] Could not create Applications symlink: {e}")
 
     if shutil.which("hdiutil"):
         if dmg_path.exists():
             dmg_path.unlink()
         ret = run_cmd(f'hdiutil create -volname "CopSight" -srcfolder "{dmg_stage}" -ov -format UDZO "{dmg_path}"', check=False)
         if ret == 0 and dmg_path.exists():
-            print(f"[Success] Created macOS DMG installer: {dmg_path}")
+            print(f"[Success] Created macOS DMG installer with Applications drop target: {dmg_path}")
         else:
             print("[Notice] DMG creation skipped; CopSight.app & ZIP distribution assets are fully compiled and ready.")
         if dmg_stage.exists():
