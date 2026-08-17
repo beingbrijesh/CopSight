@@ -100,7 +100,7 @@ def acquire(output_dir, level, ufdr_config, profile):
         
         # Generate deterministic integer ID from device.device_id
         import hashlib
-        internal_device_id = int(hashlib.md5(device.device_id.encode()).hexdigest()[:8], 16)
+        internal_device_id = int(hashlib.md5(device.device_id.encode()).hexdigest()[:7], 16)
         api_stream_writer = ApiStreamWriter(stream_url, token, session_encryption_key, int(case_id), internal_device_id)
     except Exception as e:
         console.print(f"[red]Authentication or server connection failed:[/red] {e}")
@@ -297,7 +297,7 @@ def import_image(image_path, output_dir, level, ufdr_config):
         if selected_case:
             case_id = selected_case.get("id")
             import hashlib
-            internal_device_id = int(hashlib.md5(device.device_id.encode()).hexdigest()[:8], 16)
+            internal_device_id = int(hashlib.md5(device.device_id.encode()).hexdigest()[:7], 16)
             api_stream_writer = ApiStreamWriter(stream_url, token, session_encryption_key, int(case_id), internal_device_id)
     except Exception as e:
         console.print(f"[yellow]Skipping CopSight AI streaming (auth failed or skipped).[/yellow]")

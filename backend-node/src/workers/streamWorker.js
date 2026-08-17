@@ -68,9 +68,15 @@ streamQueue.process(async (job) => {
 
     // 1. Ensure Device exists
     let device = null;
-    if (deviceId) {
-      device = await Device.findByPk(deviceId);
+    const parsedDeviceId = parseInt(deviceId, 10);
+    if (!isNaN(parsedDeviceId) && parsedDeviceId > 0 && parsedDeviceId <= 2147483647) {
+      try {
+        device = await Device.findByPk(parsedDeviceId);
+      } catch (devErr) {
+        logger.warn(`Device lookup by pk ${parsedDeviceId} skipped: ${devErr.message}`);
+      }
     }
+
     if (!device) {
       [device] = await Device.findOrCreate({
         where: { caseId: parseInt(caseId), deviceName: 'Direct Extraction Device' },
@@ -117,7 +123,7 @@ streamQueue.process(async (job) => {
             
             const form = new FormData();
             form.append('case_id', caseId.toString());
-            form.append('device_id', (deviceId || device.id).toString());
+            form.append('device_id', (device?.id || 1).toString());
             form.append('file', fs.createReadStream(filePath), artifact.data.fileName);
             
             const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8001';
