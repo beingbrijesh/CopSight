@@ -38,37 +38,20 @@ def main():
     print("[1/5] Compiling React desktop UI...")
     run_cmd("npx vite build", cwd=str(macos_app_dir))
 
-    # 2. Compile Native Cocoa Application Bundle with osacompile
-    print("[2/5] Compiling native macOS Cocoa Mach-O bundle...")
+    # 2. Compile Native Cocoa Application Bundle with Clang & WebKit
+    print("[2/5] Compiling native macOS Cocoa Mach-O binary with WebKit...")
     dist_dir.mkdir(parents=True, exist_ok=True)
     if app_bundle_dir.exists():
         shutil.rmtree(app_bundle_dir)
 
-    applescript_source = """on run
-    set resourcesDir to (path to me as text) & "Contents:Resources:"
-    set scriptPath to POSIX path of resourcesDir & "start_services.sh"
-    
-    do shell script "/bin/bash " & quoted form of scriptPath & " > /dev/null 2>&1 &"
-    delay 1
-    open location "http://localhost:5174"
-end run
+    macos_dir = app_bundle_dir / "Contents" / "MacOS"
+    macos_dir.mkdir(parents=True, exist_ok=True)
+    resources_dir.mkdir(parents=True, exist_ok=True)
 
-on reopen
-    open location "http://localhost:5174"
-end reopen
-
-on quit
-    continue quit
-end quit
-"""
-
-    temp_as_file = dist_dir / "copsight_bundle.applescript"
-    with open(temp_as_file, "w") as f:
-        f.write(applescript_source)
-
-    run_cmd(f'osacompile -o "{app_bundle_dir}" "{temp_as_file}"')
-    if temp_as_file.exists():
-        temp_as_file.unlink()
+    main_m_src = macos_app_dir / "scripts" / "main.m"
+    target_bin = macos_dir / "CopSight"
+    run_cmd(f'clang -framework Cocoa -framework WebKit -O2 "{main_m_src}" -o "{target_bin}"')
+    target_bin.chmod(0o755)
 
     # 3. Write start_services.sh helper into Bundle Resources
     print("[3/5] Installing service lifecycle manager...")
@@ -142,9 +125,9 @@ exit 0
     <key>CFBundleDisplayName</key>
     <string>CopSight</string>
     <key>CFBundleExecutable</key>
-    <string>applet</string>
+    <string>CopSight</string>
     <key>CFBundleIconFile</key>
-    <string>applet</string>
+    <string>logo</string>
     <key>CFBundleIdentifier</key>
     <string>com.copsight.forensics.macos</string>
     <key>CFBundleInfoDictionaryVersion</key>
