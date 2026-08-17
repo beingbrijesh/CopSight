@@ -23,11 +23,24 @@ class ApiStreamWriter:
         self._seen_hashes = set()
         self.lock = Lock()
         
-        # Setup offline queue DB
-        self.db_path = Path.home() / ".forensixd" / "offline_queue.db"
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._init_db()
-        self._attempt_sync()
+        # Setup offline queue DB with safe directory fallbacks
+        try:
+            self.db_path = Path.home() / ".forensixd" / "offline_queue.db"
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+            self._init_db()
+        except Exception:
+            try:
+                self.db_path = Path("./.forensixd") / "offline_queue.db"
+                self.db_path.parent.mkdir(parents=True, exist_ok=True)
+                self._init_db()
+            except Exception:
+                self.db_path = ":memory:"
+                self._init_db()
+
+        try:
+            self._attempt_sync()
+        except Exception:
+            pass
 
     def _init_db(self):
         with sqlite3.connect(self.db_path) as conn:
@@ -54,7 +67,37 @@ class ApiStreamWriter:
                 return
             self._seen_hashes.add(sha256)
 
-        # Convert artifact to dict safely
+        # 1. First attempt structured decoding (SMS, Calls, Contacts, WhatsApp chats, Backups)
+        try:
+            from forensixd.parsers.auto_decoder import ForensicAutoDecoder
+            decoded_records = ForensicAutoDecoder.decode_and_extract_records(artifact)
+            if decoded_records:
+                with self.lock:
+                    for rec in decoded_records:
+                        app_name = str(rec.get("app") or rec.get("channel") or "sms").lower()
+                        if "whatsapp" in app_name:
+                            st = "whatsapp"
+                        elif "telegram" in app_name:
+                            st = "telegram"
+                        elif "call" in app_name or "phone" in app_name:
+                            st = "call_log"
+                        elif "contact" in app_name:
+                            st = "contacts"
+                        else:
+                            st = "sms"
+                        self.buffer.append({
+                            "sourceType": st,
+                            "data": rec
+                        })
+                        if len(self.buffer) >= self.batch_size:
+                            batch = self.buffer.copy()
+                            self.buffer.clear()
+                            self._send_batch(batch)
+                return
+        except Exception as e:
+            console.print(f"[yellow]Auto-decoder notice: {e}[/yellow]")
+
+        # 2. General Artifact Fallback
         if hasattr(artifact, 'model_dump'):
             art_dict = artifact.model_dump(mode="json")
         elif hasattr(artifact, 'json'):
@@ -65,8 +108,7 @@ class ApiStreamWriter:
             art_dict = artifact.__dict__
         else:
             art_dict = str(artifact)
-            
-        # Attach content if it's a small text file, otherwise upload it
+
         is_uploaded = False
         if hasattr(artifact, 'source_path') and artifact.source_path:
             p = Path(artifact.source_path)
@@ -80,14 +122,12 @@ class ApiStreamWriter:
                     except Exception as e:
                         console.print(f"[yellow]Failed to read content for {p}: {e}[/yellow]")
                 else:
-                    # Upload large or binary files via multipart
                     self._upload_file(p, art_dict)
                     is_uploaded = True
                     
         if is_uploaded:
-            return  # Skip sending the JSON representation if we already uploaded the file directly
+            return
 
-        # Add source_type mapping
         source_type = 'unknown'
         if hasattr(artifact, 'app_name'):
             source_type = artifact.app_name.lower()
@@ -104,19 +144,28 @@ class ApiStreamWriter:
                 self.buffer.clear()
                 self._send_batch(batch)
 
+    def _encrypt_bytes(self, plaintext_bytes: bytes) -> tuple[bytes, bytes, bytes]:
+        """Encrypts bytes using AES-256-GCM with cryptography (or PyCryptodome fallback)."""
+        import os
+        iv = os.urandom(12)
+        try:
+            from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+            aesgcm = AESGCM(self.session_encryption_key)
+            ct_with_tag = aesgcm.encrypt(iv, plaintext_bytes, None)
+            return iv, ct_with_tag[:-16], ct_with_tag[-16:]
+        except ImportError:
+            from Crypto.Cipher import AES
+            cipher = AES.new(self.session_encryption_key, AES.MODE_GCM, nonce=iv)
+            ciphertext, tag = cipher.encrypt_and_digest(plaintext_bytes)
+            return iv, ciphertext, tag
+
     def _encrypt_payload(self, payload_dict: dict) -> dict:
         if not self.session_encryption_key:
             return payload_dict
-            
-        from Crypto.Cipher import AES
-        import os
-        
-        iv = os.urandom(12)
-        cipher = AES.new(self.session_encryption_key, AES.MODE_GCM, nonce=iv)
-        
+
         plaintext = json.dumps(payload_dict).encode('utf-8')
-        ciphertext, tag = cipher.encrypt_and_digest(plaintext)
-        
+        iv, ciphertext, tag = self._encrypt_bytes(plaintext)
+
         return {
             "iv": iv.hex(),
             "ciphertext": ciphertext.hex(),
@@ -140,19 +189,10 @@ class ApiStreamWriter:
         
         try:
             if self.session_encryption_key:
-                from Crypto.Cipher import AES
-                import os
-                iv = os.urandom(12)
-                cipher = AES.new(self.session_encryption_key, AES.MODE_GCM, nonce=iv)
                 enc_path = file_path.with_suffix(file_path.suffix + '.enc')
-                
-                with open(file_path, 'rb') as f_in, open(enc_path, 'wb') as f_out:
-                    while True:
-                        chunk = f_in.read(64 * 1024)
-                        if not chunk:
-                            break
-                        f_out.write(cipher.encrypt(chunk))
-                    tag = cipher.digest()
+                raw_bytes = file_path.read_bytes()
+                iv, ciphertext, tag = self._encrypt_bytes(raw_bytes)
+                enc_path.write_bytes(ciphertext)
                 
                 data["iv"] = iv.hex()
                 data["tag"] = tag.hex()

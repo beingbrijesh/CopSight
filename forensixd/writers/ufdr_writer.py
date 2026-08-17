@@ -2,7 +2,12 @@ import zipfile
 from pathlib import Path
 from typing import Union, List
 
-from lxml import etree
+try:
+    from lxml import etree
+    HAS_LXML = True
+except ImportError:
+    import xml.etree.ElementTree as etree
+    HAS_LXML = False
 
 from forensixd.core.models import SessionLog, Artifact
 from forensixd.core.exceptions import WriteError
@@ -50,6 +55,16 @@ class UFDRWriter:
             return self.output_path
         except Exception as e:
             raise WriteError(f"Failed to build CopSight AI archive at {self.output_path}: {e}") from e
+
+    def _serialize_xml(self, root: etree.Element) -> bytes:
+        if HAS_LXML:
+            return etree.tostring(root, pretty_print=True, xml_declaration=True, encoding="UTF-8")
+        else:
+            try:
+                etree.indent(root, space="  ")
+            except Exception:
+                pass
+            return etree.tostring(root, encoding="UTF-8", xml_declaration=True)
 
     def _write_report_xml(self, zf: zipfile.ZipFile, artifacts: List[Artifact]) -> None:
         """
@@ -126,7 +141,7 @@ class UFDRWriter:
                     # Silently ignore parsing errors during CopSight AI generation
                     pass
 
-        tree_bytes = etree.tostring(root, pretty_print=True, xml_declaration=True, encoding="UTF-8")
+        tree_bytes = self._serialize_xml(root)
         zf.writestr("report.xml", tree_bytes)
 
     def _write_index_xml(self, zf: zipfile.ZipFile, artifacts: List[Artifact]) -> None:
@@ -163,7 +178,7 @@ class UFDRWriter:
             else:
                 acquired_at.text = str(artifact.acquired_at)
 
-        tree_bytes = etree.tostring(root, pretty_print=True, xml_declaration=True, encoding="UTF-8")
+        tree_bytes = self._serialize_xml(root)
         zf.writestr("index.xml", tree_bytes)
 
     def _write_artifact_files(self, zf: zipfile.ZipFile, artifacts: List[Artifact]) -> None:

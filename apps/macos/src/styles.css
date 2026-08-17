@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #2475B5; /* Default Light Theme Background */
+  color: #f1f5f9;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  transition: background-color 0.3s ease;
+}
+
+.dark body {
+  background-color: #111111; /* Dark Theme Background */
+}
+
+/* Scrollbar based on theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Glass Panels */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.dark .glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.glass-panel-hover:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.dark .glass-panel-hover:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Red / Danger elements (Balanced macOS medium red for perfect legibility without being dark/maroon) */
+.badge-danger {
+  background-color: rgba(239, 68, 68, 0.28);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #ffffff;
+}
+
+.dark .badge-danger {
+  background-color: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fda4af;
+}
+
+.btn-danger {
+  background-color: rgba(239, 68, 68, 0.28);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #ffffff;
+}
+
+.btn-danger:hover {
+  background-color: rgba(239, 68, 68, 0.45);
+  color: #ffffff;
+}
+
+.dark .btn-danger {
+  background-color: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fda4af;
+}
+
+.dark .btn-danger:hover {
+  background-color: rgba(244, 63, 94, 0.25);
+  color: #ffffff;
+}
+
+.alert-danger {
+  background-color: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #ffffff;
+}
+
+.dark .alert-danger {
+  background-color: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fecdd3;
+}
+
+/* Pulse animation on radar */
+@keyframes radarSweepGlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.radar-sweep-cone {
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 255, 255, 0.3) 0deg,
+    rgba(255, 255, 255, 0.05) 45deg,
+    transparent 90deg,
+    transparent 360deg
+  );
+  animation: radarSweepGlow 3.5s linear infinite;
+  transform-origin: center center;
+}
+
+.dark .radar-sweep-cone {
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 255, 255, 0.15) 0deg,
+    rgba(255, 255, 255, 0.02) 45deg,
+    transparent 90deg,
+    transparent 360deg
+  );
+}

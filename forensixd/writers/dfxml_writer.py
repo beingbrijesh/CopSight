@@ -1,6 +1,12 @@
 from pathlib import Path
 from typing import Union
-from lxml import etree
+
+try:
+    from lxml import etree
+    HAS_LXML = True
+except ImportError:
+    import xml.etree.ElementTree as etree
+    HAS_LXML = False
 
 from forensixd.core.models import SessionLog, Artifact
 from forensixd.core.exceptions import WriteError
@@ -26,7 +32,7 @@ class DFXMLWriter:
         self.output_path = Path(output_path)
         self.session = session
 
-        # Build lxml root <dfxml version="1.2">
+        # Build root <dfxml version="1.2">
         self.root = etree.Element("dfxml", version="1.2", xmlns=DFXML_NS)
 
         # Add <metadata>
@@ -111,9 +117,16 @@ class DFXMLWriter:
         """
         try:
             self.output_path.parent.mkdir(parents=True, exist_ok=True)
-            tree_bytes = etree.tostring(
-                self.root, pretty_print=True, xml_declaration=True, encoding="UTF-8"
-            )
+            if HAS_LXML:
+                tree_bytes = etree.tostring(
+                    self.root, pretty_print=True, xml_declaration=True, encoding="UTF-8"
+                )
+            else:
+                try:
+                    etree.indent(self.root, space="  ")
+                except Exception:
+                    pass
+                tree_bytes = etree.tostring(self.root, encoding="UTF-8", xml_declaration=True)
             self.output_path.write_bytes(tree_bytes)
             return self.output_path
         except Exception as e:

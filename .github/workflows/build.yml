@@ -52,6 +52,10 @@ jobs:
       shell: bash
       run: |
         python -c "import os; f = 'forensixd/constants.py'; content = open(f).read().replace('INJECTED_STREAM_URL', os.environ.get('PROD_SERVER_URL', '')).replace('INJECTED_LOGIN_URL', os.environ.get('PROD_FRONTEND_URL', '')); open(f, 'w').write(content)"
+        if [ -n "$PROD_SERVER_URL" ]; then
+          echo "VITE_API_URL=${PROD_SERVER_URL}/api" >> apps/macos/.env
+          echo "VITE_STREAM_URL=${PROD_SERVER_URL}" >> apps/macos/.env
+        fi
       env:
         PROD_SERVER_URL: ${{ secrets.PROD_SERVER_URL }}
         PROD_FRONTEND_URL: ${{ secrets['PROD_FRONTEND_URL'] }}
@@ -92,17 +96,10 @@ jobs:
           mv forensixd.exe forensixd-windows-amd64-$APP_VERSION.exe
         elif [ "$RUNNER_OS" == "macOS" ]; then
           cd ..
-          python scripts/build_macos_bundle.py dist/forensixd "$APP_VERSION"
+          cd apps/macos && npm install
+          cd ../..
+          python3 apps/macos/scripts/build_macos_app.py "$APP_VERSION"
           cd dist
-          
-          mkdir dmg_stage
-          cp -R CopSight.app dmg_stage/
-          ln -s /Applications dmg_stage/Applications
-          hdiutil create -volname "CopSight" -srcfolder dmg_stage -ov -format UDZO CopSight-macOS-$APP_VERSION.dmg
-          rm -rf dmg_stage
-          
-          zip -r -y CopSight-macOS-$APP_VERSION.zip CopSight.app
-          rm -rf CopSight.app
         fi
 
     - name: Upload Artifacts

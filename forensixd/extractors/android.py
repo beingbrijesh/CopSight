@@ -158,6 +158,35 @@ def _artifact_type_for_path(path: str) -> ArtifactType:
     return ArtifactType.APP_DATA
 
 
+def resolve_adb_command() -> str:
+    """Get the path to the adb executable, resolving across PyInstaller, Homebrew, and system PATH."""
+    import sys
+    import os
+    import shutil
+
+    if hasattr(sys, '_MEIPASS'):
+        bundled_adb = os.path.join(sys._MEIPASS, 'platform-tools', 'adb.exe' if os.name == 'nt' else 'adb')
+        if os.path.exists(bundled_adb):
+            if os.name != 'nt':
+                try:
+                    os.chmod(bundled_adb, 0o755)
+                except Exception:
+                    pass
+            return bundled_adb
+
+    for candidate in ["adb", "/opt/homebrew/bin/adb", "/usr/local/bin/adb", "/usr/bin/adb"]:
+        resolved = shutil.which(candidate) or (candidate if os.path.exists(candidate) and os.access(candidate, os.X_OK) else None)
+        if resolved:
+            return resolved
+
+    return 'adb'
+
+
+def _resolve_adb_command() -> str:
+    """Backward compatibility alias for resolve_adb_command."""
+    return resolve_adb_command()
+
+
 # ---------------------------------------------------------------------------
 # AndroidExtractor
 # ---------------------------------------------------------------------------
@@ -194,19 +223,16 @@ class AndroidExtractor(AbstractExtractor):
         self._connected: bool = False
 
     # ------------------------------------------------------------------
-    # AbstractExtractor interface
-    # ------------------------------------------------------------------
-
     def is_available(self) -> bool:
-        """Return ``True`` when ``adb_shell`` is importable in the active environment.
-
-        Returns
-        -------
-        bool
-            :data:`ADB_AVAILABLE` — ``True`` if the ``adb_shell`` package was
-            successfully imported at module load time; ``False`` otherwise.
-        """
-        return ADB_AVAILABLE
+        """Return True when adb command line tool or adb_shell is available."""
+        import shutil
+        import os
+        if ADB_AVAILABLE:
+            return True
+        for candidate in ["adb", "/opt/homebrew/bin/adb", "/usr/local/bin/adb", "/usr/bin/adb"]:
+            if shutil.which(candidate) or (os.path.exists(candidate) and os.access(candidate, os.X_OK)):
+                return True
+        return False
 
     def supported_levels(self) -> list[ExtractionLevel]:
         """Return the extraction levels supported by this extractor.
@@ -221,10 +247,6 @@ class AndroidExtractor(AbstractExtractor):
     def connect(self, device: DeviceInfo) -> None:
         """Record *device* as the active target and mark the extractor as connected.
 
-        Stores *device* for use during extraction and sets the internal connected
-        flag.  Transport-layer handshaking (USB enumeration, ADB authorisation,
-        etc.) would be performed here in a full ``adb_shell`` integration.
-
         Parameters
         ----------
         device:
@@ -233,12 +255,11 @@ class AndroidExtractor(AbstractExtractor):
         Raises
         ------
         ExtractionError
-            If ``adb_shell`` is not installed (i.e. :meth:`is_available` returns
-            ``False``).
+            If neither ADB CLI nor ``adb_shell`` is installed.
         """
-        if not ADB_AVAILABLE:
+        if not self.is_available():
             raise ExtractionError(
-                "adb_shell is not installed; cannot connect to an Android device.",
+                "ADB (Android Debug Bridge) is not installed or available on this system.",
                 context={"device_id": device.device_id},
             )
 
@@ -317,22 +338,11 @@ class AndroidExtractor(AbstractExtractor):
         Delegates to :attr:`~forensixd.core.models.DeviceInfo.is_rooted`.
         Returns ``False`` when no device is stored.
         """
-        return bool(self._device and self._device.is_rooted)
+        return self._device is not None and self._device.is_rooted
 
     def _get_adb_cmd(self) -> str:
-        """Get the path to the adb executable, preferring the PyInstaller bundled version."""
-        import sys
-        import os
-        if hasattr(sys, '_MEIPASS'):
-            bundled_adb = os.path.join(sys._MEIPASS, 'platform-tools', 'adb.exe' if os.name == 'nt' else 'adb')
-            if os.path.exists(bundled_adb):
-                if os.name != 'nt':
-                    try:
-                        os.chmod(bundled_adb, 0o755)
-                    except:
-                        pass
-                return bundled_adb
-        return 'adb'
+        """Get the path to the adb executable, resolving across PyInstaller, Homebrew, and system PATH."""
+        return resolve_adb_command()
 
     def _logical_extract(self, session: ForensicSession, profile: str = "all") -> Iterator[Artifact]:
         """Yield artefacts from standard user-accessible paths via ADB.
@@ -340,34 +350,21 @@ class AndroidExtractor(AbstractExtractor):
         Iterates over :data:`_LOGICAL_PATHS` and uses `adb pull` to extract real
         files to the session's output directory. Generates one
         :class:`~forensixd.core.models.Artifact` per successfully pulled file.
-        Also attempts an `adb backup` if the user approves the prompt.
         """
         assert self._device is not None, "connect() must be called before extract()."
-
-        # 1. Ask the user to authorize USB debugging
-        instructions = (
-            "To extract data from an Android device, USB Debugging must be enabled:\n\n"
-            "1. If not enabled, go to Settings -> About Phone -> tap 'Build Number' 7 times.\n"
-            "2. Go back to Settings -> System -> Developer Options.\n"
-            "3. Turn on 'USB Debugging' (and 'Install via USB' / 'USB debugging (Security settings)' if present).\n"
-            "4. Connect the device to the computer.\n"
-            "5. A prompt will appear on the phone: 'Allow USB debugging?'. Check 'Always allow' and tap OK.\n\n"
-            "Click 'Yes' to proceed ONLY after you have completed these steps."
-        )
-        prompt_allow_deny("Android Connection - Setup Required", instructions)
 
         adb_pull_dir = session.output_dir / "adb_pull"
         adb_pull_dir.mkdir(parents=True, exist_ok=True)
 
+        adb_cmd = self._get_adb_cmd()
+        
+        # Ensure ADB server is running
+        subprocess.run([adb_cmd, "start-server"], capture_output=True)
+
         # Attempt to get actual ADB serial and check authorization status
         adb_serial = None
         device_status = None
-        
-        adb_cmd = self._get_adb_cmd()
-        # Restart ADB server to ensure fresh connection
-        subprocess.run([adb_cmd, "kill-server"], capture_output=True)
-        subprocess.run([adb_cmd, "start-server"], capture_output=True)
-        
+
         devices_out = subprocess.run([adb_cmd, "devices"], capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
         for line in devices_out.splitlines()[1:]:
             line = line.strip()
@@ -391,7 +388,8 @@ class AndroidExtractor(AbstractExtractor):
             elif device_status == "offline":
                 raise ExtractionError("Device is OFFLINE. Please reconnect the USB cable and try again.")
             else:
-                raise ExtractionError("No Android devices found with USB Debugging enabled. Please ensure Developer Options and USB Debugging are turned on.")
+                # If adb devices returned no device, attempt default target
+                adb_target_args = []
 
         # Ask the user to create manual backups for secure messaging apps
         backup_instructions = (
@@ -421,138 +419,9 @@ class AndroidExtractor(AbstractExtractor):
         else:
             paths_to_pull = []
 
-        for remote_path, artifact_type in paths_to_pull:
-            while True:
-                try:
-                    safe_name = str(Path(remote_path)).strip('/').replace('/', '_').replace('\\', '_')
-                    local_dest = adb_pull_dir / safe_name
-                    _logger.info("Executing adb pull %s %s", remote_path, local_dest)
-                    result = subprocess.run(
-                        [adb_cmd, *adb_target_args, "pull", remote_path, str(local_dest)],
-                        capture_output=True, text=True, encoding='utf-8', errors='replace'
-                    )
-                    
-                    if result.returncode == 0 and local_dest.exists():
-                        # Walk the pulled directory
-                        if local_dest.is_dir():
-                            files = [f for f in local_dest.rglob("*") if f.is_file()]
-                        else:
-                            files = [local_dest]
-                            
-                        for file_path in files:
-                            # Skip OS metadata / junk / hidden files
-                            if (
-                                file_path.name.lower() in _IGNORED_FILENAMES
-                                or file_path.name.startswith("._")
-                                or file_path.suffix.lower() == ".nomedia"
-                            ):
-                                file_path.unlink(missing_ok=True)
-                                continue
-
-                            # Profile-specific filtering
-                            if profile == "textual" and file_path.suffix.lower() in _MEDIA_EXTENSIONS:
-                                file_path.unlink(missing_ok=True)
-                                continue
-                            elif profile == "media" and file_path.suffix.lower() not in _MEDIA_EXTENSIONS:
-                                file_path.unlink(missing_ok=True)
-                                continue
-
-                            hashes = HashEngine.hash_file(file_path)
-                            artifact = Artifact(
-                                artifact_type=artifact_type,
-                                source_app="adb_logical",
-                                source_path=str(file_path),
-                                acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
-                                hashes=hashes,
-                                data={"method": "adb_pull", "remote_path": remote_path},
-                                device=self._device,
-                            )
-                            session.register_artifact(artifact)
-                            yield artifact
-                        break
-                    else:
-                        _logger.warning("adb pull failed for %s: %s", remote_path, result.stderr)
-                        
-                        # If the path doesn't exist (e.g. app not installed), just skip silently
-                        err_lower = result.stderr.lower()
-                        if "does not exist" in err_lower or "stat failed" in err_lower or "no such file" in err_lower:
-                            _logger.info("Path %s does not exist on device, skipping.", remote_path)
-                            break
-                            
-                        action = prompt_error_action(
-                            "Extraction Error",
-                            f"Failed to extract {remote_path} via adb.\nError: {result.stderr}\n\nChoose an action:"
-                        )
-                        if action == "Retry":
-                            continue
-                        elif action == "Abort":
-                            raise ExtractionError(f"Aborted extraction due to error pulling {remote_path}")
-                        else: # Skip
-                            break
-
-                except Exception as exc:  # noqa: BLE001
-                    _logger.warning("AndroidExtractor: skipping path %r — error: %s", remote_path, exc, exc_info=True)
-                    action = prompt_error_action(
-                        "Extraction Exception",
-                        f"Exception while pulling {remote_path}: {exc}\n\nChoose an action:"
-                    )
-                    if action == "Retry":
-                        continue
-                    elif action == "Abort":
-                        raise ExtractionError(f"Aborted extraction due to exception pulling {remote_path}") from exc
-                    else:
-                        break
-                
-        # 2. Attempt ADB Backup for application data
-        if extract_textual and prompt_allow_deny("ADB Backup", "Would you like to perform a full ADB backup for deeper extraction? (Requires tapping 'Back up my data' on device)"):
-            backup_file = session.output_dir / "backup.ab"
-            _logger.info("Starting adb backup to %s", backup_file)
-            
-            while True:
-                backup_proc = subprocess.Popen(
-                    [adb_cmd, *adb_target_args, "backup", "-all", "-f", str(backup_file)],
-                    stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace'
-                )
-                
-                prompt_password(
-                    "Backup Password", 
-                    "If you set a desktop backup password on the device, please enter it here (or leave blank if none):"
-                )
-                
-                _, stderr_out = backup_proc.communicate()
-                
-                if backup_proc.returncode == 0 and backup_file.exists():
-                    break
-                else:
-                    _logger.warning("adb backup failed: %s", stderr_out)
-                    action = prompt_error_action(
-                        "Backup Error",
-                        f"adb backup failed.\nError: {stderr_out}\n\nChoose an action:"
-                    )
-                    if action == "Retry":
-                        continue
-                    elif action == "Abort":
-                        raise ExtractionError("Aborted extraction due to adb backup failure")
-                    else:
-                        break
-            
-            if backup_file.exists():
-                hashes = HashEngine.hash_file(backup_file)
-                artifact = Artifact(
-                    artifact_type=ArtifactType.APP_DATA,
-                    source_app="adb_backup",
-                    source_path=str(backup_file),
-                    acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
-                    hashes=hashes,
-                    data={"method": "adb_backup"},
-                    device=self._device,
-                )
-                session.register_artifact(artifact)
-                yield artifact
-
-        # 3. Extract native Content Providers (SMS, Call Logs, Contacts)
+        # 1. Extract native Content Providers (SMS, Call Logs, Contacts) FIRST for immediate intelligence
         if extract_textual:
-            _logger.info("Extracting native Android content providers (SMS, Call Logs, Contacts)")
+            _logger.info("Extracting native Android content providers (SMS, Call Logs, Contacts)...")
             providers = {
                 "sms": "content://sms/",
                 "call_logs": "content://call_log/calls",
@@ -583,7 +452,7 @@ class AndroidExtractor(AbstractExtractor):
                             source_path=str(dest_file),
                             acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
                             hashes=hashes,
-                            data={"method": "adb_shell_content", "uri": uri},
+                            data={"method": "adb_shell_content", "uri": uri, "provider": name},
                             device=self._device,
                         )
                         session.register_artifact(artifact)
@@ -592,6 +461,66 @@ class AndroidExtractor(AbstractExtractor):
                         _logger.info(f"No data returned for {uri} or query failed: {query_proc.stderr}")
                 except Exception as exc:
                     _logger.warning(f"Failed to query {uri}: {exc}", exc_info=True)
+
+        # 2. Extract standard user-accessible directories
+        for remote_path, artifact_type in paths_to_pull:
+            try:
+                safe_name = str(Path(remote_path)).strip('/').replace('/', '_').replace('\\', '_')
+                local_dest = adb_pull_dir / safe_name
+                _logger.info("Executing adb pull %s %s", remote_path, local_dest)
+                result = subprocess.run(
+                    [adb_cmd, *adb_target_args, "pull", remote_path, str(local_dest)],
+                    capture_output=True, text=True, encoding='utf-8', errors='replace'
+                )
+                
+                if result.returncode == 0 and local_dest.exists():
+                    if local_dest.is_dir():
+                        files = [f for f in local_dest.rglob("*") if f.is_file()]
+                    else:
+                        files = [local_dest]
+                        
+                    for file_path in files:
+                        if (
+                            file_path.name.lower() in _IGNORED_FILENAMES
+                            or file_path.name.startswith("._")
+                            or file_path.suffix.lower() == ".nomedia"
+                        ):
+                            file_path.unlink(missing_ok=True)
+                            continue
+
+                        name_lower = file_path.name.lower()
+                        is_media_file = (
+                            file_path.suffix.lower() in _MEDIA_EXTENSIONS
+                            or any(ext in name_lower for ext in [
+                                ".webp", ".was", ".png", ".jpg", ".jpeg", ".gif", ".bmp",
+                                ".tgs", ".tgv", ".pcache", ".pcache2", ".thumb", ".mp4", ".mp3", ".opus", ".ogg"
+                            ])
+                        )
+
+                        if profile == "textual" and is_media_file:
+                            file_path.unlink(missing_ok=True)
+                            continue
+                        elif profile == "media" and not is_media_file:
+                            file_path.unlink(missing_ok=True)
+                            continue
+
+                        hashes = HashEngine.hash_file(file_path)
+                        artifact = Artifact(
+                            artifact_type=artifact_type,
+                            source_app="adb_logical",
+                            source_path=str(file_path),
+                            acquired_at=datetime.now(timezone(timedelta(hours=5, minutes=30))),
+                            hashes=hashes,
+                            data={"method": "adb_pull", "remote_path": remote_path},
+                            device=self._device,
+                        )
+                        session.register_artifact(artifact)
+                        yield artifact
+                else:
+                    _logger.info("Path %s not present or inaccessible, skipping.", remote_path)
+
+            except Exception as exc:  # noqa: BLE001
+                _logger.warning("AndroidExtractor: skipping path %r — error: %s", remote_path, exc, exc_info=True)
 
         # 4. Deleted Artifact Carving Pass (when profile == 'deleted' or 'all')
         if extract_deleted:

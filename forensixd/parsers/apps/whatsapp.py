@@ -45,11 +45,14 @@ from forensixd.parsers.sqlite_parser import SQLiteParser
 # ---------------------------------------------------------------------------
 
 try:
-    from Crypto.Cipher import AES  # pycryptodome
-
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     CRYPTO_AVAILABLE = True
-except ImportError:  # pragma: no cover
-    CRYPTO_AVAILABLE = False
+except ImportError:
+    try:
+        from Crypto.Cipher import AES  # pycryptodome
+        CRYPTO_AVAILABLE = True
+    except ImportError:  # pragma: no cover
+        CRYPTO_AVAILABLE = False
 
 __all__ = ["WhatsAppParser", "CRYPTO_AVAILABLE"]
 
@@ -206,10 +209,16 @@ class WhatsAppParser(AbstractParser):
         ciphertext: bytes = db_data[83:-16]  # variable-length encrypted payload
         tag: bytes = db_data[-16:]           # 16-byte GCM authentication tag
 
-        cipher = AES.new(aes_key, AES.MODE_GCM, nonce=iv)  # type: ignore[attr-defined]
         try:
-            return cipher.decrypt_and_verify(ciphertext, tag)
-        except ValueError as exc:
+            try:
+                from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+                aesgcm = AESGCM(aes_key)
+                return aesgcm.decrypt(iv, ciphertext + tag, None)
+            except ImportError:
+                from Crypto.Cipher import AES  # type: ignore
+                cipher = AES.new(aes_key, AES.MODE_GCM, nonce=iv)
+                return cipher.decrypt_and_verify(ciphertext, tag)
+        except Exception as exc:
             raise EncryptionError(
                 f"crypt15 GCM authentication failed — data may be corrupted or tampered: {exc}",
                 context={"db_path": str(db_path)},

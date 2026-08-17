@@ -1,10 +1,22 @@
 # Dependencies
+node_modules
 node_modules/
+**/node_modules
+**/node_modules/**
+apps/macos/node_modules
+apps/macos/node_modules/**
+apps/macos/dist
+apps/macos/dist/**
+vendor/
+**/vendor/**
 __pycache__/
+**/*.pyc
 *.pyc
 venv/
 env/
 .venv/
+**/.venv/
+.forensixd/
 
 # Environment
 .env
