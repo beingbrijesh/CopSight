@@ -3,6 +3,7 @@ import { FolderKey, Search, Calendar, ArrowRight, RefreshCw, LogOut, CheckCircle
 import { ForensicCase, useCaseStore } from '../store/caseStore';
 import { useAuthStore } from '../store/authStore';
 import { caseService } from '../lib/api';
+import logoImg from '../assets/logo.jpeg';
 
 export const CaseGate: React.FC = () => {
   const { assignedCases, setAssignedCases, selectedCase, setSelectedCase, isLoading, setIsLoading } = useCaseStore();
@@ -63,7 +64,7 @@ export const CaseGate: React.FC = () => {
       <header className="glass-panel rounded-[2.5rem] p-3 sm:px-6 flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-8 shadow-lg">
         <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-full bg-white p-1 flex items-center justify-center shadow-md ring-2 ring-white/40 overflow-hidden flex-shrink-0">
-            <img src="/logo.jpeg" alt="CopSight Logo" className="w-full h-full object-contain rounded-full" />
+            <img src={logoImg} alt="CopSight Logo" className="w-full h-full object-contain rounded-full" />
           </div>
           <div>
             <div className="flex items-center gap-2">

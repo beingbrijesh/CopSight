@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { User, Lock, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../lib/api';
+import logoImg from '../assets/logo.jpeg';
 
 export const AuthGate: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -94,14 +95,9 @@ export const AuthGate: React.FC = () => {
           {/* Logo & Header */}
           <div className="flex flex-col items-center text-center mb-7">
             <div className="w-16 h-16 rounded-full bg-white p-1.5 flex items-center justify-center shadow-xl ring-4 ring-white/30 mb-3.5 overflow-hidden">
-              <img src="/logo.jpeg" alt="CopSight Logo" className="w-full h-full object-contain rounded-full" />
+              <img src={logoImg} alt="CopSight Logo" className="w-full h-full object-contain rounded-full" />
             </div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-extrabold text-white tracking-wide uppercase">CopSight AI</h1>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/20">
-                macOS
-              </span>
-            </div>
+            <h1 className="text-2xl font-extrabold text-white tracking-wide uppercase">CopSight AI</h1>
             <p className="text-xs font-mono text-white opacity-75 mt-1">Digital Forensic Acquisition Station</p>
           </div>
 

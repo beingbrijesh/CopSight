@@ -1,6 +1,7 @@
 import React from 'react';
 import { User } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import logoImg from '../assets/logo.jpeg';
 
 export type WorkspaceTab = 'dashboard' | 'devices' | 'acquisition' | 'evidence' | 'settings';
 
@@ -30,21 +31,13 @@ export const ContextHeader: React.FC<ContextHeaderProps> = ({
       <div className="flex items-center gap-3.5">
         <div className="w-10 h-10 rounded-full bg-white p-1 flex items-center justify-center shrink-0 shadow-md ring-2 ring-white/40 overflow-hidden">
           <img
-            src="/logo.jpeg"
+            src={logoImg}
             alt="CopSight Logo"
             className="w-full h-full object-contain rounded-full"
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
           />
         </div>
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-base font-extrabold tracking-tight uppercase text-white">CopSight AI</span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/20 text-white font-bold">
-              macOS
-            </span>
-          </div>
+          <span className="text-base font-extrabold tracking-tight uppercase text-white block">CopSight AI</span>
           <p className="text-[10px] uppercase tracking-widest opacity-75 text-white">Forensic OS</p>
         </div>
       </div>
