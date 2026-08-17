@@ -4,6 +4,7 @@ import { decryptPayload } from '../middleware/encryptionMiddleware.js';
 import streamQueue from '../queues/streamQueue.js';
 import logger from '../config/logger.js';
 import Case from '../models/Case.js';
+import ProcessingJob from '../models/ProcessingJob.js';
 
 import upload from '../middleware/upload.js';
 
@@ -29,10 +30,24 @@ router.post('/stream/case/:caseId', decryptPayload, async (req, res) => {
     if (!artifacts || !Array.isArray(artifacts)) {
       return res.status(400).json({ success: false, message: 'Invalid payload: artifacts array required' });
     }
+
+    // Create ProcessingJob in database so IO dashboard shows active and recent jobs
+    const processingJob = await ProcessingJob.create({
+      caseId: parseInt(caseId),
+      jobType: 'stream_extraction',
+      status: 'processing',
+      progress: 10,
+      startedAt: new Date()
+    });
+
+    if (targetCase.status === 'active') {
+      await targetCase.update({ status: 'processing' });
+    }
     
-    // Push chunk to the streamQueue
+    // Push chunk to the streamQueue with processingJobId
     const job = await streamQueue.add({
-      caseId,
+      processingJobId: processingJob.id,
+      caseId: parseInt(caseId),
       deviceId,
       artifacts,
       userId: req.user.id
@@ -41,7 +56,7 @@ router.post('/stream/case/:caseId', decryptPayload, async (req, res) => {
     res.status(202).json({
       success: true,
       message: `Stream chunk queued successfully`,
-      jobId: job.id
+      jobId: processingJob.id
     });
   } catch (err) {
     logger.error('Error queuing stream chunk:', err);
@@ -68,9 +83,23 @@ router.post('/upload/case/:caseId', upload.single('file'), async (req, res) => {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
+    // Create ProcessingJob in database
+    const processingJob = await ProcessingJob.create({
+      caseId: parseInt(caseId),
+      jobType: 'artifact_upload',
+      status: 'processing',
+      progress: 10,
+      startedAt: new Date()
+    });
+
+    if (targetCase.status === 'active') {
+      await targetCase.update({ status: 'processing' });
+    }
+
     // Push the file processing job to the streamQueue
     const job = await streamQueue.add({
-      caseId,
+      processingJobId: processingJob.id,
+      caseId: parseInt(caseId),
       deviceId,
       userId: req.user.id,
       artifacts: [{
@@ -89,7 +118,7 @@ router.post('/upload/case/:caseId', upload.single('file'), async (req, res) => {
     res.status(202).json({
       success: true,
       message: 'File uploaded and queued for processing',
-      jobId: job.id,
+      jobId: processingJob.id,
       filePath: req.file.path
     });
   } catch (err) {

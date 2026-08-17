@@ -398,7 +398,10 @@ export const CaseDetail = () => {
               <div key={job.id} className="border border-gray-200 dark:border-white/10 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {job.jobType === 'parse_ufdr' ? 'Parsing UFDR File' : job.jobType}
+                    {job.jobType === 'parse_ufdr' ? 'Parsing UFDR File' :
+                     job.jobType === 'stream_extraction' || job.jobType === 'stream_ingestion' ? 'Live Data Extraction' :
+                     job.jobType === 'artifact_upload' ? 'Processing Artifact Upload' :
+                     job.jobType?.replace('_', ' ')}
                   </span>
                   <span className="text-xs text-gray-500 dark:text-slate-400">
                     {job.progress || 0}%
@@ -408,9 +411,9 @@ export const CaseDetail = () => {
                   <div className="bg-blue-600 h-2 rounded-full transition-all duration-500" style={{ width: `${job.progress || 0}%` }} />
                 </div>
                 <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
-                  {job.progress < 30 && 'Parsing file structure...'}
-                  {job.progress >= 30 && job.progress < 50 && 'Extracting device information...'}
-                  {job.progress >= 50 && job.progress < 80 && 'Processing data sources...'}
+                  {job.progress < 30 && 'Parsing data records...'}
+                  {job.progress >= 30 && job.progress < 50 && 'Extracting device and entity information...'}
+                  {job.progress >= 50 && job.progress < 80 && 'Processing data sources & NER...'}
                   {job.progress >= 80 && 'Finalizing and indexing...'}
                 </p>
               </div>
@@ -438,7 +441,7 @@ export const CaseDetail = () => {
                   <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Devices Processed</span>
                   <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{processing.devices?.length || 0}</span>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-slate-500">Total devices from UFDR files</p>
+                <p className="text-xs text-gray-500 dark:text-slate-500">Total devices from extractions & UFDR</p>
               </div>
 
               <div className="p-4 bg-purple-50 dark:bg-purple-500/10 rounded-xl">
@@ -477,7 +480,14 @@ export const CaseDetail = () => {
                   {processing.jobs.slice(0, 5).map((job: any) => (
                     <div key={job.id} className="p-3 border border-gray-100 dark:border-white/10 rounded-xl">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">Job #{job.id}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          Job #{job.id} • {
+                            job.jobType === 'parse_ufdr' ? 'UFDR Processing' :
+                            job.jobType === 'stream_extraction' || job.jobType === 'stream_ingestion' ? 'Live Extraction' :
+                            job.jobType === 'artifact_upload' ? 'Artifact Upload' :
+                            job.jobType?.replace('_', ' ') || 'Processing'
+                          }
+                        </span>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                           job.status === 'completed' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' :
                           job.status === 'failed' ? 'bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-300' :
@@ -502,7 +512,7 @@ export const CaseDetail = () => {
                 <div className="text-center py-10 text-gray-500 dark:text-slate-500">
                   <FileBarChart className="w-10 h-10 text-gray-300 dark:text-slate-600 mx-auto mb-2" />
                   <p className="text-sm">No processing jobs yet</p>
-                  <p className="text-xs mt-0.5">Upload a UFDR file to start</p>
+                  <p className="text-xs mt-0.5">Extract from device or upload a file</p>
                 </div>
               )}
             </div>

@@ -210,7 +210,7 @@ class RAGPipeline:
             if not db_manager.elasticsearch:
                 return []
             response = await db_manager.elasticsearch.search(
-                index="ufdr-*",
+                index="copsight-*,ufdr-*",
                 body={
                     "query": {"bool": {"must": must_clauses}},
                     "size": 50,

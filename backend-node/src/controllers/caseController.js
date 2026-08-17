@@ -425,33 +425,37 @@ export const getCaseChats = async (req, res) => {
 
     const offset = (page - 1) * limit;
 
-    // Fetch all message records from Elasticsearch for this case
-    // We use a larger limit to ensure we get a good set of conversations,
-    // though ideally we'd have a more efficient way to group in ES.
-    const searchResult = await elasticsearchService.searchElasticsearch(parseInt(caseId), '', {
-      limit: 1000, // Fetch more to allow for conversation grouping
-      offset: 0
-    });
+    let searchResult = { results: [] };
+    try {
+      searchResult = await elasticsearchService.searchElasticsearch(parseInt(caseId), '', {
+        limit: 1000, // Fetch up to 1000 for conversation grouping
+        offset: 0
+      });
+    } catch (esError) {
+      logger.warn(`Elasticsearch query in getCaseChats: ${esError.message}`);
+      searchResult = { results: [] };
+    }
 
     const allChats = [];
     const conversations = {};
 
-    searchResult.results.forEach(hit => {
-      const source = hit.source;
+    (searchResult.results || []).forEach(hit => {
+      const source = hit.source || {};
       const meta = source.metadata || {};
 
+      const st = (source.sourceType || '').toLowerCase();
       // Skip non-message/non-chat types if they somehow got in
-      if (!source.sourceType || !['sms', 'chat', 'whatsapp', 'telegram', 'email', 'messages'].includes(source.sourceType.toLowerCase())) {
+      if (!st || !['sms', 'chat', 'whatsapp', 'telegram', 'email', 'messages', 'imessage', 'signal', 'stream'].includes(st)) {
         return;
       }
 
       // 1. Determine sender and receiver
-      let sender = 'Unknown';
-      let receiver = 'User';
+      let sender = meta.sender || meta.from || meta.caller || source.phoneNumber || 'Unknown';
+      let receiver = meta.receiver || meta.recipient || meta.to || 'User';
 
-      if (source.sourceType === 'sms' || source.sourceType === 'messages') {
-        const direction = meta.direction || 'incoming';
-        const phone = source.phoneNumber || meta.address || 'Unknown';
+      if (st === 'sms' || st === 'messages') {
+        const direction = meta.direction || meta.type || meta.call_type || 'incoming';
+        const phone = source.phoneNumber || meta.address || meta.sender || meta.caller || 'Unknown';
 
         if (direction === 'incoming') {
           sender = phone;
@@ -462,14 +466,18 @@ export const getCaseChats = async (req, res) => {
         }
       } else if (meta.sender || meta.from) {
         sender = meta.sender || meta.from;
-        receiver = meta.receiver || meta.to || 'User';
+        receiver = meta.receiver || meta.recipient || meta.to || 'User';
       } else if (source.phoneNumber) {
         sender = source.phoneNumber;
         receiver = 'User';
       }
 
       // 2. Extract message content
-      const message = source.content || meta.body || meta.text || '';
+      const message = source.content || meta.body || meta.text || meta.message || (typeof meta.content === 'string' ? meta.content : '') || '';
+
+      if (!message && !source.content) {
+        return;
+      }
 
       // 3. Create chat object
       const chat = {
@@ -479,7 +487,7 @@ export const getCaseChats = async (req, res) => {
         message,
         timestamp: source.timestamp || meta.timestamp || new Date(),
         dataSourceId: meta.dataSourceId || 0,
-        appName: source.appName || meta.appName || 'Unknown'
+        appName: source.appName || meta.appName || meta.app || meta.channel || st.toUpperCase()
       };
 
       allChats.push(chat);
@@ -518,7 +526,7 @@ export const getCaseChats = async (req, res) => {
           total: allChats.length,
           page: parseInt(page),
           limit: parseInt(limit),
-          pages: Math.ceil(allChats.length / limit)
+          pages: Math.ceil(allChats.length / limit) || 1
         }
       }
     });

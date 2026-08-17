@@ -143,7 +143,7 @@ export const searchElasticsearch = async (caseId, query, filters = {}) => {
     }
 
     const { body: result } = await elasticsearchClient.search({
-      index: 'ufdr-*',
+      index: 'copsight-*,ufdr-*',
       body: {
         query: { bool: { must } },
         size: filters.limit || 100,
@@ -158,8 +158,8 @@ export const searchElasticsearch = async (caseId, query, filters = {}) => {
     });
 
     return {
-      total: result.hits.total.value,
-      results: result.hits.hits.map(hit => ({
+      total: result.hits?.total?.value ?? (typeof result.hits?.total === 'number' ? result.hits.total : 0),
+      results: (result.hits?.hits || []).map(hit => ({
         id: hit._id,
         score: hit._score,
         source: hit._source,
@@ -176,11 +176,12 @@ export const searchElasticsearch = async (caseId, query, filters = {}) => {
  * Get index name based on source type
  */
 const getIndexName = (sourceType) => {
-  if (sourceType === 'sms' || sourceType === 'whatsapp' || sourceType === 'telegram') {
+  const st = (sourceType || '').toLowerCase();
+  if (st === 'sms' || st === 'whatsapp' || st === 'telegram' || st === 'chat' || st === 'messages' || st === 'imessage' || st === 'signal') {
     return 'copsight-messages';
-  } else if (sourceType === 'call_log') {
+  } else if (st === 'call_log' || st === 'call' || st === 'calls' || st === 'call_logs') {
     return 'copsight-calls';
-  } else if (sourceType === 'contacts') {
+  } else if (st === 'contacts' || st === 'contact') {
     return 'copsight-contacts';
   }
   return 'copsight-messages';

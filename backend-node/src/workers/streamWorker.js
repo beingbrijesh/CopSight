@@ -5,6 +5,7 @@ import { indexToAIService } from '../services/search/aiService.js';
 import EntityTag from '../models/EntityTag.js';
 import Device from '../models/Device.js';
 import ProcessingJob from '../models/ProcessingJob.js';
+import Case from '../models/Case.js';
 import DataSource from '../models/DataSource.js';
 import AuditLog from '../models/AuditLog.js';
 import logger from '../config/logger.js';
@@ -31,34 +32,54 @@ logger.info('WORKER FILE LOADED: streamWorker.js imported');
 
 streamQueue.process(async (job) => {
   logger.info(`Stream Worker processing job ID: ${job.id}`);
+  let activeProcessingJobId = job.data.processingJobId;
+
   try {
     const { caseId, deviceId, artifacts, userId } = job.data;
 
     // Validate caseId to prevent PostgreSQL NaN column errors
     if (!caseId || isNaN(parseInt(caseId))) {
       logger.error(`Invalid caseId in job ${job.id}: ${caseId}`);
+      if (activeProcessingJobId) {
+        await ProcessingJob.update(
+          { status: 'failed', errorMessage: 'Invalid caseId', completedAt: new Date() },
+          { where: { id: activeProcessingJobId } }
+        );
+      }
       return { success: false, error: 'Invalid caseId' };
     }
     
-    // 1. Ensure Device exists
-    const [device] = await Device.findOrCreate({
-      where: { caseId: parseInt(caseId), deviceName: 'Streaming Device' },
-      defaults: {
-        deviceType: 'Stream',
-        extractionDate: new Date()
-      }
-    });
+    // Ensure ProcessingJob exists and update progress
+    if (activeProcessingJobId) {
+      await ProcessingJob.update(
+        { status: 'processing', progress: 30 },
+        { where: { id: activeProcessingJobId } }
+      );
+    } else {
+      const newJob = await ProcessingJob.create({
+        caseId: parseInt(caseId),
+        jobType: 'stream_extraction',
+        status: 'processing',
+        progress: 30,
+        startedAt: new Date()
+      });
+      activeProcessingJobId = newJob.id;
+    }
 
-    // 2. Ensure ProcessingJob exists for streaming
-    const [processingJob] = await ProcessingJob.findOrCreate({
-      where: { caseId: parseInt(caseId), jobType: 'stream_ingestion' },
-      defaults: {
-        progress: 100,
-        status: 'completed',
-        startedAt: new Date(),
-        completedAt: new Date()
-      }
-    });
+    // 1. Ensure Device exists
+    let device = null;
+    if (deviceId) {
+      device = await Device.findByPk(deviceId);
+    }
+    if (!device) {
+      [device] = await Device.findOrCreate({
+        where: { caseId: parseInt(caseId), deviceName: 'Direct Extraction Device' },
+        defaults: {
+          deviceType: 'Stream',
+          extractionDate: new Date()
+        }
+      });
+    }
     
     const allEntities = [];
     let extractedCount = 0;
@@ -193,10 +214,41 @@ streamQueue.process(async (job) => {
       logger.info(`Skipped automatic AI ingestion for case ${caseId} (AUTO_PROCESS_TEXT is not true)`);
     }
     
-    logger.info(`Successfully streamed and processed ${artifacts.length} artifacts`);
-    return { success: true, count: artifacts.length };
+    if (activeProcessingJobId) {
+      await ProcessingJob.update(
+        {
+          status: 'completed',
+          progress: 100,
+          completedAt: new Date()
+        },
+        { where: { id: activeProcessingJobId } }
+      );
+    }
+
+    // Update Case status to ready_for_analysis
+    await Case.update(
+      { status: 'ready_for_analysis' },
+      { where: { id: parseInt(caseId) } }
+    );
+
+    logger.info(`Successfully streamed and processed ${artifacts.length} artifacts for case ${caseId}`);
+    return { success: true, count: artifacts.length, jobId: activeProcessingJobId };
   } catch (err) {
     logger.error('Stream processing failed:', err);
+    if (activeProcessingJobId) {
+      try {
+        await ProcessingJob.update(
+          {
+            status: 'failed',
+            errorMessage: err.message || 'Stream processing failed',
+            completedAt: new Date()
+          },
+          { where: { id: activeProcessingJobId } }
+        );
+      } catch (updateErr) {
+        logger.error('Failed to update job status on error:', updateErr);
+      }
+    }
     throw err;
   }
 });

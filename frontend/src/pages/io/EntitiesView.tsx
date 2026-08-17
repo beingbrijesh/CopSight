@@ -481,14 +481,14 @@ export const EntitiesView = () => {
                   <MessageCircle className="w-16 h-16 text-green-500 dark:text-emerald-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Chat Messages Await Discovery</h3>
                   <p className="text-gray-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
-                    No chat conversations have been processed yet. Upload a UFDR file containing WhatsApp, SMS, or messaging data to view detailed chat histories with timestamps.
+                    No chat conversations found for this case yet. Extract data from a connected device using the macOS App / CLI, or upload a UFDR file containing WhatsApp, SMS, or Telegram communications.
                   </p>
                   <button
                     onClick={() => navigate(`${rolePrefix}/case/${caseId}`)}
                     className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition font-medium"
                   >
                     <CloudUpload className="w-4 h-4 mr-2" />
-                    Upload CopSight AI File
+                    Case Ingestion Hub
                   </button>
                 </div>
               ) : (

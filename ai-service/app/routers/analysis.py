@@ -507,7 +507,7 @@ async def detect_suspicious_activity(case_id: int) -> Dict[str, Any]:
     if db_manager.elasticsearch:
         try:
             result = await db_manager.elasticsearch.search(
-                index="ufdr-*",
+                index="copsight-*,ufdr-*",
                 body={
                     "query": {
                         "bool": {
@@ -646,7 +646,7 @@ async def generate_timeline(case_id: int) -> Dict[str, Any]:
     if db_manager.elasticsearch:
         try:
             result = await db_manager.elasticsearch.search(
-                index="ufdr-*",
+                index="copsight-*,ufdr-*",
                 body={
                     "query": {"term": {"caseId": case_id}},
                     "size": 100,
@@ -700,7 +700,7 @@ async def get_case_summary(case_id: int):
         # Get communication stats from Elasticsearch
         if db_manager.elasticsearch:
             result = await db_manager.elasticsearch.search(
-                index="ufdr-*",
+                index="copsight-*,ufdr-*",
                 body={
                     "query": {"term": {"caseId": case_id}},
                     "size": 0,
@@ -768,7 +768,7 @@ async def get_case_data_for_analysis(case_id: int) -> Dict[str, Any]:
                 # Standardize case_id filter and fetch full metadata for context
                 # "metadata" contains the original record fields like contactName, duration, etc.
                 result = await db_manager.elasticsearch.search(
-                    index="ufdr-*",
+                    index="copsight-*,ufdr-*",
                     body={
                         "query": {"term": {"caseId": case_id}},
                         "size": 1000,
@@ -932,7 +932,7 @@ async def get_case_predictive_data(case_id: int) -> Dict[str, Any]:
                     if db_manager.elasticsearch:
                         try:
                             result = await db_manager.elasticsearch.count(
-                                index="ufdr-*",
+                                index="copsight-*,ufdr-*",
                                 body={"query": {"term": {"caseId": case_id}}}
                             )
                             case_data["communication_count"] = result["count"]
