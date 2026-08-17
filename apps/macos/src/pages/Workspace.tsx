@@ -6,6 +6,7 @@ import { LiveConsole } from '../components/LiveConsole';
 import { EvidenceViewer } from '../components/EvidenceViewer';
 import { SettingsView } from '../components/SettingsView';
 import { daemonClient } from '../lib/daemonClient';
+import { caseService } from '../lib/api';
 import { useCaseStore } from '../store/caseStore';
 import { useAuthStore } from '../store/authStore';
 import { useDaemonStore } from '../store/daemonStore';
@@ -30,6 +31,12 @@ export const Workspace: React.FC = () => {
   } = useDaemonStore();
 
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('dashboard');
+  const [caseStats, setCaseStats] = useState<{ totalRecords: number; totalChats: number; totalEntities: number }>({
+    totalRecords: 0,
+    totalChats: 0,
+    totalEntities: 0,
+  });
+  const [localReports, setLocalReports] = useState<any[]>([]);
 
   useEffect(() => {
     daemonClient.checkHealth();
@@ -47,7 +54,23 @@ export const Workspace: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (selectedCase?.id) {
+      loadCaseData(selectedCase.id);
+    }
+  }, [selectedCase, lastCompletedResult]);
+
+  const loadCaseData = async (caseId: number) => {
+    const [stats, reports] = await Promise.all([
+      caseService.getCaseStats(caseId),
+      caseService.getLocalDeliverables(),
+    ]);
+    setCaseStats(stats);
+    setLocalReports(Array.isArray(reports) ? reports : []);
+  };
+
   const activeDevice = selectedDevice || detectedDevices[0];
+  const liveEvidenceCount = (caseStats.totalRecords || 0) + (totalArtifactsExtracted || 0);
 
   return (
     <div className="min-h-screen w-full flex flex-col select-none overflow-y-auto pb-12 transition-colors duration-300">
@@ -109,7 +132,7 @@ export const Workspace: React.FC = () => {
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,240,255,0.8)]" />
                     <p className="text-2xl sm:text-3xl font-light text-white font-mono">
-                      {totalArtifactsExtracted || 842}
+                      {liveEvidenceCount}
                     </p>
                   </div>
                   <p className="text-[9.5px] uppercase tracking-wider opacity-75 text-white">Indexed Evidence</p>
@@ -246,8 +269,8 @@ export const Workspace: React.FC = () => {
                       <span className="text-white font-bold block">UFDR Container (.ufdr)</span>
                       <span className="opacity-70 text-[10px]">Universal Evidence Package</span>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full bg-white/10 text-white text-[10px] font-bold">
-                      {lastCompletedResult ? 'Ready' : 'Standby'}
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${lastCompletedResult?.ufdr_path ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/10 text-white'}`}>
+                      {lastCompletedResult?.ufdr_path ? 'Generated' : 'Standby'}
                     </span>
                   </div>
 
@@ -256,8 +279,8 @@ export const Workspace: React.FC = () => {
                       <span className="text-white font-bold block">Forensic PDF Report</span>
                       <span className="opacity-70 text-[10px]">Court-Admissible Dossier</span>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full bg-white/10 text-white text-[10px] font-bold">
-                      {lastCompletedResult ? 'Compiled' : 'Standby'}
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${localReports.length > 0 || lastCompletedResult?.report_path ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/10 text-white'}`}>
+                      {localReports.length > 0 ? `Compiled (${localReports.length})` : lastCompletedResult?.report_path ? 'Compiled' : 'Standby'}
                     </span>
                   </div>
 
@@ -266,8 +289,8 @@ export const Workspace: React.FC = () => {
                       <span className="text-white font-bold block">DFXML Manifest v1.2</span>
                       <span className="opacity-70 text-[10px]">SHA-256 Hash Digest</span>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full bg-white/10 text-white text-[10px] font-bold">
-                      {lastCompletedResult ? 'Hashed' : 'Standby'}
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${lastCompletedResult?.dfxml_path ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'bg-white/10 text-white'}`}>
+                      {lastCompletedResult?.dfxml_path ? 'Verified' : 'Standby'}
                     </span>
                   </div>
                 </div>

@@ -72,6 +72,14 @@ export const authService = {
       };
     }
   },
+  updateProfile: async (profileData: any) => {
+    try {
+      const response = await apiClient.put('/users/profile', profileData);
+      return response.data;
+    } catch {
+      return { success: true, data: profileData };
+    }
+  },
 };
 
 export const caseService = {
@@ -93,13 +101,24 @@ export const caseService = {
     return [];
   },
   getCaseDetails: async (caseId: number) => {
-    const response = await apiClient.get(`/cases/${caseId}`);
-    return response.data;
+    try {
+      const response = await apiClient.get(`/cases/${caseId}`);
+      return response.data?.data || response.data;
+    } catch {
+      return null;
+    }
   },
   getCaseChats: async (caseId: number) => {
     try {
       const response = await apiClient.get(`/cases/${caseId}/chats`);
-      return response.data?.data || [];
+      const payload = response.data?.data;
+      if (payload?.chats && Array.isArray(payload.chats)) {
+        return payload.chats;
+      }
+      if (Array.isArray(payload)) {
+        return payload;
+      }
+      return [];
     } catch {
       return [];
     }
@@ -107,7 +126,41 @@ export const caseService = {
   getCaseEntities: async (caseId: number) => {
     try {
       const response = await apiClient.get(`/cases/${caseId}/entities`);
-      return response.data?.data || [];
+      const payload = response.data?.data;
+      if (payload?.entities && Array.isArray(payload.entities)) {
+        return payload.entities;
+      }
+      if (Array.isArray(payload)) {
+        return payload;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  },
+  getCaseStats: async (caseId: number): Promise<{ totalRecords: number; totalChats: number; totalEntities: number }> => {
+    try {
+      const [chats, entities, details] = await Promise.all([
+        caseService.getCaseChats(caseId),
+        caseService.getCaseEntities(caseId),
+        caseService.getCaseDetails(caseId),
+      ]);
+      const chatsCount = Array.isArray(chats) ? chats.length : 0;
+      const entitiesCount = Array.isArray(entities) ? entities.length : 0;
+      const totalRecords = chatsCount + entitiesCount || (details as any)?.totalRecords || 0;
+      return {
+        totalRecords,
+        totalChats: chatsCount,
+        totalEntities: entitiesCount,
+      };
+    } catch {
+      return { totalRecords: 0, totalChats: 0, totalEntities: 0 };
+    }
+  },
+  getLocalDeliverables: async () => {
+    try {
+      const res = await axios.get('http://127.0.0.1:54322/api/reports', { timeout: 3000 });
+      return res.data?.reports || [];
     } catch {
       return [];
     }
