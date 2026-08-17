@@ -22,7 +22,25 @@ export const CaseDetail = () => {
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [showQueryPrompt, setShowQueryPrompt] = useState(false);
   const [fileJustProcessed, setFileJustProcessed] = useState(false);
-  const [dismissedErrorJobId, setDismissedErrorJobId] = useState<number | null>(null);
+  const [dismissedErrorJobIds, setDismissedErrorJobIds] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem(`copsight_dismissed_jobs_${caseId}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const dismissErrorJob = (jobId: number) => {
+    setDismissedErrorJobIds(prev => {
+      const updated = Array.from(new Set([...prev, jobId]));
+      try {
+        localStorage.setItem(`copsight_dismissed_jobs_${caseId}`, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
   const [activeAITab, setActiveAITab] = useState<AITab>('cross-case');
   const [mountedAITabs, setMountedAITabs] = useState<Set<AITab>>(new Set(['cross-case']));
   const { user } = useAuthStore();
@@ -515,30 +533,33 @@ export const CaseDetail = () => {
        processing.jobs.length > 0 && 
        processing.jobs[0].status === 'failed' && 
        activeJobs.length === 0 && 
-       dismissedErrorJobId !== processing.jobs[0].id && (
+       !dismissedErrorJobIds.includes(processing.jobs[0].id) && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-5 relative animate-fade-in">
-          <button 
-            onClick={() => setDismissedErrorJobId(processing.jobs[0].id)}
-            className="absolute top-4 right-4 text-red-400 hover:text-red-600 dark:hover:text-red-200 transition"
-            title="Dismiss error"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-red-900 dark:text-red-300 mb-1">Previous Job Failed</h3>
-              <p className="text-sm text-red-700 dark:text-red-400 mb-2">
-                {processing.jobs[0].errorMessage || 'An error occurred while processing.'}
-              </p>
-              <div className="text-xs text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/20 p-2.5 rounded-lg mt-1">
-                <p className="font-medium mb-1">Common issues:</p>
-                <ul className="list-disc list-inside space-y-0.5">
-                  <li>Ensure the device connection or uploaded file is valid</li>
-                  <li>Check extraction daemon status or file format (.xml, .ufdr, .dfxml)</li>
-                </ul>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-red-900 dark:text-red-300 mb-1">Previous Job #{processing.jobs[0].id} Failed</h3>
+                <p className="text-sm text-red-700 dark:text-red-400 mb-2">
+                  {processing.jobs[0].errorMessage || 'An error occurred while processing.'}
+                </p>
+                <div className="text-xs text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/20 p-2.5 rounded-lg mt-1">
+                  <p className="font-medium mb-1">Common issues:</p>
+                  <ul className="list-disc list-inside space-y-0.5">
+                    <li>Ensure the device connection or uploaded file is valid</li>
+                    <li>Check extraction daemon status or file format (.xml, .ufdr, .dfxml)</li>
+                  </ul>
+                </div>
               </div>
             </div>
+            <button 
+              onClick={() => dismissErrorJob(processing.jobs[0].id)}
+              className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg text-xs font-medium transition shrink-0 flex items-center gap-1"
+              title="Dismiss error"
+            >
+              <X className="w-3.5 h-3.5" />
+              Dismiss
+            </button>
           </div>
         </div>
       )}
