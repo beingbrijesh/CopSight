@@ -106,9 +106,9 @@ export const AcquisitionWizard: React.FC = () => {
           </div>
         </div>
 
-        <span className="text-2xl font-light font-mono text-[#FF7A59] dark:text-white bg-black/20 dark:bg-white/10 px-3 py-1 rounded-full">
+        <div className="flex items-center justify-center px-3.5 py-1.5 rounded-full bg-black/25 dark:bg-white/10 border border-white/15 text-xs sm:text-sm font-mono font-bold text-[#FF7A59] dark:text-white shrink-0 leading-none shadow-sm">
           Step {currentLevelIndex >= 0 ? currentLevelIndex + 1 : 1} of 3
-        </span>
+        </div>
       </div>
 
       {/* Main Parameters Scope Area */}

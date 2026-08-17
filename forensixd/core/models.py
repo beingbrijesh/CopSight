@@ -26,7 +26,23 @@ from typing import Optional, Any
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+try:
+    from pydantic import BaseModel, Field, field_validator, ConfigDict
+except ImportError:
+    # Lightweight standard library fallback for systems without pydantic
+    class BaseModel:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+        def model_dump(self, *args, **kwargs):
+            return self.__dict__
+    def Field(*args, **kwargs):
+        return kwargs.get("default", None)
+    def field_validator(*args, **kwargs):
+        def decorator(f):
+            return f
+        return decorator
+    ConfigDict = dict
 
 # IST timezone singleton — reused by every validator.
 _IST = ZoneInfo("Asia/Kolkata")

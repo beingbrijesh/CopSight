@@ -41,17 +41,17 @@ export const Workspace: React.FC = () => {
   const activeDevice = selectedDevice || detectedDevices[0];
 
   return (
-    <div className="min-h-screen w-full flex flex-col select-none overflow-y-auto pb-10 transition-colors duration-300">
+    <div className="min-h-screen w-full flex flex-col select-none overflow-y-auto pb-12 transition-colors duration-300">
       
-      {/* Top Floating Navigation Bar (Aligned in same line with traffic light controls) */}
-      <div className="pt-2 px-2 sm:px-4 w-full sticky top-0 z-40">
+      {/* Top Floating Navigation Bar (Positioned comfortably below window controls) */}
+      <div className="pt-8 sm:pt-9 px-4 sm:px-8 max-w-[1750px] mx-auto w-full">
         <ContextHeader
           activeTab={activeTab}
           setActiveTab={setActiveTab}
         />
       </div>
 
-      <main className="flex-1 px-2 sm:px-4 pt-4 w-full mx-auto max-w-[1800px]">
+      <main className="flex-1 px-4 sm:px-8 pt-6 max-w-[1750px] w-full mx-auto">
         
         {/* ========================================================================= */}
         {/* VIEW 1: SIMPLIFIED, INTUITIVE FORENSIC DASHBOARD                          */}
