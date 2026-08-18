@@ -13,6 +13,15 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Set, Optional
 
+# Ensure project root and app core are in sys.path
+_current_dir = Path(__file__).resolve().parent
+_project_root = _current_dir.parent.parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+_app_core = _current_dir.parent.parent
+if str(_app_core) not in sys.path:
+    sys.path.insert(0, str(_app_core))
+
 try:
     import uvicorn
     from starlette.applications import Starlette
@@ -205,8 +214,18 @@ async def cancel_acquire_endpoint(request: Request) -> JSONResponse:
 
 async def reports_endpoint(request: Request) -> JSONResponse:
     """Returns details of the latest output artifacts."""
-    if bridge._last_result:
-        return JSONResponse({"success": True, "report": bridge._last_result})
+    case_dir = Path("cases")
+    reports = []
+    if case_dir.exists():
+        for p in case_dir.rglob("*.pdf"):
+            reports.append({"name": p.name, "path": str(p), "size": p.stat().st_size})
+    return JSONResponse({
+        "success": True,
+        "report": bridge._last_result,
+        "reports": reports
+    })
+
+
 async def poll_events_endpoint(request: Request) -> JSONResponse:
     """HTTP polling fallback for real-time extraction progress and events."""
     try:
