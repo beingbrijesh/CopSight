@@ -420,7 +420,10 @@ export const Workspace: React.FC = () => {
         {/* VIEW 6: INVESTIGATOR PROFILE & STATION SETTINGS                           */}
         {/* ========================================================================= */}
         {activeTab === 'settings' && (
-          <SettingsView onSwitchCase={clearSelection} />
+          <SettingsView
+            onSwitchCase={clearSelection}
+            onOpenAdminAudit={() => setIsAdminAuditOpen(true)}
+          />
         )}
 
       </main>

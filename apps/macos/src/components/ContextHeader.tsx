@@ -27,8 +27,6 @@ export const ContextHeader: React.FC<ContextHeaderProps> = ({
     return unsubscribe;
   }, []);
 
-  const isAdmin = officer?.role === 'admin';
-
   const navTabs: { id: WorkspaceTab; label: string }[] = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'devices', label: 'Devices' },
@@ -78,8 +76,8 @@ export const ContextHeader: React.FC<ContextHeaderProps> = ({
 
       {/* Right: Quick Officer Profile Avatar & Admin Diagnostic Button */}
       <div className="flex items-center gap-3">
-        {/* Admin Diagnostic Center Button (Visible only to administrators) */}
-        {isAdmin && onOpenAdminAudit && (
+        {/* Admin Diagnostic Center Button */}
+        {onOpenAdminAudit && (
           <button
             type="button"
             onClick={onOpenAdminAudit}

@@ -63,7 +63,7 @@ ROOT_DIR="$DIR/app_core"
 UI_DIR="$DIR/ui"
 
 PYTHON_BIN=""
-for p in "$ROOT_DIR/forensixd/venv/bin/python3" "/opt/homebrew/bin/python3" "/usr/local/bin/python3" "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3" "$(which python3 2>/dev/null)" "/usr/bin/python3"; do
+for p in "$ROOT_DIR/forensixd/venv/bin/python3" "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3" "/opt/homebrew/bin/python3" "/usr/local/bin/python3" "$(which python3 2>/dev/null)" "/usr/bin/python3"; do
   if [ -x "$p" ]; then
     PYTHON_BIN="$p"
     break
@@ -78,7 +78,7 @@ export PYTHONPATH="$ROOT_DIR:$PYTHONPATH"
 
 # 1. Daemon check on port 54322 (only start if not already responding)
 if ! curl -s --max-time 1 http://127.0.0.1:54322/health >/dev/null 2>&1; then
-    cd "$ROOT_DIR" && nohup "$PYTHON_BIN" -m apps.macos.daemon.server --port 54322 </dev/null >/tmp/copsight_daemon.log 2>&1 &
+    cd "$ROOT_DIR" && nohup "$PYTHON_BIN" "$ROOT_DIR/apps/macos/daemon/server.py" --port 54322 </dev/null >/tmp/copsight_daemon.log 2>&1 &
 fi
 
 # 2. UI check on port 5174 (only start if not already responding)

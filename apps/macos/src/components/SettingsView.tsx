@@ -19,9 +19,10 @@ import { daemonClient } from '../lib/daemonClient';
 
 interface SettingsViewProps {
   onSwitchCase: () => void;
+  onOpenAdminAudit?: () => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase, onOpenAdminAudit }) => {
   const { officer, updateOfficer, logout } = useAuthStore();
   const { selectedCase } = useCaseStore();
   const { isDaemonConnected, isScanning } = useDaemonStore();
@@ -452,7 +453,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase }) => {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-1">
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
               <button
                 type="button"
                 onClick={handleTestDaemon}
@@ -479,6 +480,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase }) => {
                 <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
                 <span>Probe USB Bus</span>
               </button>
+              {onOpenAdminAudit && (
+                <button
+                  type="button"
+                  onClick={onOpenAdminAudit}
+                  className="py-2.5 px-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-mono font-bold flex items-center justify-center gap-2 border border-red-500/30 transition-all cursor-pointer shadow-sm"
+                  title="Open Diagnostic Log Dossier"
+                >
+                  <span>Diagnostic Logs</span>
+                </button>
+              )}
             </div>
           </div>
 

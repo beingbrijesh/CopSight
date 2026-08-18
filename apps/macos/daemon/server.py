@@ -22,6 +22,10 @@ _app_core = _current_dir.parent.parent
 if str(_app_core) not in sys.path:
     sys.path.insert(0, str(_app_core))
 
+import http.server
+import urllib.parse
+import socketserver
+
 try:
     import uvicorn
     from starlette.applications import Starlette
@@ -34,8 +38,7 @@ try:
     HAS_STARLETTE = True
 except ImportError:
     HAS_STARLETTE = False
-    import http.server
-    import urllib.parse
+    app = None
 
 from forensixd.core.device_detector import DeviceDetector, USB_AVAILABLE
 from forensixd.extractors.android import resolve_adb_command, _resolve_adb_command

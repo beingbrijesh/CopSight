@@ -69,73 +69,84 @@ export const LiveConsole: React.FC = () => {
         </div>
       </div>
 
-      {/* Responsive Telemetry Gauge & Quick Metrics Bar */}
-      <div className="shrink-0 flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 p-3.5 rounded-2xl bg-black/20 dark:bg-white/5 border border-white/10 mb-3">
+      {/* Responsive Telemetry Gauge & Metrics Panel (Zero-Overflow Guaranteed) */}
+      <div className="shrink-0 rounded-2xl bg-black/20 dark:bg-white/5 border border-white/10 p-3.5 mb-3 space-y-2.5">
         
-        {/* Speedometer Radial Gauge */}
-        <div className="flex items-center gap-3">
-          <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center shrink-0">
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
-              {/* Background track ring */}
-              <circle
-                cx="80"
-                cy="80"
-                r="54"
-                fill="transparent"
-                stroke="rgba(255,255,255,0.12)"
-                strokeWidth="12"
-              />
-              {/* Active Progress Ring in vibrant coral #FF7A59 */}
-              <circle
-                cx="80"
-                cy="80"
-                r="54"
-                fill="transparent"
-                stroke="#FF7A59"
-                strokeWidth="12"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                className="dark:stroke-white transition-all duration-700 ease-out"
-              />
-            </svg>
-            
-            {/* Speed Label */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none">
-              <span className="text-base sm:text-lg font-bold tracking-tight text-white font-mono">
-                {currentSpeedMbps.toFixed(1)}
-              </span>
-              <span className="text-[8px] uppercase tracking-wider font-mono opacity-70">
-                MB/s
-              </span>
+        {/* Row 1: Gauge + Status Indicator + Mode Badge */}
+        <div className="flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center shrink-0">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
+                {/* Background track ring */}
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="54"
+                  fill="transparent"
+                  stroke="rgba(255,255,255,0.12)"
+                  strokeWidth="14"
+                />
+                {/* Active Progress Ring in vibrant coral #FF7A59 */}
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="54"
+                  fill="transparent"
+                  stroke="#FF7A59"
+                  strokeWidth="14"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                  className="dark:stroke-white transition-all duration-700 ease-out"
+                />
+              </svg>
+              
+              {/* Speed Label */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none">
+                <span className="text-xs sm:text-sm font-bold tracking-tight text-white font-mono leading-none">
+                  {currentSpeedMbps.toFixed(1)}
+                </span>
+                <span className="text-[7.5px] uppercase tracking-wider font-mono opacity-70 leading-none mt-0.5">
+                  MB/s
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-hidden">
+              <div className="flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${isAcquiring ? 'bg-emerald-400 animate-ping' : 'bg-[#FF7A59] dark:bg-white'}`} />
+                <span className="text-xs font-mono font-bold text-white tracking-tight truncate">
+                  {isAcquiring ? 'STREAMING DATA' : 'ENGINE READY'}
+                </span>
+              </div>
+              <p className="text-[10px] font-mono opacity-70 truncate max-w-[150px] sm:max-w-[200px] mt-0.5">
+                {latestArtifactName || 'Awaiting bitstream...'}
+              </p>
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className={`w-2 h-2 rounded-full ${isAcquiring ? 'bg-emerald-400 animate-ping' : 'bg-[#FF7A59] dark:bg-white'}`} />
-              <span className="text-xs font-mono font-bold text-white">
-                {isAcquiring ? 'STREAMING DATA' : 'ENGINE READY'}
-              </span>
-            </div>
-            <p className="text-[10px] font-mono opacity-70 truncate max-w-[180px]">
-              {latestArtifactName || 'Awaiting bitstream...'}
-            </p>
-          </div>
+          <span
+            className={`text-[9.5px] font-mono font-bold px-2.5 py-1 rounded-full border shrink-0 ${
+              isAcquiring
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                : 'bg-white/10 text-white/80 border-white/15'
+            }`}
+          >
+            {isAcquiring ? 'Active' : 'Standby'}
+          </span>
         </div>
 
-        {/* Counter Stats */}
-        <div className="flex items-center gap-4 border-t sm:border-t-0 sm:border-l border-white/10 pt-2 sm:pt-0 sm:pl-4">
-          <div className="text-left">
-            <span className="text-sm font-mono font-bold text-white block">{totalArtifactsExtracted}</span>
-            <span className="text-[9px] uppercase opacity-60 font-mono">Artifacts</span>
+        {/* Row 2: Metrics Grid */}
+        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10 font-mono text-xs">
+          <div className="p-2 rounded-xl bg-black/20 dark:bg-white/5 border border-white/5 flex items-center justify-between">
+            <span className="text-[9.5px] opacity-60 uppercase">Artifacts:</span>
+            <span className="font-bold text-white text-xs">{totalArtifactsExtracted}</span>
           </div>
-          <div className="h-6 w-px bg-white/15" />
-          <div className="text-left">
-            <span className={`text-xs font-mono font-bold block ${isAcquiring ? 'text-emerald-400' : 'text-white/80'}`}>
-              {isAcquiring ? 'Active' : 'Standby'}
+          <div className="p-2 rounded-xl bg-black/20 dark:bg-white/5 border border-white/5 flex items-center justify-between">
+            <span className="text-[9.5px] opacity-60 uppercase">Bitstream:</span>
+            <span className="font-bold text-white text-[11px] truncate max-w-[70px]">
+              {isAcquiring ? 'Active' : 'Idle'}
             </span>
-            <span className="text-[9px] uppercase opacity-60 font-mono">Status</span>
           </div>
         </div>
 

@@ -1,0 +1,1 @@
+"""CopSight macOS App Package."""
