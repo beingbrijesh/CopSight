@@ -21,7 +21,46 @@
         NSLog(@"Error launching start_services.sh: %@", exception);
     }
 
-    // 2. Create Window with Compact Minimum Size (Full Responsiveness)
+    // 2. Setup Standard macOS Application & Edit Menus (Enables Cmd+C, Cmd+V, Cmd+A, Cmd+X)
+    NSMenu *mainMenu = [[NSMenu alloc] init];
+
+    // App Menu
+    NSMenuItem *appMenuItem = [[NSMenuItem alloc] init];
+    NSMenu *appMenu = [[NSMenu alloc] initWithTitle:@"CopSight"];
+    [appMenu addItemWithTitle:@"About CopSight" action:@selector(orderFrontStandardAboutPanel:) keyEquivalent:@""];
+    [appMenu addItem:[NSMenuItem separatorItem]];
+    [appMenu addItemWithTitle:@"Hide CopSight" action:@selector(hide:) keyEquivalent:@"h"];
+    [appMenu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"h"];
+    [appMenu addItem:[NSMenuItem separatorItem]];
+    [appMenu addItemWithTitle:@"Quit CopSight" action:@selector(terminate:) keyEquivalent:@"q"];
+    appMenuItem.submenu = appMenu;
+    [mainMenu addItem:appMenuItem];
+
+    // Edit Menu (CRITICAL: Routes Cmd+C, Cmd+V, Cmd+A, Cmd+X to WKWebView)
+    NSMenuItem *editMenuItem = [[NSMenuItem alloc] init];
+    NSMenu *editMenu = [[NSMenu alloc] initWithTitle:@"Edit"];
+    [editMenu addItemWithTitle:@"Undo" action:@selector(undo:) keyEquivalent:@"z"];
+    [editMenu addItemWithTitle:@"Redo" action:@selector(redo:) keyEquivalent:@"Z"];
+    [editMenu addItem:[NSMenuItem separatorItem]];
+    [editMenu addItemWithTitle:@"Cut" action:@selector(cut:) keyEquivalent:@"x"];
+    [editMenu addItemWithTitle:@"Copy" action:@selector(copy:) keyEquivalent:@"c"];
+    [editMenu addItemWithTitle:@"Paste" action:@selector(paste:) keyEquivalent:@"v"];
+    [editMenu addItemWithTitle:@"Select All" action:@selector(selectAll:) keyEquivalent:@"a"];
+    editMenuItem.submenu = editMenu;
+    [mainMenu addItem:editMenuItem];
+
+    // Window Menu
+    NSMenuItem *windowMenuItem = [[NSMenuItem alloc] init];
+    NSMenu *windowMenu = [[NSMenu alloc] initWithTitle:@"Window"];
+    [windowMenu addItemWithTitle:@"Minimize" action:@selector(performMiniaturize:) keyEquivalent:@"m"];
+    [windowMenu addItemWithTitle:@"Zoom" action:@selector(performZoom:) keyEquivalent:@""];
+    [windowMenu addItemWithTitle:@"Close" action:@selector(performClose:) keyEquivalent:@"w"];
+    windowMenuItem.submenu = windowMenu;
+    [mainMenu addItem:windowMenuItem];
+
+    [NSApp setMainMenu:mainMenu];
+
+    // 3. Create Window with Compact Minimum Size (Full Responsiveness)
     NSRect frame = NSMakeRect(100, 100, 1360, 880);
     self.window = [[NSWindow alloc] initWithContentRect:frame
                                               styleMask:(NSWindowStyleMaskTitled |
@@ -39,7 +78,7 @@
     self.window.releasedWhenClosed = NO;
     self.window.backgroundColor = [NSColor windowBackgroundColor];
 
-    // 3. Create WKWebView
+    // 4. Create WKWebView
     WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
     [config.preferences setValue:@YES forKey:@"developerExtrasEnabled"];
 

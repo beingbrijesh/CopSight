@@ -11,6 +11,8 @@ import {
   Activity,
   Terminal,
   Code,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { loggerService, AuditLogEntry, LogLevel } from '../lib/loggerService';
 
@@ -24,6 +26,8 @@ export const AdminAuditModal: React.FC<AdminAuditModalProps> = ({ isOpen, onClos
   const [filterLevel, setFilterLevel] = useState<LogLevel | 'ALL'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntry, setSelectedEntry] = useState<AuditLogEntry | null>(null);
+  const [copiedAll, setCopiedAll] = useState(false);
+  const [copiedEntry, setCopiedEntry] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -45,13 +49,31 @@ export const AdminAuditModal: React.FC<AdminAuditModalProps> = ({ isOpen, onClos
     return matchesLevel && matchesSearch;
   });
 
+  const handleCopyAll = async () => {
+    const ok = await loggerService.copyLogsToClipboard(true);
+    if (ok) {
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2500);
+    }
+  };
+
+  const handleCopyEntry = async (entry: AuditLogEntry) => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(entry, null, 2));
+      setCopiedEntry(true);
+      setTimeout(() => setCopiedEntry(false), 2500);
+    } catch {
+      // Fallback
+    }
+  };
+
   const errorCount = logs.filter((l) => l.level === 'ERROR').length;
   const warnCount = logs.filter((l) => l.level === 'WARN').length;
   const actionCount = logs.filter((l) => l.level === 'ACTION').length;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-fadeIn select-text">
-      <div className="glass-panel w-full max-w-6xl h-[85vh] rounded-[2.5rem] p-6 sm:p-8 flex flex-col shadow-2xl border border-white/20 overflow-hidden">
+      <div className="glass-panel w-full max-w-6xl h-[85vh] rounded-[2.5rem] p-6 sm:p-8 flex flex-col shadow-2xl border border-white/20 overflow-hidden select-text">
         
         {/* Top Header */}
         <div className="flex items-start justify-between pb-4 border-b border-white/10 shrink-0">
@@ -75,12 +97,21 @@ export const AdminAuditModal: React.FC<AdminAuditModalProps> = ({ isOpen, onClos
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => loggerService.exportLogsJson()}
+              onClick={handleCopyAll}
               className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-mono font-bold flex items-center gap-1.5 border border-white/15 transition-all cursor-pointer shadow-sm"
-              title="Download Full JSON Dossier"
+              title="Copy entire audit trail to clipboard"
+            >
+              {copiedAll ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedAll ? 'Copied!' : 'Copy JSON'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => loggerService.exportLogsJson()}
+              className="px-3.5 py-2 rounded-xl bg-[#FF7A59] hover:bg-[#ff6540] text-white dark:bg-white dark:text-black text-xs font-mono font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+              title="Save JSON dossier into Downloads and reveal in Finder"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Export JSON</span>
+              <span>Export Dossier</span>
             </button>
             <button
               type="button"
@@ -238,20 +269,31 @@ export const AdminAuditModal: React.FC<AdminAuditModalProps> = ({ isOpen, onClos
 
           {/* Right: Selected Log Entry Stack Trace & Metadata Inspector */}
           {selectedEntry && (
-            <div className="lg:col-span-5 bg-black/60 rounded-2xl border border-white/15 p-4 overflow-y-auto font-mono text-xs flex flex-col justify-between shadow-xl">
-              <div className="space-y-3">
+            <div className="lg:col-span-5 bg-black/60 rounded-2xl border border-white/15 p-4 overflow-y-auto font-mono text-xs flex flex-col justify-between shadow-xl select-text">
+              <div className="space-y-3 select-text">
                 <div className="flex items-center justify-between pb-2 border-b border-white/10">
                   <div className="flex items-center gap-2">
                     <Code className="w-4 h-4 text-emerald-400" />
                     <span className="font-bold text-white text-xs">Event Detail Inspector</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedEntry(null)}
-                    className="opacity-70 hover:opacity-100 text-xs"
-                  >
-                    ✕
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleCopyEntry(selectedEntry)}
+                      className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-mono flex items-center gap-1 border border-white/10 transition-all cursor-pointer"
+                      title="Copy this event JSON"
+                    >
+                      {copiedEntry ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedEntry ? 'Copied' : 'Copy'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedEntry(null)}
+                      className="opacity-70 hover:opacity-100 text-xs ml-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-1 text-[11px]">

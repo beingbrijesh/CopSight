@@ -232,14 +232,91 @@ class LoggerService {
     this.logListeners.forEach((fn) => fn(copy));
   }
 
-  public exportLogsJson(): void {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(this.logs, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `copsight_audit_log_${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+  public async exportLogsJson(): Promise<void> {
+    const jsonStr = JSON.stringify(this.logs, null, 2);
+    
+    // 1. First attempt native macOS file write via daemon RPC
+    try {
+      const res = await fetch('http://127.0.0.1:54322/api/logs/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logs: this.logs }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.triggerToast({
+          id: `export-${Date.now()}`,
+          type: 'success',
+          title: 'Logs Exported',
+          message: data.message || 'Log dossier saved to Downloads and revealed in Finder.',
+          timestamp: Date.now(),
+        });
+        // Also copy to clipboard for immediate pasting
+        await this.copyLogsToClipboard(false);
+        return;
+      }
+    } catch {
+      // Fallback to browser blob download
+    }
+
+    // 2. Fallback: Blob URL download
+    try {
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', url);
+      downloadAnchor.setAttribute('download', `copsight_audit_log_${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch {
+      // Ignore
+    }
+
+    // 3. Fallback: Copy to clipboard
+    await this.copyLogsToClipboard();
+  }
+
+  public async copyLogsToClipboard(showToast = true): Promise<boolean> {
+    try {
+      const jsonStr = JSON.stringify(this.logs, null, 2);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(jsonStr);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = jsonStr;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
+
+      if (showToast) {
+        this.triggerToast({
+          id: `copy-${Date.now()}`,
+          type: 'success',
+          title: 'Logs Copied',
+          message: `Copied ${this.logs.length} audit log entries to clipboard in JSON format.`,
+          timestamp: Date.now(),
+        });
+      }
+      return true;
+    } catch (e: any) {
+      if (showToast) {
+        this.triggerToast({
+          id: `copy-err-${Date.now()}`,
+          type: 'error',
+          title: 'Copy Failed',
+          message: `Could not copy logs: ${e.message}`,
+          timestamp: Date.now(),
+        });
+      }
+      return false;
+    }
   }
 }
 

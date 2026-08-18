@@ -29,6 +29,15 @@ _logger = logging.getLogger(__name__)
 _IST = timezone(timedelta(hours=5, minutes=30))
 
 
+def _is_adb_device_online(adb_cmd: str, adb_target_args: list[str]) -> bool:
+    """Verifies that an ADB target device is connected and authorized."""
+    try:
+        res = subprocess.run([adb_cmd, *adb_target_args, "get-state"], capture_output=True, text=True, timeout=3)
+        return res.returncode == 0 and "device" in res.stdout.lower()
+    except Exception:
+        return False
+
+
 class WhatsAppDecryptionEngine:
     """Multi-vector decryption engine for WhatsApp crypt12, crypt14, and crypt15 databases."""
 
@@ -105,6 +114,8 @@ class AndroidNotificationScraper:
     @staticmethod
     def scrape_notification_history(adb_cmd: str, adb_target_args: list[str]) -> List[Dict[str, Any]]:
         """Queries Android dumpsys notification / notification history for chat records."""
+        if not _is_adb_device_online(adb_cmd, adb_target_args):
+            return []
         records: List[Dict[str, Any]] = []
         try:
             # Try multiple dumpsys notification vectors
@@ -591,6 +602,20 @@ class MemoryHeapKeyScanner:
         Non-destructive: never force-stops or relaunches the target app.
         Cross-brand compatible: attempts all methods regardless of OEM skin.
         """
+        if not _is_adb_device_online(adb_cmd, adb_target_args):
+            return {
+                "success": False,
+                "message": "No Android device connected via ADB. Please connect target device with USB Debugging enabled.",
+                "methods": [],
+                "candidates": [],
+                "decrypted": None,
+                "nextSteps": [
+                    "Connect target device via USB cable",
+                    "Enable Developer Options and USB Debugging on target device",
+                    "Authorize host PC RSA fingerprint prompt on device screen"
+                ]
+            }
+
         all_candidates: List[str] = []
         method_results: List[Dict[str, Any]] = []
         decryption_result: Optional[Dict[str, Any]] = None
@@ -686,6 +711,17 @@ class PhysicalBootTriageManager:
     @staticmethod
     def inspect_bootloader_and_fastboot(adb_cmd: str, adb_target_args: list[str]) -> Dict[str, Any]:
         """Checks device physical state, recovery status, and partition accessibility."""
+        if not _is_adb_device_online(adb_cmd, adb_target_args):
+            return {
+                "success": False,
+                "error": "No Android device connected via ADB. Please connect target device with USB Debugging enabled.",
+                "hardware": "Disconnected",
+                "chipset": "None",
+                "bootloaderLocked": True,
+                "hasRootAccess": False,
+                "chipFamily": "None",
+                "physicalDumpSupported": False
+            }
         try:
             # 1. Check getprop for hardware/chipset info (Qualcomm vs MediaTek)
             res_hw = subprocess.run([adb_cmd, *adb_target_args, "shell", "getprop", "ro.hardware"], capture_output=True, text=True, timeout=5)
@@ -715,6 +751,8 @@ class PhysicalBootTriageManager:
     @staticmethod
     def extract_direct_physical_db(adb_cmd: str, adb_target_args: list[str], output_dir: Path) -> Dict[str, Any]:
         """Attempts direct extraction from /data/data/ if root/su or elevated shell is available."""
+        if not _is_adb_device_online(adb_cmd, adb_target_args):
+            return {"success": False, "error": "No Android device connected via ADB."}
         try:
             out_db = output_dir / "msgstore.db"
             out_key = output_dir / "key"
@@ -757,6 +795,13 @@ class AndroidWhatsAppHarvester:
     @staticmethod
     def harvest_whatsapp_media(adb_cmd: str, adb_target_args: list[str], target_case_dir: Path) -> Dict[str, Any]:
         """Scans unencrypted Android shared media directories for WhatsApp voice notes, audio, and documents."""
+        if not _is_adb_device_online(adb_cmd, adb_target_args):
+            return {
+                "success": False,
+                "error": "No Android device connected via ADB. Please connect target device with USB Debugging enabled.",
+                "totalFiles": 0,
+                "outputDir": str(target_case_dir)
+            }
         target_media_dir = target_case_dir / "whatsapp_media"
         target_media_dir.mkdir(parents=True, exist_ok=True)
 
@@ -795,6 +840,12 @@ class AndroidWhatsAppHarvester:
     def scrape_deep_whatsapp_threads(adb_cmd: str, adb_target_args: list[str], output_dir: Path, max_chats: int = 30) -> Dict[str, Any]:
         """Iteratively opens individual WhatsApp conversations, scrolls to the top of each conversation,
         and scrolls down the contact list to harvest all conversations locally without duplication or re-crawling."""
+        if not _is_adb_device_online(adb_cmd, adb_target_args):
+            return {
+                "success": False,
+                "error": "No Android device connected via ADB. Please connect target device with USB Debugging enabled.",
+                "records": []
+            }
         import xml.etree.ElementTree as ET
         all_conversations: List[Dict[str, Any]] = []
         remote_xml = "/data/local/tmp/uidump.xml"

@@ -653,6 +653,26 @@ async def upload_to_cloud_endpoint(request: Request) -> JSONResponse:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
+async def export_logs_endpoint(request: Request) -> JSONResponse:
+    """Exports audit logs directly to user's ~/Downloads directory and reveals in Finder."""
+    try:
+        data = await _safe_get_json(request)
+        logs = data.get("logs", [])
+        downloads_dir = Path.home() / "Downloads"
+        downloads_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        export_file = downloads_dir / f"CopSight_Audit_Log_{timestamp}.json"
+        export_file.write_text(json.dumps(logs, indent=2), encoding="utf-8")
+        subprocess.Popen(["open", "-R", str(export_file)])
+        return JSONResponse({
+            "success": True,
+            "message": f"Saved log dossier to {export_file.name} in Downloads folder.",
+            "filePath": str(export_file)
+        })
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
 if HAS_STARLETTE:
     def create_app() -> Starlette:
         """Constructs the Starlette application with CORS and routes."""
@@ -686,6 +706,7 @@ if HAS_STARLETTE:
             Route("/api/acquire/physical/mtk-status", mtk_status_endpoint, methods=["GET"]),
             Route("/api/cases/local-status", case_local_status_endpoint, methods=["GET"]),
             Route("/api/cases/upload-to-cloud", upload_to_cloud_endpoint, methods=["POST"]),
+            Route("/api/logs/export", export_logs_endpoint, methods=["POST"]),
             Route("/api/verify", verify_custody_endpoint, methods=["POST", "GET"]),
             Route("/api/open-folder", open_folder_endpoint, methods=["POST"]),
             Route("/api/acquire/events/poll", poll_events_endpoint, methods=["GET"]),
@@ -708,7 +729,7 @@ else:
             self.end_headers()
 
         def do_OPTIONS(self):
-            self._send_cors(204)
+            self._send_cors(200)
 
         def do_GET(self):
             parsed = urllib.parse.urlparse(self.path)
@@ -718,7 +739,7 @@ else:
                 resp = json.dumps({
                     "status": "healthy",
                     "daemon": "CopSight macOS Engine",
-                    "version": "2.0.28",
+                    "version": "2.0.29",
                     "usb_available": USB_AVAILABLE,
                     "is_acquiring": bridge.is_running,
                 }).encode("utf-8")
@@ -775,10 +796,9 @@ else:
             elif path == "/api/cases/local-status":
                 query_params = urllib.parse.parse_qs(parsed.query)
                 case_number = query_params.get("caseNumber", ["Demo"])[0]
-                case_dir = Path("cases") / case_number
-                files = list(case_dir.glob("**/*")) if case_dir.exists() else []
-                files = [f for f in files if f.is_file() and not f.name.startswith('.')]
-                upload_flag = case_dir / "adb_pull" / ".uploaded_to_cloud"
+                case_dir = Path("cases") / case_number / "adb_pull"
+                files = list(case_dir.glob("*.*")) if case_dir.exists() else []
+                upload_flag = case_dir / ".uploaded_to_cloud"
                 is_uploaded = upload_flag.exists()
                 self._send_cors(200)
                 self.wfile.write(json.dumps({
@@ -849,6 +869,7 @@ else:
                 cancelled = bridge.cancel()
                 self._send_cors(200)
                 self.wfile.write(json.dumps({"success": True, "message": "Acquisition cancellation requested" if cancelled else "No active acquisition"}).encode("utf-8"))
+
             elif path == "/api/cases/upload-to-cloud":
                 case_number = data.get("caseNumber", "Demo")
                 case_dir = Path("cases") / case_number / "adb_pull"
@@ -860,17 +881,116 @@ else:
                     "message": "Successfully synchronized local evidence records with central storage.",
                     "status": "Uploaded"
                 }).encode("utf-8"))
+
             elif path == "/api/decrypt/whatsapp":
+                case_number = data.get("caseNumber", "Demo")
+                hex_key = data.get("hexKey")
+                key_file_path = data.get("keyFilePath")
+                case_dir = Path("cases") / case_number / "adb_pull"
+                crypt_files = list(case_dir.glob("msgstore*.crypt14")) + list(case_dir.glob("msgstore*.crypt15")) + list(case_dir.glob("*.crypt14"))
+                if not crypt_files:
+                    self._send_cors(200)
+                    self.wfile.write(json.dumps({
+                        "success": False,
+                        "error": "No encrypted WhatsApp databases (*.crypt14/*.crypt15) found in active case directory. Acquire or place database files first."
+                    }).encode("utf-8"))
+                else:
+                    from forensixd.parsers.decryption_toolkit import WhatsAppDecryptionEngine
+                    try:
+                        target_db = crypt_files[0]
+                        out_db = case_dir / "msgstore.db"
+                        if hex_key:
+                            decrypted_bytes = WhatsAppDecryptionEngine.decrypt_with_hex_key(target_db, hex_key)
+                        elif key_file_path and Path(key_file_path).exists():
+                            decrypted_bytes = WhatsAppDecryptionEngine.decrypt_with_key_file(target_db, Path(key_file_path))
+                        else:
+                            sibling_key = case_dir / "key"
+                            if sibling_key.exists():
+                                decrypted_bytes = WhatsAppDecryptionEngine.decrypt_with_key_file(target_db, sibling_key)
+                            else:
+                                raise ValueError("Missing AES key hex or keyfile.")
+                        out_db.write_bytes(decrypted_bytes)
+                        self._send_cors(200)
+                        self.wfile.write(json.dumps({"success": True, "message": f"Successfully decrypted {target_db.name} -> msgstore.db"}).encode("utf-8"))
+                    except Exception as e:
+                        self._send_cors(200)
+                        self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
+
+            elif path == "/api/acquire/heap":
+                case_number = data.get("caseNumber", "Demo")
+                package_name = data.get("packageName", "com.whatsapp")
+                adb_args = _resolve_adb_target_args(data)
+                case_dir = Path("cases") / case_number / "adb_pull"
+                case_dir.mkdir(parents=True, exist_ok=True)
+                from forensixd.parsers.decryption_toolkit import MemoryHeapKeyScanner
+                adb_cmd = _resolve_adb_command()
+                res = MemoryHeapKeyScanner.dump_and_scan_app_heap(adb_cmd, adb_args, package_name, case_dir)
+                self._send_cors(200)
+                self.wfile.write(json.dumps(res).encode("utf-8"))
+
+            elif path == "/api/acquire/physical-inspect":
+                adb_args = _resolve_adb_target_args(data)
+                from forensixd.parsers.decryption_toolkit import PhysicalBootTriageManager
+                adb_cmd = _resolve_adb_command()
+                res = PhysicalBootTriageManager.inspect_bootloader_and_fastboot(adb_cmd, adb_args)
+                self._send_cors(200)
+                self.wfile.write(json.dumps(res).encode("utf-8"))
+
+            elif path == "/api/acquire/notifications":
+                adb_args = _resolve_adb_target_args(data)
+                from forensixd.parsers.decryption_toolkit import AndroidNotificationScraper
+                adb_cmd = _resolve_adb_command()
+                records = AndroidNotificationScraper.scrape_notification_history(adb_cmd, adb_args)
+                if records:
+                    self._send_cors(200)
+                    self.wfile.write(json.dumps({"success": True, "capturedCount": len(records), "records": records}).encode("utf-8"))
+                else:
+                    self._send_cors(200)
+                    self.wfile.write(json.dumps({"success": False, "error": "No device connected via ADB or notification history is empty.", "capturedCount": 0}).encode("utf-8"))
+
+            elif path == "/api/acquire/whatsapp-media":
+                case_number = data.get("caseNumber", "Demo")
+                case_dir = Path("cases") / case_number / "adb_pull"
+                case_dir.mkdir(parents=True, exist_ok=True)
+                from forensixd.parsers.decryption_toolkit import AndroidWhatsAppHarvester
+                adb_cmd = _resolve_adb_command()
+                adb_args = _resolve_adb_target_args(data)
+                res = AndroidWhatsAppHarvester.harvest_whatsapp_media(adb_cmd, adb_args, case_dir)
+                self._send_cors(200)
+                self.wfile.write(json.dumps(res).encode("utf-8"))
+
+            elif path == "/api/acquire/whatsapp-ui":
+                case_number = data.get("caseNumber", "Demo")
+                case_dir = Path("cases") / case_number / "adb_pull"
+                case_dir.mkdir(parents=True, exist_ok=True)
+                from forensixd.parsers.decryption_toolkit import AndroidWhatsAppHarvester
+                adb_cmd = _resolve_adb_command()
+                adb_args = _resolve_adb_target_args(data)
+                res = AndroidWhatsAppHarvester.scrape_deep_whatsapp_threads(adb_cmd, adb_args, case_dir)
+                self._send_cors(200)
+                self.wfile.write(json.dumps(res).encode("utf-8"))
+
+            elif path == "/api/logs/export":
+                logs = data.get("logs", [])
+                downloads_dir = Path.home() / "Downloads"
+                downloads_dir.mkdir(parents=True, exist_ok=True)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                export_file = downloads_dir / f"CopSight_Audit_Log_{timestamp}.json"
+                export_file.write_text(json.dumps(logs, indent=2), encoding="utf-8")
+                subprocess.Popen(["open", "-R", str(export_file)])
                 self._send_cors(200)
                 self.wfile.write(json.dumps({
                     "success": True,
-                    "message": "WhatsApp decryption key validated and decrypted SQLite DB mapped."
+                    "message": f"Saved log dossier to {export_file.name} in Downloads.",
+                    "filePath": str(export_file)
                 }).encode("utf-8"))
+
             elif path == "/api/open-folder":
                 folder_path = data.get("path", ".")
                 subprocess.Popen(["open", folder_path])
                 self._send_cors(200)
                 self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
+
             else:
                 self._send_cors(200)
                 self.wfile.write(json.dumps({"success": True, "message": "OK"}).encode("utf-8"))
