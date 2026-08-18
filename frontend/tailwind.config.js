@@ -8,6 +8,22 @@ export default {
   theme: {
     extend: {
       colors: {
+        coral: '#FF7A59',
+        ocean: '#2475B5',
+        light: {
+          bg: '#2475B5',
+          accent: '#FF7A59',
+        },
+        dark: {
+          bg: '#111111',
+          accent: '#FFFFFF',
+        },
+        cyber: {
+          success: '#10b981',
+          warning: '#f59e0b',
+          danger: '#ef4444',
+          muted: '#64748b',
+        },
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
@@ -20,6 +36,10 @@ export default {
           800: '#1e40af',
           900: '#1e3a8a',
         },
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
       },
       animation: {
         'gradient-shift': 'gradient-shift 8s ease infinite',

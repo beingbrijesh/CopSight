@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, AlertTriangle, BookmarkCheck, FileSearch, FolderOpen, MessageSquareText, Eye } from 'lucide-react';
+import { Activity, AlertTriangle, BookmarkCheck, FolderOpen, MessageSquareText, ArrowRight } from 'lucide-react';
 import { alertsAPI, bookmarkAPI, caseAPI, queryAPI } from '../../lib/api';
 import { AlertsPanel } from '../../components/AlertsPanel';
 
@@ -13,18 +13,18 @@ interface ActivityItem {
 }
 
 const statusBadgeStyles: Record<string, string> = {
-  active: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300',
-  closed: 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300',
-  processing: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  ready_for_analysis: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-  under_review: 'bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300',
+  active: 'bg-blue-500/20 text-blue-200 border border-blue-500/30',
+  closed: 'bg-white/10 text-white/80 border border-white/10',
+  processing: 'bg-amber-500/20 text-amber-200 border border-amber-500/30',
+  ready_for_analysis: 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/30',
+  under_review: 'bg-purple-500/20 text-purple-200 border border-purple-500/30',
 };
 
 const priorityBadgeStyles: Record<string, string> = {
-  critical: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300',
-  high: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300',
-  medium: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300',
-  low: 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300',
+  critical: 'bg-red-500/30 text-red-200 border border-red-500/30 font-bold',
+  high: 'bg-orange-500/30 text-orange-200 border border-orange-500/30 font-bold',
+  medium: 'bg-blue-500/20 text-blue-200 border border-blue-500/30',
+  low: 'bg-white/10 text-white/70 border border-white/10',
 };
 
 export const SupervisorDashboard = () => {
@@ -124,88 +124,121 @@ export const SupervisorDashboard = () => {
   };
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-8">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/20">
-          <Eye className="h-6 w-6 text-white" />
-        </div>
+    <div className="space-y-6 animate-fade-in text-white">
+      
+      {/* ─── Header ──────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Supervisor Overview</h1>
-          <p className="text-sm text-gray-500 dark:text-slate-500">Oversight for active investigations, officer workload, and flagged activity.</p>
+          <h1 className="text-3xl sm:text-4xl font-light tracking-tight text-white mb-1.5">
+            Supervisor <span className="font-bold text-white">Oversight Center</span>
+          </h1>
+          <div className="flex items-center gap-3">
+            <div className="bg-black/20 dark:bg-white/10 rounded-full px-3.5 py-1 flex items-center gap-2 border border-white/15">
+              <span className="text-[10px] uppercase font-bold text-[#FF7A59] dark:text-white">Review Docket</span>
+              <span className="font-mono text-xs text-white font-semibold">
+                {totals.total} Tracked Cases
+              </span>
+            </div>
+            <span className="text-xs opacity-75 text-white">Cross-Investigation Supervisory Console</span>
+          </div>
+        </div>
+
+        {/* Live Counters */}
+        <div className="flex flex-wrap items-center gap-6 sm:gap-8">
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="w-2 h-2 rounded-full bg-[#FF7A59] dark:bg-white shadow-[0_0_8px_#FF7A59]" />
+              <p className="text-2xl sm:text-3xl font-light text-white font-mono">
+                {loading ? '..' : String(totals.total).padStart(2, '0')}
+              </p>
+            </div>
+            <p className="text-[9.5px] uppercase tracking-wider opacity-75 text-white">Total Cases</p>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              <p className="text-2xl sm:text-3xl font-light text-white font-mono">
+                {loading ? '..' : String(totals.active).padStart(2, '0')}
+              </p>
+            </div>
+            <p className="text-[9.5px] uppercase tracking-wider opacity-75 text-white">Active Cases</p>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,240,255,0.8)]" />
+              <p className="text-2xl sm:text-3xl font-light text-white font-mono">
+                {loading ? '..' : String(totals.highPriority).padStart(2, '0')}
+              </p>
+            </div>
+            <p className="text-[9.5px] uppercase tracking-wider opacity-75 text-white">High Priority</p>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: 'Total Cases', value: totals.total, icon: FolderOpen, accent: 'accent-card-blue', iconBg: 'bg-blue-100 dark:bg-blue-500/10', iconColor: 'text-blue-600 dark:text-blue-400' },
-          { label: 'Active Cases', value: totals.active, icon: Activity, accent: 'accent-card-green', iconBg: 'bg-emerald-100 dark:bg-emerald-500/10', iconColor: 'text-emerald-600 dark:text-emerald-400' },
-          { label: 'Closed Cases', value: totals.closed, icon: FileSearch, accent: 'accent-card-amber', iconBg: 'bg-amber-100 dark:bg-amber-500/10', iconColor: 'text-amber-600 dark:text-amber-400' },
-          { label: 'High Priority', value: totals.highPriority, icon: AlertTriangle, accent: 'accent-card-red', iconBg: 'bg-red-100 dark:bg-red-500/10', iconColor: 'text-red-600 dark:text-red-400' },
-        ].map(({ label, value, icon: Icon, accent, iconBg, iconColor }) => (
-          <div key={label} className={`accent-card ${accent} rounded-2xl border border-gray-200 dark:border-white/10 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl p-5 shadow-sm dark:shadow-none card-hover-lift`}>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-gray-500 dark:text-slate-500">{label}</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                  {loading ? <span className="inline-block h-9 w-12 bg-gray-200 dark:bg-slate-700 rounded-lg animate-pulse" /> : value}
-                </p>
+      {/* ─── Bento Grid ──────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        
+        {/* Cases Overview Table (8 cols) */}
+        <div className="xl:col-span-8 glass-panel rounded-[2rem] p-6 sm:p-7 shadow-xl">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-300">
+                <FolderOpen className="w-5 h-5" />
               </div>
-              <div className={`${iconBg} p-3 rounded-xl`}>
-                <Icon className={`h-5 w-5 ${iconColor}`} />
+              <div>
+                <h3 className="text-lg font-bold text-white">Investigative Cases Docket</h3>
+                <p className="text-xs opacity-75 text-white">Tracked investigations and officer workloads</p>
               </div>
             </div>
+            <span className="text-xs font-mono opacity-80">{cases.length} Total</span>
           </div>
-        ))}
-      </div>
 
-      <div className="grid gap-6 xl:grid-cols-3">
-        <div className="rounded-2xl border border-gray-200 dark:border-white/10 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl shadow-sm dark:shadow-none xl:col-span-2">
-          <div className="border-b border-gray-200 dark:border-white/10 px-6 py-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Case Overview</h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-slate-500">Tracked investigations and their current supervisory status.</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50 dark:bg-slate-800/60">
-                <tr>
-                  {['Case ID', 'Title', 'Assigned Officer', 'Status', 'Priority', 'Action'].map((heading) => (
-                    <th key={heading} className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-slate-500">
-                      {heading}
-                    </th>
-                  ))}
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left font-mono text-xs">
+              <thead>
+                <tr className="border-b border-white/10 text-white/60">
+                  <th className="pb-3 px-3">Case ID</th>
+                  <th className="pb-3 px-3">Title</th>
+                  <th className="pb-3 px-3">Officer</th>
+                  <th className="pb-3 px-3">Status</th>
+                  <th className="pb-3 px-3">Priority</th>
+                  <th className="pb-3 px-3 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-slate-800 bg-white dark:bg-transparent">
+              <tbody className="divide-y divide-white/5">
                 {cases.length > 0 ? (
                   cases.map((caseItem: any) => (
-                    <tr key={caseItem.id} className="transition hover:bg-gray-50 dark:hover:bg-slate-800/50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{caseItem.caseNumber}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">{caseItem.title}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">{caseItem.assignedOfficer?.fullName || 'Unassigned'}</td>
-                      <td className="px-6 py-4">
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeStyles[caseItem.status] || 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300'}`}>
+                    <tr key={caseItem.id} className="hover:bg-white/5 transition">
+                      <td className="py-3 px-3 font-bold text-white">#{caseItem.caseNumber}</td>
+                      <td className="py-3 px-3 font-sans text-white font-medium truncate max-w-[180px]">{caseItem.title}</td>
+                      <td className="py-3 px-3 text-white/80">{caseItem.assignedOfficer?.fullName || 'Unassigned'}</td>
+                      <td className="py-3 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${statusBadgeStyles[caseItem.status] || 'bg-white/10 text-white'}`}>
                           {String(caseItem.status || 'unknown').replaceAll('_', ' ')}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityBadgeStyles[caseItem.priority] || 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300'}`}>
+                      <td className="py-3 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${priorityBadgeStyles[caseItem.priority] || 'bg-white/10 text-white'}`}>
                           {caseItem.priority || 'unknown'}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="py-3 px-3 text-right">
                         <Link
                           to={`/supervisor/case/${caseItem.id}`}
-                          className="inline-flex items-center rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:shadow-lg hover:shadow-blue-500/20 transition"
+                          className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#FF7A59] hover:bg-[#ff6540] dark:bg-white dark:text-black text-white text-[11px] font-bold transition shadow-sm"
                         >
-                          Open Case
+                          <span>Review</span>
+                          <ArrowRight className="w-3 h-3" />
                         </Link>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-500 dark:text-slate-500">
-                      {loading ? 'Loading cases...' : 'No cases available for supervisor review yet.'}
+                    <td colSpan={6} className="py-12 text-center text-white/60">
+                      {loading ? 'Loading cases...' : 'No cases assigned for supervisory review.'}
                     </td>
                   </tr>
                 )}
@@ -214,46 +247,70 @@ export const SupervisorDashboard = () => {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 dark:border-white/10 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl p-6 shadow-sm dark:shadow-none">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-slate-500">Latest queries, case updates, and bookmarks.</p>
-          </div>
-          <div className="space-y-4">
-            {activity.length > 0 ? (
-              activity.map((item) => (
-                <div key={item.id} className="flex gap-3 rounded-xl border border-gray-200 dark:border-white/10 p-4">
-                  <div className="mt-1 rounded-full bg-gray-100 dark:bg-slate-800 p-2">
-                    {item.type === 'query' && <MessageSquareText className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
-                    {item.type === 'bookmark' && <BookmarkCheck className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
-                    {item.type === 'case' && <FolderOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
-                    {item.type === 'alert' && <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{item.label}</p>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">{item.detail}</p>
-                    <p className="mt-2 text-xs text-gray-400 dark:text-slate-500">{new Date(item.timestamp).toLocaleString()}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="rounded-lg border border-dashed border-gray-200 dark:border-white/10 p-6 text-sm text-gray-500 dark:text-slate-500">
-                Recent activity will appear here as supervisors review active cases.
+        {/* Live Activity Stream (4 cols) */}
+        <div className="xl:col-span-4 rounded-[2rem] p-6 sm:p-7 shadow-2xl bg-black/40 dark:bg-black/60 border border-white/15 backdrop-blur-2xl flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-[#FF7A59] dark:text-white" />
+                <h3 className="text-base font-bold text-white">Supervisory Activity</h3>
               </div>
-            )}
+              <span className="text-[10px] font-mono text-white/70">
+                {activity.length} Events
+              </span>
+            </div>
+
+            <div className="space-y-2.5 font-mono text-xs max-h-[320px] overflow-y-auto custom-scrollbar pr-1">
+              {activity.length > 0 ? (
+                activity.map((item) => (
+                  <div key={item.id} className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-start gap-2.5">
+                    <div className="mt-0.5 p-1 rounded bg-white/10 shrink-0">
+                      {item.type === 'query' && <MessageSquareText className="w-3.5 h-3.5 text-purple-300" />}
+                      {item.type === 'bookmark' && <BookmarkCheck className="w-3.5 h-3.5 text-amber-300" />}
+                      {item.type === 'case' && <FolderOpen className="w-3.5 h-3.5 text-blue-300" />}
+                      {item.type === 'alert' && <AlertTriangle className="w-3.5 h-3.5 text-red-300" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white font-bold text-[11px] truncate">{item.label}</p>
+                      <p className="text-white/70 text-[10px] truncate">{item.detail}</p>
+                      <span className="text-[9px] opacity-50 block mt-0.5">
+                        {new Date(item.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-white/60 text-xs">
+                  <p>No recent supervisory activity recorded.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="pt-4">
+            <p className="text-[10px] text-center opacity-60 font-mono">
+              Audit trail synchronized with forensic backend
+            </p>
           </div>
         </div>
-      </div>
 
-      <div className="rounded-2xl border border-gray-200 dark:border-white/10 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl shadow-sm dark:shadow-none">
-        <div className="border-b border-gray-200 dark:border-white/10 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Alerts and Flags</h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-slate-500">Suspicious activity, high-risk entities, and unresolved case alerts.</p>
-        </div>
-        <div className="p-6">
+        {/* Alerts & Risk Flagging Section (12 cols) */}
+        <div className="xl:col-span-12 glass-panel rounded-[2rem] p-6 sm:p-7 shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center text-red-300">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Supervisory Risk & Alerts Triage</h3>
+              <p className="text-xs opacity-75 text-white">Cross-case anomaly triggers, critical keywords, and audit alarms</p>
+            </div>
+          </div>
+
           <AlertsPanel limit={6} showHeader={false} />
         </div>
+
       </div>
+
     </div>
   );
 };

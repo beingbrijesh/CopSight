@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Sun, Moon } from 'lucide-react';
+import { AlertCircle, Sun, Moon, Lock, User as UserIcon } from 'lucide-react';
 import { authAPI } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
@@ -27,18 +27,18 @@ export const Login = () => {
     }
   }
 
-  // Removed the "Authenticating CLI..." overlay because the user must log in again to generate a new sessionEncryptionKey
-
   if (cliSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-slate-900 flex flex-col items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-800 p-1 rounded-full mb-6 overflow-hidden h-20 w-20 shadow-lg border border-gray-100 dark:border-white/10 flex items-center justify-center">
-          <div className="h-full w-full bg-green-500 flex items-center justify-center rounded-full">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+        <div className="glass-panel p-8 rounded-[2.5rem] max-w-md w-full text-center shadow-2xl">
+          <div className="w-20 h-20 bg-emerald-500 flex items-center justify-center rounded-full mx-auto mb-6 shadow-lg">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
           </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Authentication Successful!</h2>
+          <p className="text-white/80 text-sm max-w-md">Your secure CLI session is now connected with End-to-End Encryption. You may close this browser window and return to your terminal.</p>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Authentication Successful!</h2>
-        <p className="text-gray-600 dark:text-slate-400 text-center max-w-md">Your secure CLI session is now connected with End-to-End Encryption. You may close this browser window and return to your terminal.</p>
       </div>
     );
   }
@@ -85,90 +85,93 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4 relative">
-      {/* Mesh Gradient Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-300/20 dark:bg-blue-500/5 blur-[120px]"></div>
-        <div className="absolute bottom-[10%] -right-[10%] w-[40%] h-[40%] rounded-full bg-indigo-300/20 dark:bg-indigo-500/5 blur-[120px]"></div>
-      </div>
-
-      {/* Theme Toggle */}
+    <div className="min-h-screen flex items-center justify-center p-4 relative text-white">
+      {/* Theme Toggle Button at top right */}
       <button
         onClick={toggleTheme}
-        className="absolute top-6 right-6 z-20 flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 dark:border-white/10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all shadow-sm"
+        className="absolute top-6 right-6 z-20 flex items-center justify-center h-10 w-10 rounded-full bg-black/20 dark:bg-white/10 hover:bg-black/30 text-white border border-white/20 transition-all shadow-md cursor-pointer"
         title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
       >
-        {isDarkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-600" />}
+        {isDarkMode ? <Sun className="h-4 w-4 text-amber-300" /> : <Moon className="h-4 w-4 text-white" />}
       </button>
 
       <div className="max-w-md w-full relative z-10">
-        <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl/80 backdrop-blur-xl rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-blue-500/5 p-8 border border-white/50 dark:border-white/10">
+        <div className="glass-panel rounded-[2.5rem] shadow-2xl p-8 sm:p-10 border border-white/20 backdrop-blur-2xl">
+          
           <div className="flex flex-col items-center mb-8">
-            <div className="bg-white dark:bg-slate-800 p-1 rounded-full mb-4 overflow-hidden h-24 w-24 shadow-lg border border-gray-100 dark:border-white/10 flex items-center justify-center">
+            <div className="w-20 h-20 rounded-full bg-white p-1.5 flex items-center justify-center mb-4 shadow-xl ring-4 ring-white/30 overflow-hidden">
               <img src="/logo.jpeg" alt="CopSight Logo" className="h-full w-full object-cover rounded-full" />
             </div>
-            <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">CopSight AI</h1>
-            <p className="text-gray-600 dark:text-slate-400 mt-2 font-medium">Unified Forensic Data Repository</p>
+            <h1 className="text-3xl font-black text-white tracking-tight">CopSight AI</h1>
+            <p className="text-white/80 mt-1 text-xs uppercase tracking-widest font-mono">Unified Forensic Repository</p>
           </div>
 
           {cliCallback && (
-            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-blue-800 dark:text-blue-300">
+            <div className="mb-6 p-3.5 bg-blue-500/20 border border-blue-400/30 rounded-2xl flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-blue-300 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-100">
                 Please {isAuthenticated ? "re-enter your credentials" : "sign in"} to securely connect your CLI session.
               </p>
             </div>
           )}
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
+            <div className="mb-6 p-3.5 bg-red-500/20 border border-red-400/30 rounded-2xl flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-red-300 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-100">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="username" className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">
+              <label htmlFor="username" className="block text-xs font-mono uppercase tracking-wider text-white/80 mb-1.5">
                 Username
               </label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition placeholder:text-gray-400 dark:placeholder:text-slate-500"
-                placeholder="Enter your username"
-                required
-              />
+              <div className="relative">
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-4 py-3 pl-11 rounded-2xl bg-black/25 dark:bg-white/5 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF7A59] dark:focus:ring-white transition text-sm font-mono"
+                  placeholder="Officer / Admin username"
+                  required
+                />
+                <UserIcon className="w-4 h-4 text-white/50 absolute left-4 top-3.5" />
+              </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">
+              <label htmlFor="password" className="block text-xs font-mono uppercase tracking-wider text-white/80 mb-1.5">
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition placeholder:text-gray-400 dark:placeholder:text-slate-500"
-                placeholder="Enter your password"
-                required
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 pl-11 rounded-2xl bg-black/25 dark:bg-white/5 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF7A59] dark:focus:ring-white transition text-sm font-mono"
+                  placeholder="••••••••••••"
+                  required
+                />
+                <Lock className="w-4 h-4 text-white/50 absolute left-4 top-3.5" />
+              </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-bold hover:shadow-lg hover:shadow-blue-500/25 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 px-4 rounded-full font-bold text-sm bg-[#FF7A59] hover:bg-[#ff6540] dark:bg-white dark:text-black text-white shadow-xl hover:shadow-2xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-mono tracking-wide"
+              >
+                {loading ? 'Authenticating...' : 'Sign In'}
+              </button>
+            </div>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600 dark:text-slate-500">
-            <p>Authorized Personnel Only</p>
+          <div className="mt-6 text-center text-[11px] text-white/60 font-mono">
+            <p>Authorized Law Enforcement Personnel Only</p>
           </div>
         </div>
       </div>

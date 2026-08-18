@@ -1,16 +1,18 @@
-import { LogOut, Menu, Sun, Moon, Shield, Eye, Crosshair } from 'lucide-react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { LogOut, Sun, Moon, ShieldAlert, Shield, Crosshair, Eye } from 'lucide-react';
+import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { authAPI } from '../lib/api';
+import { loggerService } from '../lib/loggerService';
 import { NotificationBell } from './NotificationBell';
 
 interface NavbarProps {
-  onMenuToggle?: () => void;
+  onOpenAdminAudit?: () => void;
 }
 
 const roleLabel: Record<string, string> = {
-  admin: 'Admin',
+  admin: 'Administrator',
   investigating_officer: 'Investigating Officer',
   supervisor: 'Supervisor',
 };
@@ -21,11 +23,19 @@ const roleIcon: Record<string, typeof Shield> = {
   supervisor: Eye,
 };
 
-export const Navbar = ({ onMenuToggle }: NavbarProps) => {
+export const Navbar = ({ onOpenAdminAudit }: NavbarProps) => {
   const { user, logout } = useAuthStore();
   const { isDarkMode, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const [errorCount, setErrorCount] = useState(0);
+
+  useEffect(() => {
+    const unsubscribe = loggerService.subscribeLogs((logs) => {
+      setErrorCount(logs.filter((l) => l.level === 'ERROR').length);
+    });
+    return unsubscribe;
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -38,127 +48,173 @@ export const Navbar = ({ onMenuToggle }: NavbarProps) => {
     }
   };
 
-  // Build breadcrumb segments from current path
-  const buildBreadcrumbs = (): { label: string; to?: string }[] => {
-    const path = location.pathname;
-    const crumbs: { label: string; to?: string }[] = [];
+  const caseMatch = location.pathname.match(/\/case\/([^/]+)/);
+  const caseId = caseMatch ? caseMatch[1] : undefined;
 
-    const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'supervisor' ? '/supervisor' : '/io';
-    const dashLabel = user?.role === 'admin' ? 'Admin' : user?.role === 'supervisor' ? 'Supervisor' : 'Dashboard';
+  const rolePrefix = user?.role === 'supervisor' ? '/supervisor' : user?.role === 'admin' ? '/admin' : '/io';
 
-    if (path === rolePrefix) {
-      crumbs.push({ label: dashLabel });
-      return crumbs;
+  // Define tabs per role
+  const getNavTabs = (): { label: string; to: string; disabled?: boolean; end?: boolean }[] => {
+    if (user?.role === 'admin') {
+      return [
+        { label: 'Dashboard', to: '/admin', end: true },
+        { label: 'Users', to: '/admin/users' },
+        { label: 'Cases', to: '/admin/cases' },
+      ];
     }
 
-    crumbs.push({ label: dashLabel, to: rolePrefix });
+    const isSup = user?.role === 'supervisor';
+    const dashTo = isSup ? '/supervisor' : '/io';
+    const casesTo = isSup ? '/supervisor/cases' : '/io';
+    const prefix = isSup ? '/supervisor' : '/io';
+    const ctxId = caseId || 'none';
+    const noCtx = !caseId;
 
-    if (path.includes('/users')) {
-      crumbs.push({ label: 'Users' });
-    } else if (path.includes('/cases') && !path.includes('/case/')) {
-      crumbs.push({ label: 'Cases' });
-    } else if (path.includes('/case/')) {
-      const caseMatch = path.match(/\/case\/([^/]+)/);
-      const caseId = caseMatch?.[1];
-      if (caseId) {
-        crumbs.push({ label: `Case #${caseId}`, to: `${rolePrefix}/case/${caseId}` });
-
-        if (path.includes('/query')) crumbs.push({ label: 'Query' });
-        else if (path.includes('/bookmarks')) crumbs.push({ label: 'Bookmarks' });
-        else if (path.includes('/report')) crumbs.push({ label: 'Report' });
-        else if (path.includes('/entities')) crumbs.push({ label: 'Entities' });
-        else if (path.includes('/network')) crumbs.push({ label: 'Network' });
-      }
-    }
-
-    return crumbs;
+    return [
+      { label: 'Dashboard', to: dashTo, end: true },
+      { label: 'Cases', to: casesTo, end: isSup ? false : true },
+      { label: caseId ? `Case #${caseId}` : 'Active Case', to: `${prefix}/case/${ctxId}`, disabled: noCtx, end: true },
+      { label: 'Queries', to: `${prefix}/case/${ctxId}/query`, disabled: noCtx },
+      { label: 'Bookmarks', to: `${prefix}/case/${ctxId}/bookmarks`, disabled: noCtx },
+      { label: 'Reports', to: `${prefix}/case/${ctxId}/report`, disabled: noCtx },
+      { label: 'Entities', to: `${prefix}/case/${ctxId}/entities`, disabled: noCtx },
+      { label: 'Network', to: `${prefix}/case/${ctxId}/network`, disabled: noCtx }
+    ];
   };
 
-  const breadcrumbs = buildBreadcrumbs();
+  const navTabs = getNavTabs();
   const RoleIcon = roleIcon[user?.role || ''] || Shield;
 
   return (
-    <nav className="glass-panel sticky top-0 z-40 border-b border-gray-200 dark:border-white/10 bg-white/80 dark:bg-black/80 backdrop-blur-xl">
-      <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="fixed top-0 left-0 right-0 z-50 pt-4 sm:pt-6 pb-2 px-4 sm:px-8 md:px-[2cm] mx-auto w-full pointer-events-none">
+      <div className="pointer-events-auto min-h-16 py-2.5 px-4 sm:px-6 glass-panel rounded-[2.5rem] flex flex-wrap items-center justify-between gap-3 sm:gap-4 select-none shadow-2xl backdrop-blur-2xl">
         
-        {/* Left section — Logo + Brand */}
-        <div className="flex items-center gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={onMenuToggle}
-            className="rounded-lg p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white lg:hidden"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-
-          <div className="hidden lg:flex items-center gap-2 h-10 w-10 justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 ml-2 overflow-hidden shadow-lg shadow-blue-500/20">
-            <img src="/logo.jpeg" alt="CopSight Logo" className="h-full w-full object-cover" />
+        {/* Left: Brand with Official Frontend Logo */}
+        <div 
+          onClick={() => navigate(rolePrefix)} 
+          className="flex items-center gap-3 cursor-pointer group shrink-0"
+        >
+          <div className="w-10 h-10 rounded-full bg-white p-1 flex items-center justify-center shrink-0 shadow-md ring-2 ring-white/40 overflow-hidden group-hover:scale-105 transition-transform">
+            <img
+              src="/logo.jpeg"
+              alt="CopSight Logo"
+              className="w-full h-full object-cover rounded-full"
+            />
           </div>
-          <div className="hidden lg:block">
-            <p className="text-base font-bold text-gray-900 dark:text-white">CopSight</p>
-            <p className="text-xs text-gray-500 dark:text-slate-500">Unified Forensic Data</p>
+          <div className="hidden sm:block">
+            <span className="text-base font-extrabold tracking-tight uppercase text-white block leading-tight group-hover:text-[#FF7A59] transition-colors">
+              CopSight AI
+            </span>
+            <p className="text-[10px] uppercase tracking-widest opacity-80 text-white leading-tight">
+              Unified Forensic Data
+            </p>
           </div>
         </div>
 
-        {/* Center section — Contextual breadcrumb */}
-        <div className="hidden lg:flex flex-1 items-center justify-center min-w-0 px-6">
-          <div className="flex items-center gap-1 text-sm max-w-lg truncate">
-            {breadcrumbs.map((crumb, i) => {
-              const isLast = i === breadcrumbs.length - 1;
+        {/* Center: Navigation Menu Bar with Balanced Spacing & Active Highlights */}
+        <nav className="flex items-center gap-1 sm:gap-1.5 p-1 rounded-full bg-black/25 dark:bg-white/10 border border-white/15 shadow-inner overflow-x-auto custom-scrollbar max-w-full">
+          {navTabs.map((tab, idx) => {
+            if (tab.disabled) {
               return (
-                <span key={i} className="flex items-center">
-                  {i > 0 && <span className="breadcrumb-sep" />}
-                  {isLast ? (
-                    <span className="font-semibold text-gray-900 dark:text-white truncate">{crumb.label}</span>
-                  ) : (
-                    <Link to={crumb.to!} className="text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 transition truncate">
-                      {crumb.label}
-                    </Link>
-                  )}
-                </span>
+                <div
+                  key={idx}
+                  title="Open a case to unlock this tab"
+                  className="px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-semibold tracking-wide text-white/30 cursor-not-allowed whitespace-nowrap"
+                >
+                  {tab.label}
+                </div>
               );
-            })}
-          </div>
-        </div>
+            }
 
-        {/* Right section */}
-        <div className="flex items-center justify-end gap-2 sm:gap-3 shrink-0">
+            const isActive = tab.end 
+              ? location.pathname === tab.to 
+              : location.pathname.startsWith(tab.to);
+
+            return (
+              <NavLink
+                key={idx}
+                to={tab.to}
+                className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#FF7A59] text-white shadow-md font-bold scale-[1.02] dark:bg-white dark:text-black'
+                    : 'text-white/80 hover:text-white hover:bg-white/10 dark:text-white/70 dark:hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Right: Actions, Theme Toggle, Profile & Logout */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          
+          {/* Admin Diagnostics Button */}
+          {user?.role === 'admin' && onOpenAdminAudit && (
+            <button
+              type="button"
+              onClick={onOpenAdminAudit}
+              className="px-3 sm:px-3.5 py-1.5 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-100 dark:text-red-300 border border-red-500/30 text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+              title="Open Administrator Diagnostics & System Error Logs"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-red-300 dark:text-red-400" />
+              <span className="hidden md:inline">Admin Diagnostics</span>
+              {errorCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[9px] font-bold">
+                  {errorCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="relative flex items-center justify-center h-9 w-9 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 shadow-sm"
+            className="flex items-center justify-center h-9 w-9 rounded-full bg-black/20 dark:bg-white/10 hover:bg-black/30 dark:hover:bg-white/20 text-white border border-white/15 transition-all shadow-sm cursor-pointer"
             title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
             {isDarkMode ? (
-              <Sun className="h-4 w-4 text-amber-400" />
+              <Sun className="h-4 w-4 text-amber-300" />
             ) : (
-              <Moon className="h-4 w-4 text-indigo-600" />
+              <Moon className="h-4 w-4 text-white" />
             )}
           </button>
 
-          <NotificationBell />
-          
-          <div className="hidden items-center gap-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-800/60 px-3 py-2 sm:flex">
-            <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
-              <RoleIcon className="h-3.5 w-3.5" />
-            </div>
-            <div className="text-right">
-              <div className="text-sm font-medium text-gray-900 dark:text-white leading-tight">{user?.fullName}</div>
-              <div className="text-xs text-gray-500 dark:text-slate-500">
+          {/* Notifications */}
+          <div className="text-white">
+            <NotificationBell />
+          </div>
+
+          {/* User Profile Badge */}
+          <div className="flex items-center gap-2.5 pl-1">
+            <div className="text-right hidden xl:block">
+              <div className="text-xs font-bold text-white leading-tight">
+                {user?.fullName || user?.username || 'Officer'}
+              </div>
+              <div className="text-[9.5px] uppercase tracking-wider opacity-75 text-white">
                 {user?.badgeNumber || roleLabel[user?.role || ''] || user?.role}
               </div>
             </div>
+
+            <div 
+              className="w-9 h-9 rounded-full bg-white/20 dark:bg-white/10 border border-white/30 flex items-center justify-center text-white overflow-hidden shadow-md"
+              title={`${user?.fullName} (${user?.role})`}
+            >
+              <RoleIcon className="w-4 h-4" />
+            </div>
           </div>
 
+          {/* Logout Button */}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 px-3 py-2 text-sm text-gray-700 dark:text-slate-300 transition hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white"
+            className="flex items-center justify-center h-9 w-9 rounded-full bg-black/20 dark:bg-white/10 hover:bg-red-500/30 text-white border border-white/15 transition-all shadow-sm cursor-pointer ml-1"
+            title="Logout"
           >
             <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
+
       </div>
-    </nav>
+    </header>
   );
 };
