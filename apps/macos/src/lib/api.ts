@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { loggerService } from './loggerService';
 
 // Load backend URL strictly from environment variables or saved user session
 const envApiUrl = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.VITE_BACKEND_URL || '';
@@ -44,8 +45,36 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  loggerService.debug('API', `Sending ${config.method?.toUpperCase()} ${config.url}`, {
+    params: config.params,
+    url: config.url,
+  });
   return config;
 });
+
+apiClient.interceptors.response.use(
+  (response) => {
+    loggerService.debug('API', `Response ${response.status} from ${response.config.url}`);
+    return response;
+  },
+  (error) => {
+    const url = error.config?.url || 'API Request';
+    const status = error.response?.status;
+    const errorMsg = error.response?.data?.message || error.message || 'Network request failed';
+
+    loggerService.error(
+      'API',
+      `HTTP ${status || 'ERR'} on ${url}: ${errorMsg}`,
+      {
+        status,
+        url,
+        data: error.response?.data,
+      },
+      error.stack
+    );
+    return Promise.reject(error);
+  }
+);
 
 export const authService = {
   login: async (credentials: { username: string; password: string }) => {

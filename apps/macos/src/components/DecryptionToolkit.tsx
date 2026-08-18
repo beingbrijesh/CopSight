@@ -294,42 +294,42 @@ export const DecryptionToolkit: React.FC = () => {
   const vectorCards = [
     {
       id: 'whatsapp' as const,
-      title: 'Vector 1: Crypt14 / Crypt15 Key Decryption',
+      title: 'Crypt14 / Crypt15 Key Decryption',
       desc: 'Decrypt raw SQLite databases using 64-char key hex or keyfile',
       icon: Key,
       badge: 'SQLite Engine',
     },
     {
       id: 'ram' as const,
-      title: 'Vector 2: Volatile RAM Heap Dump',
+      title: 'Volatile RAM Heap Dump Analyzer',
       desc: '6-method memory acquisition chain to extract live WhatsApp key vectors',
       icon: Cpu,
       badge: 'Volatile Memory',
     },
     {
       id: 'hardware' as const,
-      title: 'Vector 3: MediaTek BROM / Chipset Bypass',
+      title: 'MediaTek BROM / Hardware Exploit',
       desc: 'Physical partition extraction via hardware bootrom exploit vectors',
       icon: Zap,
       badge: 'Physical BROM',
     },
     {
       id: 'notifications' as const,
-      title: 'Vector 4: Notification Stream Scraper',
+      title: 'Notification Stream Scraper',
       desc: 'Intercept live encrypted message payloads from notification buffers',
       icon: Bell,
       badge: 'Live Listener',
     },
     {
       id: 'ui' as const,
-      title: 'Vector 5: Accessibility Screen Harvester',
+      title: 'Accessibility Screen Harvester',
       desc: 'Extract visible chat messages directly from foreground UI nodes',
       icon: Eye,
       badge: 'UI Hierarchy',
     },
     {
       id: 'media' as const,
-      title: 'Vector 6: Encrypted Media Partition Harvester',
+      title: 'Encrypted Media Partition Harvester',
       desc: 'Extract unencrypted voice notes, videos, and media metadata',
       icon: HardDrive,
       badge: 'Media Storage',
@@ -337,16 +337,13 @@ export const DecryptionToolkit: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 max-w-[1750px] mx-auto animate-fadeIn pb-12">
+    <div className="space-y-6 max-w-[1750px] mx-auto animate-fadeIn pb-12 select-text">
       
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-white mb-1.5 flex items-center gap-3">
-            <span>Forensic Decryption & Exploitation Toolkit</span>
-            <span className="px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider bg-[#FF7A59] dark:bg-white dark:text-black text-white shadow-sm">
-              Vectors 1-6
-            </span>
+          <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-white mb-1.5">
+            Forensic Decryption & Exploitation Suite
           </h2>
           <p className="text-xs opacity-75 text-white max-w-3xl">
             Execute advanced decryption chains against protected WhatsApp SQLite databases, extract volatile RAM keys, and bypass locked chipsets using low-level hardware exploits.
@@ -380,7 +377,7 @@ export const DecryptionToolkit: React.FC = () => {
                 <div className={`p-2 rounded-xl ${isActive ? 'bg-[#FF7A59] text-white dark:bg-white dark:text-black' : 'bg-white/10 text-white'}`}>
                   <Icon className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-black/20 dark:bg-white/10 text-white border border-white/10 font-bold">
+                <span className="text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-black/20 dark:bg-white/10 text-white border border-white/10 font-bold">
                   {vc.badge}
                 </span>
               </div>
@@ -397,14 +394,14 @@ export const DecryptionToolkit: React.FC = () => {
       <div className="glass-panel rounded-[2rem] p-6 sm:p-8 space-y-6 shadow-xl">
         
         {/* ========================================================================= */}
-        {/* VECTOR 1: WHATSAPP SQLITE CRYPT14/15 DECRYPTION                           */}
+        {/* TOOL 1: WHATSAPP SQLITE CRYPT14/15 DECRYPTION                             */}
         {/* ========================================================================= */}
         {activeVector === 'whatsapp' && (
           <div className="space-y-6 animate-fadeIn">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">
               <Key className="w-6 h-6 text-[#FF7A59] dark:text-white" />
               <div>
-                <h3 className="text-lg font-bold text-white">Vector 1: Crypt14 / Crypt15 WhatsApp Decryption Engine</h3>
+                <h3 className="text-lg font-bold text-white">Crypt14 / Crypt15 WhatsApp Decryption Engine</h3>
                 <p className="text-xs opacity-75">Decrypt msgstore.db.crypt14 / crypt15 databases into queryable SQLite records</p>
               </div>
             </div>
@@ -420,7 +417,7 @@ export const DecryptionToolkit: React.FC = () => {
                     value={hexKey}
                     onChange={(e) => setHexKey(e.target.value)}
                     placeholder="e.g. 4a2f8b91c03e5d7a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a"
-                    className="w-full bg-black/30 dark:bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-xs font-mono text-white placeholder-white/40 focus:outline-none focus:border-[#FF7A59] focus:ring-1 focus:ring-[#FF7A59] transition-all"
+                    className="w-full bg-black/30 dark:bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-xs font-mono text-white placeholder-white/40 focus:outline-none focus:border-[#FF7A59] focus:ring-1 focus:ring-[#FF7A59] transition-all select-text"
                   />
                 </div>
 
@@ -434,7 +431,7 @@ export const DecryptionToolkit: React.FC = () => {
                       value={keyFilePath}
                       onChange={(e) => setKeyFilePath(e.target.value)}
                       placeholder="/Users/investigator/Cases/extracted_keys/whatsapp.key"
-                      className="flex-1 bg-black/30 dark:bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-xs font-mono text-white placeholder-white/40 focus:outline-none focus:border-[#FF7A59] focus:ring-1 focus:ring-[#FF7A59] transition-all"
+                      className="flex-1 bg-black/30 dark:bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-xs font-mono text-white placeholder-white/40 focus:outline-none focus:border-[#FF7A59] focus:ring-1 focus:ring-[#FF7A59] transition-all select-text"
                     />
                   </div>
                 </div>
@@ -446,7 +443,7 @@ export const DecryptionToolkit: React.FC = () => {
                     className="px-6 py-3 rounded-full bg-[#FF7A59] hover:bg-[#ff6540] dark:bg-white dark:text-black text-white font-bold text-xs font-mono transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Unlock className="w-4 h-4" />
-                    <span>{isDecrypting ? 'Decrypting Database...' : 'Execute Vector 1 Decryption'}</span>
+                    <span>{isDecrypting ? 'Decrypting Database...' : 'Execute SQLite Decryption'}</span>
                   </button>
                 </div>
               </div>
@@ -474,14 +471,14 @@ export const DecryptionToolkit: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* VECTOR 2: VOLATILE RAM HEAP DUMP                                          */}
+        {/* TOOL 2: VOLATILE RAM HEAP DUMP                                            */}
         {/* ========================================================================= */}
         {activeVector === 'ram' && (
           <div className="space-y-6 animate-fadeIn">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">
               <Cpu className="w-6 h-6 text-[#FF7A59] dark:text-white" />
               <div>
-                <h3 className="text-lg font-bold text-white">Vector 2: Volatile RAM Heap Dump Analyzer</h3>
+                <h3 className="text-lg font-bold text-white">Volatile RAM Heap Dump Analyzer</h3>
                 <p className="text-xs opacity-75">Executes 6 parallel volatile memory dump methods to extract AES keys directly from runtime RAM</p>
               </div>
             </div>
@@ -514,23 +511,23 @@ export const DecryptionToolkit: React.FC = () => {
             )}
 
             {heapResult && (
-              <div className="p-4 rounded-2xl bg-black/40 border border-white/15 font-mono text-xs space-y-2">
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/15 font-mono text-xs space-y-2 select-text">
                 <span className="text-[10px] uppercase font-bold text-[#FF7A59] dark:text-white block">Extracted Memory Results:</span>
-                <pre className="text-[11px] opacity-90 overflow-x-auto text-emerald-300">{JSON.stringify(heapResult, null, 2)}</pre>
+                <pre className="text-[11px] opacity-90 overflow-x-auto text-emerald-300 select-text">{JSON.stringify(heapResult, null, 2)}</pre>
               </div>
             )}
           </div>
         )}
 
         {/* ========================================================================= */}
-        {/* VECTOR 3: MEDIATEK BROM / HARDWARE EXPLOITATION                           */}
+        {/* TOOL 3: MEDIATEK BROM / HARDWARE EXPLOITATION                             */}
         {/* ========================================================================= */}
         {activeVector === 'hardware' && (
           <div className="space-y-6 animate-fadeIn">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">
               <Zap className="w-6 h-6 text-[#FF7A59] dark:text-white" />
               <div>
-                <h3 className="text-lg font-bold text-white">Vector 3: MediaTek BROM / Chipset Hardware Exploitation</h3>
+                <h3 className="text-lg font-bold text-white">MediaTek BROM / Chipset Hardware Exploitation</h3>
                 <p className="text-xs opacity-75">Bypass bootloader and secure boot on MediaTek devices via low-level BROM / Preloader handshake</p>
               </div>
             </div>
@@ -592,14 +589,14 @@ export const DecryptionToolkit: React.FC = () => {
                     {v6Step === 4 ? 'Status: Running Handshake' : v6Step === 5 ? 'Status: Complete' : 'Status: Handshake Error'}
                   </span>
                 </div>
-                <div className="p-4 rounded-2xl bg-black/70 border border-white/15 font-mono text-xs h-48 overflow-y-auto text-emerald-400">
-                  <pre className="whitespace-pre-wrap">{v6Logs || 'Waiting for serial probe...'}</pre>
+                <div className="p-4 rounded-2xl bg-black/70 border border-white/15 font-mono text-xs h-48 overflow-y-auto text-emerald-400 select-text">
+                  <pre className="whitespace-pre-wrap select-text">{v6Logs || 'Waiting for serial probe...'}</pre>
                 </div>
               </div>
             )}
 
             {physicalInfo && (
-              <div className="p-4 rounded-2xl bg-black/40 border border-white/15 font-mono text-xs space-y-2">
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/15 font-mono text-xs space-y-2 select-text">
                 <span className="text-[10px] uppercase font-bold text-[#FF7A59] dark:text-white block">Detected Chipset Architecture</span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
                   <div><span className="opacity-60 block">Vendor:</span> <span className="font-bold">{physicalInfo.chipFamily || 'Generic'}</span></div>
@@ -611,7 +608,7 @@ export const DecryptionToolkit: React.FC = () => {
             )}
 
             {physicalStatus && (
-              <div className="p-3.5 rounded-xl bg-white/10 border border-white/15 text-xs font-mono text-white">
+              <div className="p-3.5 rounded-xl bg-white/10 border border-white/15 text-xs font-mono text-white select-text">
                 {physicalStatus}
               </div>
             )}
@@ -619,14 +616,14 @@ export const DecryptionToolkit: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* VECTOR 4: NOTIFICATION STREAM SCRAPER                                     */}
+        {/* TOOL 4: NOTIFICATION STREAM SCRAPER                                       */}
         {/* ========================================================================= */}
         {activeVector === 'notifications' && (
           <div className="space-y-6 animate-fadeIn">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">
               <Bell className="w-6 h-6 text-[#FF7A59] dark:text-white" />
               <div>
-                <h3 className="text-lg font-bold text-white">Vector 4: Notification Stream Scraper</h3>
+                <h3 className="text-lg font-bold text-white">Notification Stream Scraper</h3>
                 <p className="text-xs opacity-75">Harvests live and pending encrypted notifications from Android NotificationListenerService</p>
               </div>
             </div>
@@ -645,7 +642,7 @@ export const DecryptionToolkit: React.FC = () => {
             </button>
 
             {notificationStatus && (
-              <div className="p-4 rounded-2xl bg-white/10 border border-white/20 text-xs font-mono text-white">
+              <div className="p-4 rounded-2xl bg-white/10 border border-white/20 text-xs font-mono text-white select-text">
                 {notificationStatus}
               </div>
             )}
@@ -653,14 +650,14 @@ export const DecryptionToolkit: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* VECTOR 5: ACCESSIBILITY UI SCREEN EXTRACTOR                               */}
+        {/* TOOL 5: ACCESSIBILITY UI SCREEN EXTRACTOR                                 */}
         {/* ========================================================================= */}
         {activeVector === 'ui' && (
           <div className="space-y-6 animate-fadeIn">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">
               <Eye className="w-6 h-6 text-[#FF7A59] dark:text-white" />
               <div>
-                <h3 className="text-lg font-bold text-white">Vector 5: Accessibility UI Screen Harvester</h3>
+                <h3 className="text-lg font-bold text-white">Accessibility UI Screen Harvester</h3>
                 <p className="text-xs opacity-75">Directly parses visible chat text from foreground Android UI nodes</p>
               </div>
             </div>
@@ -679,7 +676,7 @@ export const DecryptionToolkit: React.FC = () => {
             </button>
 
             {liveUiStatus && (
-              <div className="p-4 rounded-2xl bg-white/10 border border-white/20 text-xs font-mono text-white">
+              <div className="p-4 rounded-2xl bg-white/10 border border-white/20 text-xs font-mono text-white select-text">
                 {liveUiStatus}
               </div>
             )}
@@ -687,14 +684,14 @@ export const DecryptionToolkit: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* VECTOR 6: ENCRYPTED MEDIA PARTITION HARVESTER                             */}
+        {/* TOOL 6: ENCRYPTED MEDIA PARTITION HARVESTER                               */}
         {/* ========================================================================= */}
         {activeVector === 'media' && (
           <div className="space-y-6 animate-fadeIn">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">
               <HardDrive className="w-6 h-6 text-[#FF7A59] dark:text-white" />
               <div>
-                <h3 className="text-lg font-bold text-white">Vector 6: Encrypted Media Partition Harvester</h3>
+                <h3 className="text-lg font-bold text-white">Encrypted Media Partition Harvester</h3>
                 <p className="text-xs opacity-75">Extract voice notes (.opus), photos, and documents from external media storage</p>
               </div>
             </div>
@@ -713,7 +710,7 @@ export const DecryptionToolkit: React.FC = () => {
             </button>
 
             {mediaHarvestStatus && (
-              <div className="p-4 rounded-2xl bg-white/10 border border-white/20 text-xs font-mono text-white">
+              <div className="p-4 rounded-2xl bg-white/10 border border-white/20 text-xs font-mono text-white select-text">
                 {mediaHarvestStatus}
               </div>
             )}

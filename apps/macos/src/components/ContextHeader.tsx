@@ -1,6 +1,7 @@
-import React from 'react';
-import { User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { User, ShieldAlert } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { loggerService } from '../lib/loggerService';
 import logoImg from '../assets/logo.jpeg';
 
 export type WorkspaceTab = 'dashboard' | 'devices' | 'acquisition' | 'evidence' | 'decryption' | 'settings';
@@ -8,13 +9,25 @@ export type WorkspaceTab = 'dashboard' | 'devices' | 'acquisition' | 'evidence' 
 interface ContextHeaderProps {
   activeTab: WorkspaceTab;
   setActiveTab: (tab: WorkspaceTab) => void;
+  onOpenAdminAudit?: () => void;
 }
 
 export const ContextHeader: React.FC<ContextHeaderProps> = ({
   activeTab,
   setActiveTab,
+  onOpenAdminAudit,
 }) => {
   const { officer } = useAuthStore();
+  const [errorCount, setErrorCount] = useState(0);
+
+  useEffect(() => {
+    const unsubscribe = loggerService.subscribeLogs((logs) => {
+      setErrorCount(logs.filter((l) => l.level === 'ERROR').length);
+    });
+    return unsubscribe;
+  }, []);
+
+  const isAdmin = officer?.role === 'admin';
 
   const navTabs: { id: WorkspaceTab; label: string }[] = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -63,8 +76,26 @@ export const ContextHeader: React.FC<ContextHeaderProps> = ({
         })}
       </nav>
 
-      {/* Right: Quick Officer Profile Avatar */}
+      {/* Right: Quick Officer Profile Avatar & Admin Diagnostic Button */}
       <div className="flex items-center gap-3">
+        {/* Admin Diagnostic Center Button (Visible only to administrators) */}
+        {isAdmin && onOpenAdminAudit && (
+          <button
+            type="button"
+            onClick={onOpenAdminAudit}
+            className="px-3.5 py-1.5 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+            title="Open Administrator Diagnostics & System Error Logs"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+            <span>Admin Diagnostics</span>
+            {errorCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[9px] font-bold">
+                {errorCount}
+              </span>
+            )}
+          </button>
+        )}
+
         <button
           onClick={() => setActiveTab('settings')}
           className="flex items-center gap-3 cursor-pointer group"

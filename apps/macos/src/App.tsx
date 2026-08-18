@@ -4,10 +4,16 @@ import { useCaseStore } from './store/caseStore';
 import { AuthGate } from './pages/AuthGate';
 import { CaseGate } from './pages/CaseGate';
 import { Workspace } from './pages/Workspace';
+import { ToastContainer } from './components/ToastContainer';
+import { loggerService } from './lib/loggerService';
 
 export const App: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
   const { selectedCase } = useCaseStore();
+
+  useEffect(() => {
+    loggerService.initGlobalListeners();
+  }, []);
 
   // Initialize and synchronize theme with macOS System theme by default
   useEffect(() => {
@@ -45,18 +51,23 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Stage 1: Mandatory Officer Authentication Gate (No theme switch option)
-  if (!isAuthenticated) {
-    return <AuthGate />;
-  }
+  return (
+    <>
+      {/* Global Toast System */}
+      <ToastContainer />
 
-  // Stage 2: Assigned Case Selection Gate (No theme switch option)
-  if (!selectedCase) {
-    return <CaseGate />;
-  }
-
-  // Stage 3: Real Forensic Investigation Workspace
-  return <Workspace />;
+      {/* Stage 1: Mandatory Officer Authentication Gate */}
+      {!isAuthenticated ? (
+        <AuthGate />
+      ) : !selectedCase ? (
+        /* Stage 2: Assigned Case Selection Gate */
+        <CaseGate />
+      ) : (
+        /* Stage 3: Real Forensic Investigation Workspace */
+        <Workspace />
+      )}
+    </>
+  );
 };
 
 export default App;
