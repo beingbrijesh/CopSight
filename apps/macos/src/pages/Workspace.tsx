@@ -4,6 +4,7 @@ import { DeviceRadar } from '../components/DeviceRadar';
 import { AcquisitionWizard } from '../components/AcquisitionWizard';
 import { LiveConsole } from '../components/LiveConsole';
 import { EvidenceViewer } from '../components/EvidenceViewer';
+import { DecryptionToolkit } from '../components/DecryptionToolkit';
 import { SettingsView } from '../components/SettingsView';
 import { daemonClient } from '../lib/daemonClient';
 import { caseService } from '../lib/api';
@@ -75,8 +76,8 @@ export const Workspace: React.FC = () => {
   return (
     <div className="min-h-screen w-full flex flex-col select-none overflow-y-auto pb-12 transition-colors duration-300">
       
-      {/* Top Floating Navigation Bar (Positioned comfortably below window controls) */}
-      <div className="pt-8 sm:pt-9 px-4 sm:px-8 max-w-[1750px] mx-auto w-full">
+      {/* Top Floating Navigation Bar (Sticky with frosted glass so contents scroll upward behind it) */}
+      <div className="sticky top-0 z-40 pt-7 pb-2 px-4 sm:px-8 max-w-[1750px] mx-auto w-full transition-all">
         <ContextHeader
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -395,7 +396,16 @@ export const Workspace: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* VIEW 5: INVESTIGATOR PROFILE & STATION SETTINGS                           */}
+        {/* VIEW 5: DEDICATED DECRYPTION & EXTRACTION VECTORS TOOLKIT                 */}
+        {/* ========================================================================= */}
+        {activeTab === 'decryption' && (
+          <div className="space-y-6 animate-fadeIn">
+            <DecryptionToolkit />
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* VIEW 6: INVESTIGATOR PROFILE & STATION SETTINGS                           */}
         {/* ========================================================================= */}
         {activeTab === 'settings' && (
           <SettingsView onSwitchCase={clearSelection} />

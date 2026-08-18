@@ -3,7 +3,7 @@ import { User } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import logoImg from '../assets/logo.jpeg';
 
-export type WorkspaceTab = 'dashboard' | 'devices' | 'acquisition' | 'evidence' | 'settings';
+export type WorkspaceTab = 'dashboard' | 'devices' | 'acquisition' | 'evidence' | 'decryption' | 'settings';
 
 interface ContextHeaderProps {
   activeTab: WorkspaceTab;
@@ -21,6 +21,7 @@ export const ContextHeader: React.FC<ContextHeaderProps> = ({
     { id: 'devices', label: 'Devices' },
     { id: 'acquisition', label: 'Acquisition' },
     { id: 'evidence', label: 'Evidence' },
+    { id: 'decryption', label: 'Decryption Toolkit' },
     { id: 'settings', label: 'Profile & Settings' },
   ];
 
