@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Terminal, Activity, Square, Trash2 } from 'lucide-react';
+import { Activity, Square, Trash2 } from 'lucide-react';
 import { useDaemonStore } from '../store/daemonStore';
 import { daemonClient } from '../lib/daemonClient';
 
@@ -129,12 +129,14 @@ export const LiveConsole: React.FC = () => {
         </div>
       </div>
 
-      {/* Terminal Feed at bottom */}
-      <div className="h-[95px] bg-black/35 dark:bg-black/55 rounded-2xl p-3 border border-white/10 font-mono text-[9.5px] overflow-y-auto shrink-0 flex flex-col space-y-1 select-text" ref={logContainerRef}>
+      {/* Console Log Messages Terminal Stream */}
+      <div
+        ref={logContainerRef}
+        className="flex-1 bg-black/40 dark:bg-black/60 rounded-2xl p-3 border border-white/10 overflow-y-auto font-mono text-[11px] space-y-1.5 min-h-[140px] shadow-inner select-text"
+      >
         {logs.length === 0 ? (
-          <div className="opacity-40 text-center my-auto flex items-center justify-center gap-1.5">
-            <Terminal className="w-3.5 h-3.5" />
-            <span>Forensic stream initialized. Awaiting events...</span>
+          <div className="h-full flex items-center justify-center text-center opacity-40 py-6">
+            <span className="text-[10px]">Console standby. Extraction activity will log here in real-time.</span>
           </div>
         ) : (
           logs.map((log) => {
@@ -153,10 +155,10 @@ export const LiveConsole: React.FC = () => {
             }
 
             return (
-              <div key={log.id} className="leading-relaxed flex items-start gap-1.5 break-all">
-                <span className="opacity-40 select-none shrink-0">{log.timestamp.slice(11, 19)}</span>
-                <span className={`font-bold select-none shrink-0 ${badgeClass}`}>[{log.level}]</span>
-                <span className={`${colorClass} break-all`}>{log.message}</span>
+              <div key={log.id} className="leading-relaxed flex items-start gap-1.5 break-all select-text">
+                <span className="opacity-40 shrink-0 select-text">{log.timestamp.slice(11, 19)}</span>
+                <span className={`font-bold shrink-0 select-text ${badgeClass}`}>[{log.level}]</span>
+                <span className={`${colorClass} break-all select-text`}>{log.message}</span>
               </div>
             );
           })

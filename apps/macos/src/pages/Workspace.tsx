@@ -74,7 +74,7 @@ export const Workspace: React.FC = () => {
   const liveEvidenceCount = (caseStats.totalRecords || 0) + (totalArtifactsExtracted || 0);
 
   return (
-    <div className="min-h-screen w-full flex flex-col select-none transition-colors duration-300 relative">
+    <div className="min-h-screen w-full flex flex-col transition-colors duration-300 relative">
       
       {/* Fixed Top Floating Navigation Bar (Pinned below window controls with comfortable pt-9 sm:pt-10 clearance) */}
       <div className="fixed top-0 left-0 right-0 z-50 pt-9 sm:pt-10 pb-3 px-4 sm:px-8 max-w-[1750px] mx-auto w-full pointer-events-none">

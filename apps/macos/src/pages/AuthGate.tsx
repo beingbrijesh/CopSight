@@ -55,7 +55,7 @@ export const AuthGate: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 sm:p-6 pt-12 relative select-none overflow-y-auto transition-colors duration-300 titlebar-drag-region">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 sm:p-6 pt-12 relative overflow-y-auto transition-colors duration-300 titlebar-drag-region">
       
       {/* Main Authentication Card */}
       <div className="w-full max-w-md relative z-10 my-auto no-drag">

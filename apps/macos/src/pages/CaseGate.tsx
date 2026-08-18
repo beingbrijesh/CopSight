@@ -58,7 +58,7 @@ export const CaseGate: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col p-4 sm:p-8 pt-8 sm:pt-9 select-none overflow-y-auto transition-colors duration-300">
+    <div className="min-h-screen w-full flex flex-col p-4 sm:p-8 pt-8 sm:pt-9 overflow-y-auto transition-colors duration-300">
       
       {/* Top Floating Pill Header */}
       <header className="glass-panel rounded-[2.5rem] p-3 sm:px-6 flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-8 shadow-lg">

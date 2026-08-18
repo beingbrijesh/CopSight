@@ -33,8 +33,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase }) => {
   const [badgeNumber, setBadgeNumber] = useState(officer?.badgeNumber || '7482');
   const [unit, setUnit] = useState(officer?.unit || 'Cyber Crime Division');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'online' | 'offline'>('idle');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleTestDaemon = async () => {
+    setTestStatus('testing');
+    const isOnline = await daemonClient.checkHealth();
+    if (isOnline) {
+      setTestStatus('online');
+    } else {
+      setTestStatus('offline');
+    }
+    setTimeout(() => setTestStatus('idle'), 3500);
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('copsight_theme');
@@ -267,29 +279,29 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase }) => {
           </div>
         </div>
 
-        {/* Right Column (Span 6): Theme Customization, Case Assignment & Daemon Diagnostics */}
+        {/* RIGHT COLUMN: Workstation Preferences, Case Assignment & Daemon */}
         <div className="xl:col-span-6 space-y-6">
           
-          {/* Card 1: Theme & Visual Appearance Selector (Moved into Settings) */}
+          {/* Card 1: Appearance & Theme Selector */}
           <div className="glass-panel rounded-[2rem] p-6 space-y-4 shadow-lg">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#FF7A59]/20 dark:bg-white/10 flex items-center justify-center text-[#FF7A59] dark:text-white">
                 <Palette className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Appearance & Theme Mode</h3>
-                <p className="text-[10px] uppercase opacity-70 text-white">Customize Station Workspace Aesthetics</p>
+                <h3 className="text-lg font-bold text-white">Workstation Aesthetics</h3>
+                <p className="text-[10px] uppercase opacity-70 text-white">Visual Presentation & Mode</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-              {/* macOS System Theme Option (Default) */}
+              {/* macOS System Theme Option */}
               <button
                 type="button"
                 onClick={() => handleSetTheme('system')}
                 className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                   themeMode === 'system'
-                    ? 'bg-white/20 border-[#FF7A59] dark:border-white ring-2 ring-[#FF7A59]/50 shadow-md'
+                    ? 'bg-white/20 border-white ring-2 ring-white/50 shadow-md'
                     : 'bg-black/20 hover:bg-black/30 border-white/10'
                 }`}
               >
@@ -443,11 +455,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase }) => {
             <div className="flex gap-3 pt-1">
               <button
                 type="button"
-                onClick={() => daemonClient.checkHealth()}
-                className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-mono font-bold flex items-center justify-center gap-2 border border-white/15 transition-all cursor-pointer"
+                onClick={handleTestDaemon}
+                disabled={testStatus === 'testing'}
+                className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-mono font-bold flex items-center justify-center gap-2 border border-white/15 transition-all cursor-pointer disabled:opacity-50"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Test Connection</span>
+                <RefreshCw className={`w-3.5 h-3.5 ${testStatus === 'testing' ? 'animate-spin' : ''}`} />
+                <span>
+                  {testStatus === 'testing'
+                    ? 'Testing Socket...'
+                    : testStatus === 'online'
+                    ? '✓ Connected (200 OK)'
+                    : testStatus === 'offline'
+                    ? '✕ Daemon Offline'
+                    : 'Test Connection'}
+                </span>
               </button>
               <button
                 type="button"

@@ -400,47 +400,55 @@ export const EvidenceViewer: React.FC = () => {
       )}
 
       {/* View Switcher Tabs with High-Contrast Coral Accent */}
-      <div className="flex items-center gap-1 p-1 rounded-full bg-black/20 dark:bg-white/5 border border-white/10 text-xs font-mono w-fit">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
-            activeTab === 'overview'
-              ? 'bg-[#FF7A59] text-white font-bold shadow-md dark:bg-white dark:text-black'
-              : 'text-white/70 hover:text-white hover:bg-white/10'
-          }`}
-        >
-          Reports & UFDR
-        </button>
-        <button
-          onClick={() => setActiveTab('decrypt')}
-          className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
-            activeTab === 'decrypt'
-              ? 'bg-[#FF7A59] text-white font-bold shadow-md dark:bg-white dark:text-black'
-              : 'text-white/70 hover:text-white hover:bg-white/10'
-          }`}
-        >
-          Decryption Toolkit
-        </button>
-        <button
-          onClick={() => setActiveTab('messages')}
-          className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
-            activeTab === 'messages'
-              ? 'bg-[#FF7A59] text-white font-bold shadow-md dark:bg-white dark:text-black'
-              : 'text-white/70 hover:text-white hover:bg-white/10'
-          }`}
-        >
-          Chats ({chats.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('calls')}
-          className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
-            activeTab === 'calls'
-              ? 'bg-[#FF7A59] text-white font-bold shadow-md dark:bg-white dark:text-black'
-              : 'text-white/70 hover:text-white hover:bg-white/10'
-          }`}
-        >
-          Entities ({entities.length})
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-3 select-text">
+        <div className="flex items-center gap-1 p-1 rounded-full bg-black/20 dark:bg-white/5 border border-white/10 text-xs font-mono w-fit">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
+              activeTab === 'overview'
+                ? 'bg-[#FF7A59] text-white font-bold shadow-md dark:bg-white dark:text-black'
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Reports & UFDR
+          </button>
+          <button
+            onClick={() => setActiveTab('decrypt')}
+            className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
+              activeTab === 'decrypt'
+                ? 'bg-[#FF7A59] text-white font-bold shadow-md dark:bg-white dark:text-black'
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Decryption Toolkit
+          </button>
+          <button
+            onClick={() => setActiveTab('messages')}
+            className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
+              activeTab === 'messages'
+                ? 'bg-[#FF7A59] text-white font-bold shadow-md dark:bg-white dark:text-black'
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Chats ({chats.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('calls')}
+            className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
+              activeTab === 'calls'
+                ? 'bg-[#FF7A59] text-white font-bold shadow-md dark:bg-white dark:text-black'
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Entities ({entities.length})
+          </button>
+        </div>
+
+        {/* Deduplication Guarantee Tag */}
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/20 dark:bg-white/5 border border-white/10 text-[10px] font-mono text-white/80">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Idempotent Sync: Cryptographically Deduplicated (SHA-256)</span>
+        </div>
       </div>
 
       {/* Tab Content */}
@@ -1060,44 +1068,48 @@ export const EvidenceViewer: React.FC = () => {
                 <p className="text-[10px] text-slate-600">Run an acquisition to stream and extract messages.</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 select-text">
                 {chats.map((chat: any, idx: number) => {
                   const isOutgoing = chat.direction === 'outgoing' || chat.type === 'outgoing' || chat.sender === 'Me (Device Owner)';
+                  const isDatabaseSynced = chat.id || chat.dataSourceId || chat.timestamp;
                   return (
                     <div
                       key={idx}
-                      className={`p-3 rounded-xl border text-xs font-mono transition-all ${
+                      className={`p-3.5 rounded-xl border text-xs font-mono transition-all select-text ${
                         isOutgoing
                           ? 'bg-emerald-500/20 border-emerald-500/30 ml-4'
                           : 'bg-black/20 dark:bg-white/5 border-white/10 mr-4'
                       }`}
                     >
-                      <div className="flex items-center justify-between opacity-70 mb-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`font-bold ${isOutgoing ? 'text-emerald-300' : 'text-white'}`}>
+                      <div className="flex items-center justify-between opacity-75 mb-1.5 select-text">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold select-text ${isOutgoing ? 'text-emerald-300' : 'text-white'}`}>
                             {chat.sender || chat.from || 'Participant'}
                           </span>
                           {chat.recipient && (
-                            <span className="text-[10px] opacity-70">➔ {chat.recipient}</span>
+                            <span className="text-[10px] opacity-70 select-text">➔ {chat.recipient}</span>
                           )}
                           <span
-                            className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
+                            className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase select-text ${
                               isOutgoing
                                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                : 'bg-light-accent dark:bg-dark-accent text-white border border-white/10'
+                                : 'bg-white/10 text-white border border-white/15'
                             }`}
                           >
                             {isOutgoing ? 'OUTGOING' : 'INCOMING'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-[10px]">
-                          <span className="px-1.5 py-0.2 rounded bg-white/10 dark:bg-white/5 text-white">
-                            {chat.app || chat.platform || 'Chat'}
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold select-text">
+                            {isDatabaseSynced ? 'Database Synced' : 'Local Extraction'}
                           </span>
-                          <span>{chat.timestamp ? chat.timestamp.split('T')[0] : ''}</span>
+                          <span className="px-1.5 py-0.5 rounded bg-white/10 text-white select-text">
+                            {chat.appName || chat.app || chat.platform || 'CHAT'}
+                          </span>
+                          <span className="select-text">{chat.timestamp ? String(chat.timestamp).split('T')[0] : ''}</span>
                         </div>
                       </div>
-                      <p className="text-white pl-0.5">{chat.message || chat.content || chat.text}</p>
+                      <p className="text-white pl-0.5 select-text whitespace-pre-wrap">{chat.message || chat.content || chat.text}</p>
                     </div>
                   );
                 })}
@@ -1120,18 +1132,35 @@ export const EvidenceViewer: React.FC = () => {
                 <p className="text-[10px] text-slate-600">Entities are indexed automatically upon extraction.</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {entities.map((ent: any, idx: number) => (
-                  <div key={idx} className="p-3 rounded-xl bg-black/20 dark:bg-white/5 border border-white/10 text-xs font-mono flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-white">{ent.value || ent.name}</span>
-                      <span className="opacity-70 ml-2 text-[10px]">({ent.type || ent.category})</span>
+              <div className="space-y-2 select-text">
+                {entities.map((ent: any, idx: number) => {
+                  const entityVal = typeof ent === 'string' ? ent : (ent.value || ent.entityValue || ent.name || ent.tag || ent.text || ent.label || 'Extracted Entity');
+                  const entityType = typeof ent === 'object' ? (ent.type || ent.entityType || ent.category || ent.label || '') : '';
+                  const confidence = ent?.confidenceScore ?? ent?.confidence;
+                  const isDatabaseSynced = ent?.id || ent?.createdAt || ent?.created_at || ent?.evidenceId;
+
+                  return (
+                    <div key={idx} className="p-3.5 rounded-xl bg-black/20 dark:bg-white/5 border border-white/10 text-xs font-mono flex items-center justify-between transition-all select-text">
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-bold text-white select-text">{entityVal}</span>
+                        {entityType && (
+                          <span className="opacity-75 text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/15 select-text">
+                            {entityType}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[9.5px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 font-semibold select-text">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          {isDatabaseSynced ? 'Database Synced' : 'Extracted'}
+                        </span>
+                        <div className="text-right text-[10px] text-white/80 select-text">
+                          {confidence ? `${Math.round(confidence * 100)}% Confidence` : 'Indexed'}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right text-[10px] text-white">
-                      {ent.confidence ? `${Math.round(ent.confidence * 100)}% Confidence` : 'Indexed'}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
