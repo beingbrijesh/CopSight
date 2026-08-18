@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Activity, SearchCode, CloudUpload, BookmarkCheck, FileBarChart, Loader2, AlertCircle, CheckCircle2, RefreshCw, Network, Brain, Gauge, Link2, X } from 'lucide-react';
+import { Activity, SearchCode, CloudUpload, BookmarkCheck, FileBarChart, Loader2, AlertCircle, CheckCircle2, RefreshCw, Network, Brain, Gauge, Link2, X, Zap } from 'lucide-react';
 import { caseAPI, uploadAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { CrossCaseConnections } from '../../components/CrossCaseConnections';
 import { AnomalyDetection } from '../../components/AnomalyDetection';
 import { PredictiveAnalytics } from '../../components/PredictiveAnalytics';
+import { DirectExtractionModal } from '../../components/DirectExtractionModal';
 
 type AITab = 'cross-case' | 'anomaly' | 'predictive';
 
@@ -22,6 +23,7 @@ export const CaseDetail = () => {
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [showQueryPrompt, setShowQueryPrompt] = useState(false);
   const [fileJustProcessed, setFileJustProcessed] = useState(false);
+  const [isExtractModalOpen, setIsExtractModalOpen] = useState(false);
   const [dismissedErrorJobIds, setDismissedErrorJobIds] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem(`copsight_dismissed_jobs_${caseId}`);
@@ -212,6 +214,7 @@ export const CaseDetail = () => {
   }
 
   const quickActions = [
+    { label: 'Direct Extract', subtitle: 'forensixd by CopSight AI', icon: Zap, color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-500/10', isExtract: true },
     { label: 'Upload Data', subtitle: 'UFDR / XML', icon: CloudUpload, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10', isUpload: true },
     { label: 'Query AI', subtitle: 'Natural language', icon: SearchCode, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-500/10', to: `${rolePrefix}/case/${caseId}/query` },
     { label: 'Entities', subtitle: 'Extracted data', icon: Activity, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', to: `${rolePrefix}/case/${caseId}/entities` },
@@ -294,8 +297,8 @@ export const CaseDetail = () => {
       {/* ─── Quick Actions ─── */}
       <div>
         <p className="section-label mb-3">Quick Actions</p>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3 stagger-children">
-          {quickActions.map((action) => {
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 stagger-children">
+          {quickActions.map((action: any) => {
             const Icon = action.icon;
             if (action.isUpload) {
               return (
@@ -308,6 +311,20 @@ export const CaseDetail = () => {
                   <div className="text-sm font-semibold text-gray-900 dark:text-white">{action.label}</div>
                   <div className="text-xs text-gray-500 dark:text-slate-500 mt-0.5">{action.subtitle}</div>
                 </label>
+              );
+            }
+            if (action.isExtract) {
+              return (
+                <button
+                  key={action.label}
+                  type="button"
+                  onClick={() => setIsExtractModalOpen(true)}
+                  className={`${action.bg} rounded-2xl p-4 text-left card-hover-lift border border-transparent hover:border-cyan-300 dark:hover:border-cyan-500/30 transition-all animate-fade-in group cursor-pointer`}
+                >
+                  <Icon className={`w-6 h-6 ${action.color} mb-2 group-hover:scale-110 transition-transform`} />
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white">{action.label}</div>
+                  <div className="text-xs text-gray-500 dark:text-slate-500 mt-0.5">{action.subtitle}</div>
+                </button>
               );
             }
             return (
@@ -327,10 +344,20 @@ export const CaseDetail = () => {
 
       {/* ─── Upload Section ─── */}
       <div className="glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 p-6">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <CloudUpload className="w-5 h-5 text-blue-500" />
-          Upload Forensic File
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <CloudUpload className="w-5 h-5 text-blue-500" />
+            Upload Forensic File
+          </h2>
+          <button
+            type="button"
+            onClick={() => setIsExtractModalOpen(true)}
+            className="px-3.5 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30 text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>Direct Extraction (forensixd by CopSight AI)</span>
+          </button>
+        </div>
         
         {uploadSuccess && (
           <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl flex items-center gap-2">
@@ -602,6 +629,14 @@ export const CaseDetail = () => {
           </div>
         </div>
       )}
+
+      {/* ─── Direct Device Extraction Modal ─── */}
+      <DirectExtractionModal
+        isOpen={isExtractModalOpen}
+        onClose={() => setIsExtractModalOpen(false)}
+        caseId={caseId}
+        caseNumber={caseData?.caseNumber}
+      />
     </div>
   );
 };

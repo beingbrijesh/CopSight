@@ -6,17 +6,20 @@ import {
   Crosshair, 
   Activity,
   Shield,
-  Layers
+  Layers,
+  Zap
 } from 'lucide-react';
 import { caseAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { AlertsPanel } from '../../components/AlertsPanel';
+import { DirectExtractionModal } from '../../components/DirectExtractionModal';
 
 export const IODashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [cases, setCases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isExtractModalOpen, setIsExtractModalOpen] = useState(false);
 
   useEffect(() => {
     loadCases();
@@ -183,8 +186,16 @@ export const IODashboard = () => {
             </div>
           </div>
 
-          <div className="pt-4 text-center">
-            <p className="text-[11px] opacity-75 font-mono text-white">
+          <div className="pt-4 space-y-2">
+            <button
+              type="button"
+              onClick={() => setIsExtractModalOpen(true)}
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-mono text-xs font-bold transition flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-95"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Direct Extraction (forensixd by CopSight AI)</span>
+            </button>
+            <p className="text-[10.5px] text-center opacity-75 font-mono text-white">
               Compliant with Section 65B Electronic Evidence Certifications
             </p>
           </div>
@@ -277,6 +288,12 @@ export const IODashboard = () => {
         </div>
 
       </div>
+
+      {/* ─── Direct Device Extraction Modal ─── */}
+      <DirectExtractionModal
+        isOpen={isExtractModalOpen}
+        onClose={() => setIsExtractModalOpen(false)}
+      />
     </div>
   );
 };
