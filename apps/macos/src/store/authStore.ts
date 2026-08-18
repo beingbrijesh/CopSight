@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { loggerService } from '../lib/loggerService';
 
 export interface Officer {
   id: number;
@@ -40,6 +41,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       sessionEncryptionKey: sessionEncryptionKey || null,
       isAuthenticated: true,
     });
+    loggerService.event(
+      'AUTH',
+      'Officer Login',
+      'SUCCESS',
+      `Officer "${officer.fullName || officer.username}" (Role: ${officer.role}) logged in successfully.`,
+      { officerId: officer.id, username: officer.username, role: officer.role }
+    );
   },
 
   updateOfficer: (updated) => {
@@ -48,9 +56,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const newOfficer = { ...current, ...updated };
     localStorage.setItem('copsight_officer', JSON.stringify(newOfficer));
     set({ officer: newOfficer });
+    loggerService.event(
+      'AUTH',
+      'Profile Update',
+      'SUCCESS',
+      `Updated profile credentials for ${newOfficer.fullName || newOfficer.username}.`,
+      updated
+    );
   },
 
   logout: () => {
+    const prev = get().officer;
     localStorage.removeItem('copsight_token');
     localStorage.removeItem('copsight_officer');
     localStorage.removeItem('copsight_e2e_key');
@@ -61,5 +77,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       sessionEncryptionKey: null,
       isAuthenticated: false,
     });
+    loggerService.event(
+      'AUTH',
+      'Officer Logout',
+      'SUCCESS',
+      `Officer "${prev?.username || 'user'}" logged out of CopSight Forensic Station.`
+    );
   },
 }));

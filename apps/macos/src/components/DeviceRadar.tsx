@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Smartphone, HardDrive, RefreshCw, ShieldAlert, CheckCircle2, Usb } from 'lucide-react';
 import { TargetDevice, useDaemonStore } from '../store/daemonStore';
 import { daemonClient } from '../lib/daemonClient';
+import { loggerService } from '../lib/loggerService';
 
 export const DeviceRadar: React.FC = () => {
   const { detectedDevices, selectedDevice, setSelectedDevice, isScanning } = useDaemonStore();
@@ -14,6 +15,13 @@ export const DeviceRadar: React.FC = () => {
 
   const handleDeviceClick = (device: TargetDevice) => {
     setSelectedDevice(device);
+    loggerService.event(
+      'DEVICE',
+      'Target Selection',
+      'SUCCESS',
+      `Forensic target device locked: ${device.model || 'Device'} (${device.platform}, Serial: ${device.serial || device.device_id})`,
+      device
+    );
   };
 
   return (

@@ -16,6 +16,7 @@ import { useAuthStore } from '../store/authStore';
 import { useCaseStore } from '../store/caseStore';
 import { useDaemonStore } from '../store/daemonStore';
 import { daemonClient } from '../lib/daemonClient';
+import { loggerService } from '../lib/loggerService';
 
 interface SettingsViewProps {
   onSwitchCase: () => void;
@@ -40,11 +41,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase, onOpen
 
   const handleTestDaemon = async () => {
     setTestStatus('testing');
+    loggerService.event('DAEMON', 'Test Socket Connection', 'INITIATED', 'Testing RPC socket communication on 127.0.0.1:54322...');
     const isOnline = await daemonClient.checkHealth();
     if (isOnline) {
       setTestStatus('online');
+      loggerService.event('DAEMON', 'Test Socket Connection', 'SUCCESS', 'Socket responded with HTTP 200 OK (Daemon healthy).');
     } else {
       setTestStatus('offline');
+      loggerService.event('DAEMON', 'Test Socket Connection', 'FAILED', 'Daemon connection failed on 127.0.0.1:54322.');
     }
     setTimeout(() => setTestStatus('idle'), 3500);
   };
@@ -73,6 +77,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase, onOpen
         document.documentElement.classList.remove('dark');
       }
     }
+    loggerService.event('UI', 'Theme Customization', 'SUCCESS', `Station theme configured to "${mode}".`);
   };
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -84,6 +89,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase, onOpen
       unit,
     });
     setSaveSuccess(true);
+    loggerService.event('AUTH', 'Save Investigator Profile', 'SUCCESS', `Persisted updated officer profile: ${fullName} (${rank}, #${badgeNumber}, ${unit})`);
     setTimeout(() => setSaveSuccess(false), 3000);
     setIsEditingProfile(false);
   };
@@ -95,6 +101,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase, onOpen
       reader.onloadend = () => {
         const base64 = reader.result as string;
         updateOfficer({ avatarUrl: base64 });
+        loggerService.event('AUTH', 'Upload Avatar', 'SUCCESS', `Updated profile avatar image (${(file.size / 1024).toFixed(1)} KB).`);
       };
       reader.readAsDataURL(file);
     }

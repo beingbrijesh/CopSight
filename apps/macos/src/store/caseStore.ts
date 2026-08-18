@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { loggerService } from '../lib/loggerService';
 
 export interface ForensicCase {
   id: number;
@@ -38,6 +39,13 @@ export const useCaseStore = create<CaseState>((set) => ({
   setSelectedCase: (c) => {
     if (c) {
       localStorage.setItem('copsight_selected_case', JSON.stringify(c));
+      loggerService.event(
+        'CASE',
+        'Select Case',
+        'SUCCESS',
+        `Active jurisdiction set to Case #${c.caseNumber} ("${c.title}").`,
+        { caseId: c.id, caseNumber: c.caseNumber, title: c.title }
+      );
     } else {
       localStorage.removeItem('copsight_selected_case');
     }
@@ -47,9 +55,13 @@ export const useCaseStore = create<CaseState>((set) => ({
   setAssignedCases: (assignedCases) => set({ assignedCases }),
   setIsLoading: (isLoading) => set({ isLoading }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
-  setFilterStatus: (filterStatus) => set({ filterStatus }),
+  setFilterStatus: (filterStatus) => {
+    loggerService.event('CASE', 'Filter Status', 'SUCCESS', `Filtered case docket by: ${filterStatus}`);
+    set({ filterStatus });
+  },
   clearSelection: () => {
     localStorage.removeItem('copsight_selected_case');
+    loggerService.event('CASE', 'Switch Case', 'SUCCESS', 'Returned to case assignment selection screen.');
     set({ selectedCase: null });
   },
 }));

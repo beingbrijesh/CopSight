@@ -4,6 +4,7 @@ import { useDaemonStore } from '../store/daemonStore';
 import { useCaseStore } from '../store/caseStore';
 import { useAuthStore } from '../store/authStore';
 import { daemonClient } from '../lib/daemonClient';
+import { loggerService } from '../lib/loggerService';
 
 export const AcquisitionWizard: React.FC = () => {
   const {
@@ -18,6 +19,16 @@ export const AcquisitionWizard: React.FC = () => {
 
   const { selectedCase } = useCaseStore();
   const { token, sessionEncryptionKey, officer } = useAuthStore();
+
+  const handleLevelSelect = (levelId: string) => {
+    setExtractionLevel(levelId as any);
+    loggerService.event('ACQUISITION', 'Select Extraction Level', 'SUCCESS', `Configured acquisition depth to: ${levelId.toUpperCase()}`);
+  };
+
+  const handleProfileSelect = (profileId: string) => {
+    setExtractionProfile(profileId as any);
+    loggerService.event('ACQUISITION', 'Select Extraction Profile', 'SUCCESS', `Configured data scope filter to: ${profileId.toUpperCase()}`);
+  };
 
   const handleStartAcquisition = async () => {
     if (!selectedCase || !selectedDevice || isAcquiring) return;
@@ -125,7 +136,7 @@ export const AcquisitionWizard: React.FC = () => {
               return (
                 <button
                   key={level.id}
-                  onClick={() => setExtractionLevel(level.id as any)}
+                  onClick={() => handleLevelSelect(level.id)}
                   disabled={isAcquiring}
                   className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl transition-all text-left cursor-pointer border ${
                     isSelected
@@ -174,7 +185,7 @@ export const AcquisitionWizard: React.FC = () => {
               return (
                 <button
                   key={prof.id}
-                  onClick={() => setExtractionProfile(prof.id as any)}
+                  onClick={() => handleProfileSelect(prof.id)}
                   disabled={isAcquiring}
                   className={`p-3.5 rounded-2xl flex items-start gap-3 text-left transition-all cursor-pointer border ${
                     isSelected

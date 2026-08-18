@@ -15,6 +15,7 @@ import {
 import { useDaemonStore } from '../store/daemonStore';
 import { useCaseStore } from '../store/caseStore';
 import { caseService } from '../lib/api';
+import { loggerService } from '../lib/loggerService';
 
 export const EvidenceViewer: React.FC = () => {
   const { lastCompletedResult } = useDaemonStore();
@@ -34,15 +35,25 @@ export const EvidenceViewer: React.FC = () => {
 
   const loadCaseEvidence = async (caseId: number) => {
     setIsLoadingEvidence(true);
+    loggerService.event('EVIDENCE', 'Fetch Evidence Records', 'INITIATED', `Retrieving chat history and entities for Case ID: ${caseId}`);
     try {
       const [fetchedChats, fetchedEntities] = await Promise.all([
         caseService.getCaseChats(caseId),
         caseService.getCaseEntities(caseId),
       ]);
-      setChats(Array.isArray(fetchedChats) ? fetchedChats : []);
-      setEntities(Array.isArray(fetchedEntities) ? fetchedEntities : []);
-    } catch (e) {
-      console.error('Error fetching case evidence from backend:', e);
+      const validChats = Array.isArray(fetchedChats) ? fetchedChats : [];
+      const validEntities = Array.isArray(fetchedEntities) ? fetchedEntities : [];
+      setChats(validChats);
+      setEntities(validEntities);
+      loggerService.event(
+        'EVIDENCE',
+        'Fetch Evidence Records',
+        'SUCCESS',
+        `Loaded ${validChats.length} decoded chat(s) and ${validEntities.length} extracted entity record(s).`,
+        { chatsCount: validChats.length, entitiesCount: validEntities.length }
+      );
+    } catch (e: any) {
+      loggerService.event('EVIDENCE', 'Fetch Evidence Records', 'FAILED', `Error fetching evidence: ${e.message}`);
     } finally {
       setIsLoadingEvidence(false);
     }
@@ -51,6 +62,7 @@ export const EvidenceViewer: React.FC = () => {
   const handleUploadToCloud = async () => {
     setIsUploadingCloud(true);
     setCloudUploadStatus('Syncing evidence records to central cloud database...');
+    loggerService.event('EVIDENCE', 'Cloud Database Sync', 'INITIATED', `Syncing case #${selectedCase?.caseNumber || 'Demo'} artifacts to central database.`);
     try {
       const res = await fetch('http://127.0.0.1:54322/api/cases/upload-to-cloud', {
         method: 'POST',
@@ -63,28 +75,34 @@ export const EvidenceViewer: React.FC = () => {
       const data = await res.json();
       if (data.success) {
         setCloudUploadStatus(`Uploaded: ${data.message}`);
+        loggerService.event('EVIDENCE', 'Cloud Database Sync', 'SUCCESS', `Sync complete: ${data.message}`, data);
         if (selectedCase?.id) loadCaseEvidence(selectedCase.id);
       } else {
         setCloudUploadStatus(`Upload notice: ${data.message || data.error}`);
+        loggerService.event('EVIDENCE', 'Cloud Database Sync', 'FAILED', `Sync returned warning: ${data.message || data.error}`, data);
       }
     } catch (e: any) {
       setCloudUploadStatus(`Upload error: ${e.message}`);
+      loggerService.event('EVIDENCE', 'Cloud Database Sync', 'FAILED', `Cloud sync error: ${e.message}`);
     } finally {
       setIsUploadingCloud(false);
     }
   };
 
   const handleOpenFolder = async () => {
+    const caseNum = selectedCase?.caseNumber || (selectedCase as any)?.fir_number || 'Demo';
+    loggerService.event('EVIDENCE', 'Reveal in Finder', 'INITIATED', `Opening evidence directory for case #${caseNum}`);
     try {
       await fetch('http://127.0.0.1:54322/api/open-folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          caseNumber: selectedCase?.caseNumber || (selectedCase as any)?.fir_number || 'Demo',
+          caseNumber: caseNum,
         }),
       });
-    } catch (e) {
-      console.error('Error opening folder:', e);
+      loggerService.event('EVIDENCE', 'Reveal in Finder', 'SUCCESS', `Finder window launched for case #${caseNum}`);
+    } catch (e: any) {
+      loggerService.event('EVIDENCE', 'Reveal in Finder', 'FAILED', `Could not open folder: ${e.message}`);
     }
   };
 

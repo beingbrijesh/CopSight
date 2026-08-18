@@ -9,6 +9,7 @@ import { SettingsView } from '../components/SettingsView';
 import { AdminAuditModal } from '../components/AdminAuditModal';
 import { daemonClient } from '../lib/daemonClient';
 import { caseService } from '../lib/api';
+import { loggerService } from '../lib/loggerService';
 import { useCaseStore } from '../store/caseStore';
 import { useAuthStore } from '../store/authStore';
 import { useDaemonStore } from '../store/daemonStore';
@@ -41,6 +42,11 @@ export const Workspace: React.FC = () => {
   });
   const [localReports, setLocalReports] = useState<any[]>([]);
 
+  const handleTabChange = (tab: WorkspaceTab) => {
+    setActiveTab(tab);
+    loggerService.event('NAVIGATION', 'View Tab Switch', 'SUCCESS', `Navigated to view: "${tab.toUpperCase()}"`);
+  };
+
   useEffect(() => {
     daemonClient.checkHealth();
     daemonClient.connectWebSocket();
@@ -64,12 +70,23 @@ export const Workspace: React.FC = () => {
   }, [selectedCase, lastCompletedResult]);
 
   const loadCaseData = async (caseId: number) => {
-    const [stats, reports] = await Promise.all([
-      caseService.getCaseStats(caseId),
-      caseService.getLocalDeliverables(),
-    ]);
-    setCaseStats(stats);
-    setLocalReports(Array.isArray(reports) ? reports : []);
+    try {
+      const [stats, reports] = await Promise.all([
+        caseService.getCaseStats(caseId),
+        caseService.getLocalDeliverables(),
+      ]);
+      setCaseStats(stats);
+      setLocalReports(Array.isArray(reports) ? reports : []);
+      loggerService.event(
+        'CASE',
+        'Load Case Statistics',
+        'SUCCESS',
+        `Retrieved case #${selectedCase?.caseNumber || caseId} stats: ${stats.totalRecords} records, ${stats.totalChats} chats, ${stats.totalEntities} entities.`,
+        stats
+      );
+    } catch (err: any) {
+      loggerService.event('CASE', 'Load Case Statistics', 'FAILED', `Failed loading stats: ${err.message}`);
+    }
   };
 
   const activeDevice = selectedDevice || detectedDevices[0];
@@ -89,7 +106,7 @@ export const Workspace: React.FC = () => {
         <div className="pointer-events-auto">
           <ContextHeader
             activeTab={activeTab}
-            setActiveTab={setActiveTab}
+            setActiveTab={handleTabChange}
             onOpenAdminAudit={() => setIsAdminAuditOpen(true)}
           />
         </div>

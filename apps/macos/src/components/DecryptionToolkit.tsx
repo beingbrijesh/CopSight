@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useDaemonStore } from '../store/daemonStore';
 import { useCaseStore } from '../store/caseStore';
+import { loggerService } from '../lib/loggerService';
 
 export const DecryptionToolkit: React.FC = () => {
   const { selectedDevice } = useDaemonStore();
@@ -64,8 +65,10 @@ export const DecryptionToolkit: React.FC = () => {
             if (!data.running && data.logs) {
               if (data.logs.includes('Access denied') || data.logs.includes('Error') || data.logs.includes('Traceback')) {
                 setV6Step(6);
+                loggerService.event('DECRYPTION', 'MediaTek BROM Handshake', 'FAILED', 'Handshake error or access denied in BROM telemetry logs.');
               } else if (data.logs.length > 200) {
                 setV6Step(5);
+                loggerService.event('DECRYPTION', 'MediaTek BROM Handshake', 'SUCCESS', 'BROM payload injected and partition dump completed.');
               }
               clearInterval(interval);
             }
@@ -84,10 +87,12 @@ export const DecryptionToolkit: React.FC = () => {
   const handleDecryptWhatsApp = async () => {
     if (!hexKey && !keyFilePath) {
       setDecryptionStatus('Error: Please provide a 64-character hex key or key file path.');
+      loggerService.event('DECRYPTION', 'WhatsApp SQLite Decrypt', 'FAILED', 'Missing AES key hex or keyfile path.');
       return;
     }
     setIsDecrypting(true);
     setDecryptionStatus('Decrypting WhatsApp database with provided key vector...');
+    loggerService.event('DECRYPTION', 'WhatsApp SQLite Decrypt', 'INITIATED', `Attempting crypt14/15 decryption for Case #${selectedCase?.caseNumber || 'Demo'}`);
     try {
       const res = await fetch('http://127.0.0.1:54322/api/decrypt/whatsapp', {
         method: 'POST',
@@ -101,11 +106,14 @@ export const DecryptionToolkit: React.FC = () => {
       const data = await res.json();
       if (data.success) {
         setDecryptionStatus(`Success: ${data.message}`);
+        loggerService.event('DECRYPTION', 'WhatsApp SQLite Decrypt', 'SUCCESS', `Decryption completed: ${data.message}`, data);
       } else {
         setDecryptionStatus(`Decryption failed: ${data.message || data.error}`);
+        loggerService.event('DECRYPTION', 'WhatsApp SQLite Decrypt', 'FAILED', `Decryption failed: ${data.message || data.error}`, data);
       }
     } catch (e: any) {
       setDecryptionStatus(`Error connecting to daemon: ${e.message}`);
+      loggerService.event('DECRYPTION', 'WhatsApp SQLite Decrypt', 'FAILED', `Daemon RPC error: ${e.message}`);
     } finally {
       setIsDecrypting(false);
     }
@@ -116,6 +124,7 @@ export const DecryptionToolkit: React.FC = () => {
     setIsDumpingHeap(true);
     setHeapStatus('Running 6-method volatile RAM extraction chain...');
     setHeapResult(null);
+    loggerService.event('DECRYPTION', 'Volatile RAM Heap Dump', 'INITIATED', `Targeting RAM for package com.whatsapp on device ${selectedDevice?.serial || 'USB'}`);
     try {
       const res = await fetch('http://127.0.0.1:54322/api/acquire/heap', {
         method: 'POST',
@@ -132,11 +141,14 @@ export const DecryptionToolkit: React.FC = () => {
         setHeapStatus(`Success: ${data.message}`);
         if (data.decrypted?.key) setHexKey(data.decrypted.key);
         else if (data.candidates?.length > 0) setHexKey(data.candidates[0]);
+        loggerService.event('DECRYPTION', 'Volatile RAM Heap Dump', 'SUCCESS', `RAM dump completed: ${data.message}`, data);
       } else {
         setHeapStatus(data.message || data.error || 'All RAM extraction methods blocked by device security.');
+        loggerService.event('DECRYPTION', 'Volatile RAM Heap Dump', 'FAILED', `RAM extraction blocked: ${data.message || data.error}`, data);
       }
     } catch (e: any) {
       setHeapStatus(`RAM Dump error: ${e.message}`);
+      loggerService.event('DECRYPTION', 'Volatile RAM Heap Dump', 'FAILED', `RAM Dump socket error: ${e.message}`);
     } finally {
       setIsDumpingHeap(false);
     }
@@ -146,6 +158,7 @@ export const DecryptionToolkit: React.FC = () => {
   const handleInspectPhysical = async () => {
     setIsInspectingPhysical(true);
     setPhysicalStatus('Querying chipset bootloader & physical partition state...');
+    loggerService.event('DECRYPTION', 'BROM Chipset Inspection', 'INITIATED', `Probing chipset architecture on target device ${selectedDevice?.serial || 'USB'}`);
     try {
       const res = await fetch('http://127.0.0.1:54322/api/acquire/physical-inspect', {
         method: 'POST',
@@ -161,11 +174,14 @@ export const DecryptionToolkit: React.FC = () => {
         } else {
           setPhysicalStatus(`Target chipset is ${data.chipFamily}. Automated BROM bypass is currently optimized for MediaTek devices.`);
         }
+        loggerService.event('DECRYPTION', 'BROM Chipset Inspection', 'SUCCESS', `Detected Chipset: ${data.chipFamily} (${data.chipset}), Bootloader: ${data.bootloaderLocked ? 'Locked' : 'Unlocked'}`, data);
       } else {
         setPhysicalStatus(`Physical inspection error: ${data.error}`);
+        loggerService.event('DECRYPTION', 'BROM Chipset Inspection', 'FAILED', `Inspection returned error: ${data.error}`, data);
       }
     } catch (e: any) {
       setPhysicalStatus(`Physical connection error: ${e.message}`);
+      loggerService.event('DECRYPTION', 'BROM Chipset Inspection', 'FAILED', `Connection error: ${e.message}`);
     } finally {
       setIsInspectingPhysical(false);
     }
@@ -173,6 +189,7 @@ export const DecryptionToolkit: React.FC = () => {
 
   const handleV6Setup = async () => {
     setPhysicalStatus('Initializing MediaTek exploit tools (mtkclient)...');
+    loggerService.event('DECRYPTION', 'mtkclient Framework Init', 'INITIATED', 'Setting up Download Agent (DA) handlers.');
     try {
       const res = await fetch('http://127.0.0.1:54322/api/acquire/physical/vendor-setup', {
         method: 'POST',
@@ -183,17 +200,21 @@ export const DecryptionToolkit: React.FC = () => {
       if (data.success) {
         setPhysicalStatus('Success: mtkclient exploit framework initialized.');
         setV6Step(2);
+        loggerService.event('DECRYPTION', 'mtkclient Framework Init', 'SUCCESS', 'mtkclient payload handlers ready.');
       } else {
         setPhysicalStatus(`Setup error: ${data.error}`);
+        loggerService.event('DECRYPTION', 'mtkclient Framework Init', 'FAILED', `Setup failed: ${data.error}`, data);
       }
     } catch (e: any) {
       setPhysicalStatus(`Setup error: ${e.message}`);
+      loggerService.event('DECRYPTION', 'mtkclient Framework Init', 'FAILED', `Setup error: ${e.message}`);
     }
   };
 
   const handleV6Extract = async () => {
     setV6Step(4);
     setV6Logs('Starting MediaTek Hardware Physical Extraction...\nWaiting for BROM Handshake...');
+    loggerService.event('DECRYPTION', 'MediaTek BROM Dump', 'INITIATED', 'Waiting for hardware test-point / BROM handshake.');
     try {
       const res = await fetch('http://127.0.0.1:54322/api/acquire/physical/mtk-extract', {
         method: 'POST',
@@ -206,10 +227,12 @@ export const DecryptionToolkit: React.FC = () => {
       if (!data.success) {
         setV6Step(6);
         setV6Logs(prev => prev + `\nExecution Error: ${data.error || data.message}`);
+        loggerService.event('DECRYPTION', 'MediaTek BROM Dump', 'FAILED', `Extraction RPC error: ${data.error || data.message}`, data);
       }
     } catch (e: any) {
       setV6Step(6);
       setV6Logs(prev => prev + `\nConnection failed: ${e.message}`);
+      loggerService.event('DECRYPTION', 'MediaTek BROM Dump', 'FAILED', `Connection failed: ${e.message}`);
     }
   };
 
@@ -217,6 +240,7 @@ export const DecryptionToolkit: React.FC = () => {
   const handleScrapeNotifications = async () => {
     setIsScrapingNotifications(true);
     setNotificationStatus('Harvesting active notifications from target device buffer...');
+    loggerService.event('DECRYPTION', 'Notification Scraper', 'INITIATED', 'Reading NotificationListenerService buffers.');
     try {
       const res = await fetch('http://127.0.0.1:54322/api/acquire/notifications', {
         method: 'POST',
@@ -229,11 +253,14 @@ export const DecryptionToolkit: React.FC = () => {
       const data = await res.json();
       if (data.success) {
         setNotificationStatus(`Success: Captured ${data.capturedCount || 0} encrypted notification snippets.`);
+        loggerService.event('DECRYPTION', 'Notification Scraper', 'SUCCESS', `Captured ${data.capturedCount || 0} notification records.`, data);
       } else {
         setNotificationStatus(`Failed: ${data.message || data.error}`);
+        loggerService.event('DECRYPTION', 'Notification Scraper', 'FAILED', `Notification scrape failed: ${data.message || data.error}`, data);
       }
     } catch (e: any) {
       setNotificationStatus(`Error: ${e.message}`);
+      loggerService.event('DECRYPTION', 'Notification Scraper', 'FAILED', `Scrape error: ${e.message}`);
     } finally {
       setIsScrapingNotifications(false);
     }
@@ -243,6 +270,7 @@ export const DecryptionToolkit: React.FC = () => {
   const handleScrapeLiveUi = async () => {
     setIsScrapingLiveUi(true);
     setLiveUiStatus('Capturing live UI hierarchy & active application view...');
+    loggerService.event('DECRYPTION', 'Accessibility UI Scraper', 'INITIATED', 'Dumping foreground UI hierarchy via uiautomator.');
     try {
       const res = await fetch('http://127.0.0.1:54322/api/acquire/live-ui', {
         method: 'POST',
@@ -255,11 +283,14 @@ export const DecryptionToolkit: React.FC = () => {
       const data = await res.json();
       if (data.success) {
         setLiveUiStatus(`Success: Captured ${data.elementsCount || 0} visible UI elements.`);
+        loggerService.event('DECRYPTION', 'Accessibility UI Scraper', 'SUCCESS', `Captured ${data.elementsCount || 0} UI elements from active screen.`, data);
       } else {
         setLiveUiStatus(`Failed: ${data.message || data.error}`);
+        loggerService.event('DECRYPTION', 'Accessibility UI Scraper', 'FAILED', `UI extraction failed: ${data.message || data.error}`, data);
       }
     } catch (e: any) {
       setLiveUiStatus(`Error: ${e.message}`);
+      loggerService.event('DECRYPTION', 'Accessibility UI Scraper', 'FAILED', `UI scrape error: ${e.message}`);
     } finally {
       setIsScrapingLiveUi(false);
     }
@@ -269,6 +300,7 @@ export const DecryptionToolkit: React.FC = () => {
   const handleHarvestMedia = async () => {
     setIsHarvestingMedia(true);
     setMediaHarvestStatus('Harvesting encrypted voice notes, attachments, and photos from media partition...');
+    loggerService.event('DECRYPTION', 'Media Partition Harvester', 'INITIATED', 'Scanning /sdcard/WhatsApp/Media for voice notes and attachments.');
     try {
       const res = await fetch('http://127.0.0.1:54322/api/acquire/media-harvest', {
         method: 'POST',
@@ -281,11 +313,14 @@ export const DecryptionToolkit: React.FC = () => {
       const data = await res.json();
       if (data.success) {
         setMediaHarvestStatus(`Success: Recovered ${data.recoveredCount || 0} media assets.`);
+        loggerService.event('DECRYPTION', 'Media Partition Harvester', 'SUCCESS', `Recovered ${data.recoveredCount || 0} unencrypted media files.`, data);
       } else {
         setMediaHarvestStatus(`Failed: ${data.message || data.error}`);
+        loggerService.event('DECRYPTION', 'Media Partition Harvester', 'FAILED', `Media harvest failed: ${data.message || data.error}`, data);
       }
     } catch (e: any) {
       setMediaHarvestStatus(`Error: ${e.message}`);
+      loggerService.event('DECRYPTION', 'Media Partition Harvester', 'FAILED', `Media harvest error: ${e.message}`);
     } finally {
       setIsHarvestingMedia(false);
     }

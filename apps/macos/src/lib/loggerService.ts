@@ -4,7 +4,18 @@
  */
 
 export type LogLevel = 'INFO' | 'WARN' | 'ERROR' | 'ACTION' | 'DEBUG';
-export type LogCategory = 'AUTH' | 'NAVIGATION' | 'API' | 'DAEMON' | 'UI' | 'ACQUISITION' | 'DECRYPTION' | 'SYSTEM';
+export type LogCategory =
+  | 'AUTH'
+  | 'NAVIGATION'
+  | 'API'
+  | 'DAEMON'
+  | 'UI'
+  | 'ACQUISITION'
+  | 'DECRYPTION'
+  | 'CASE'
+  | 'DEVICE'
+  | 'EVIDENCE'
+  | 'SYSTEM';
 
 export interface AuditLogEntry {
   id: string;
@@ -150,6 +161,10 @@ class LoggerService {
     this.log('INFO', category, message, metadata);
   }
 
+  public success(category: LogCategory, message: string, metadata?: Record<string, any>): void {
+    this.log('INFO', category, `✓ ${message}`, metadata);
+  }
+
   public warn(category: LogCategory, message: string, metadata?: Record<string, any>): void {
     this.log('WARN', category, message, metadata);
   }
@@ -160,6 +175,18 @@ class LoggerService {
 
   public action(category: LogCategory, message: string, metadata?: Record<string, any>): void {
     this.log('ACTION', category, message, metadata);
+  }
+
+  public event(
+    category: LogCategory,
+    actionName: string,
+    outcome: 'INITIATED' | 'SUCCESS' | 'FAILED' | 'SKIPPED',
+    details: string,
+    metadata?: Record<string, any>
+  ): void {
+    const level: LogLevel = outcome === 'FAILED' ? 'ERROR' : outcome === 'INITIATED' ? 'ACTION' : 'INFO';
+    const prefix = outcome === 'SUCCESS' ? '✓ ' : outcome === 'FAILED' ? '✕ ' : '➜ ';
+    this.log(level, category, `${prefix}[${actionName}][${outcome}] ${details}`, metadata);
   }
 
   public debug(category: LogCategory, message: string, metadata?: Record<string, any>): void {
