@@ -487,7 +487,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase, onOpen
                 <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
                 <span>Probe USB Bus</span>
               </button>
-              {onOpenAdminAudit && (
+              {onOpenAdminAudit && officer?.role === 'admin' && (
                 <button
                   type="button"
                   onClick={onOpenAdminAudit}

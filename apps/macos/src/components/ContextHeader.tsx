@@ -76,8 +76,8 @@ export const ContextHeader: React.FC<ContextHeaderProps> = ({
 
       {/* Right: Quick Officer Profile Avatar & Admin Diagnostic Button */}
       <div className="flex items-center gap-3">
-        {/* Admin Diagnostic Center Button */}
-        {onOpenAdminAudit && (
+        {/* Admin Diagnostic Center Button (Exclusive to Admin accounts) */}
+        {onOpenAdminAudit && officer?.role === 'admin' && (
           <button
             type="button"
             onClick={onOpenAdminAudit}

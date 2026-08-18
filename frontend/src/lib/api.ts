@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { loggerService } from './loggerService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
@@ -28,9 +29,18 @@ const addAuthInterceptor = (instance: any) => {
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+
+      loggerService.debug('API', `Sending ${config.method?.toUpperCase()} ${config.url}`, {
+        url: config.url,
+        params: config.params,
+      });
+
       return config;
     },
-    (error: any) => Promise.reject(error)
+    (error: any) => {
+      loggerService.error('API', `Request formulation error: ${error.message}`);
+      return Promise.reject(error);
+    }
   );
 };
 
@@ -87,8 +97,17 @@ const retryRequest = async (fn: () => Promise<any>, maxRetries = 1, baseDelay = 
 
 // Response interceptor for error handling and retry logic
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    loggerService.debug('API', `Response ${response.status} from ${response.config?.url}`);
+    return response;
+  },
   async (error) => {
+    loggerService.error(
+      'API',
+      `HTTP ${error.response?.status || 'Error'} on ${error.config?.url || 'endpoint'}: ${error.response?.data?.message || error.message}`,
+      { status: error.response?.status, url: error.config?.url }
+    );
+
     // Handle authentication errors
     if (error.response?.status === 401) {
       // Don't force redirect if the error is from the login endpoint itself
