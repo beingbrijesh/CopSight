@@ -76,15 +76,16 @@ fi
 
 export PYTHONPATH="$ROOT_DIR:$PYTHONPATH"
 
-# 1. Daemon check on port 54322 (only start if not already responding)
-if ! curl -s --max-time 1 http://127.0.0.1:54322/health >/dev/null 2>&1; then
-    cd "$ROOT_DIR" && nohup "$PYTHON_BIN" "$ROOT_DIR/apps/macos/daemon/server.py" --port 54322 </dev/null >/tmp/copsight_daemon.log 2>&1 &
-fi
+# 1. Terminate any stale daemon or UI processes
+pkill -f "apps/macos/daemon/server.py" 2>/dev/null || true
+pkill -f "http.server 5174" 2>/dev/null || true
+sleep 0.3
 
-# 2. UI check on port 5174 (only start if not already responding)
-if ! curl -s --max-time 1 http://127.0.0.1:5174/ >/dev/null 2>&1; then
-    cd "$UI_DIR" && nohup "$PYTHON_BIN" -m http.server 5174 </dev/null >/tmp/copsight_ui.log 2>&1 &
-fi
+# 2. Daemon start on port 54322
+cd "$ROOT_DIR" && nohup "$PYTHON_BIN" "$ROOT_DIR/apps/macos/daemon/server.py" --port 54322 </dev/null >/tmp/copsight_daemon.log 2>&1 &
+
+# 3. UI start on port 5174
+cd "$UI_DIR" && nohup "$PYTHON_BIN" -m http.server 5174 </dev/null >/tmp/copsight_ui.log 2>&1 &
 
 exit 0
 """
@@ -187,17 +188,21 @@ exit 0
             subprocess.run(["hdiutil", "detach", "/Volumes/CopSight"], capture_output=True)
 
             # 1. Create temporary read-write HFS+ DMG
-            run_cmd(f'hdiutil create -size 350m -fs HFS+ -volname "CopSight" -ov "{rw_dmg}"')
+            rc = run_cmd(f'hdiutil create -size 350m -fs HFS+ -volname "CopSight" -ov "{rw_dmg}"', check=False)
+            if rc == 0:
+                # 2. Mount it
+                run_cmd(f'hdiutil attach "{rw_dmg}" -mountpoint /Volumes/CopSight', check=False)
 
-            # 2. Mount it
-            run_cmd(f'hdiutil attach "{rw_dmg}" -mountpoint /Volumes/CopSight')
+                # 3. Copy files & create Applications shortcut
+                if Path("/Volumes/CopSight").exists():
+                    shutil.copytree(app_bundle_dir, "/Volumes/CopSight/CopSight.app", dirs_exist_ok=True)
+                    try:
+                        os.symlink("/Applications", "/Volumes/CopSight/Applications")
+                    except Exception:
+                        pass
 
-            # 3. Copy files & create Applications shortcut
-            shutil.copytree(app_bundle_dir, "/Volumes/CopSight/CopSight.app")
-            os.symlink("/Applications", "/Volumes/CopSight/Applications")
-
-            # 4. AppleScript to set 128px icons and side-by-side position
-            as_finder_layout = '''
+                    # 4. AppleScript to set 128px icons and side-by-side position
+                    as_finder_layout = '''
 tell application "Finder"
     tell disk "CopSight"
         open
@@ -217,33 +222,39 @@ tell application "Finder"
     end tell
 end tell
 '''
-            subprocess.run(["osascript", "-e", as_finder_layout], check=False)
-            import time
-            time.sleep(1)
+                    subprocess.run(["osascript", "-e", as_finder_layout], check=False)
+                    import time
+                    time.sleep(1)
 
-            # 5. Detach read-write DMG
-            subprocess.run(["hdiutil", "detach", "/Volumes/CopSight"], check=True)
+                    # 5. Detach read-write DMG
+                    subprocess.run(["hdiutil", "detach", "/Volumes/CopSight"], check=False)
 
-            # 6. Convert to compressed UDZO DMG
-            run_cmd(f'hdiutil convert "{rw_dmg}" -format UDZO -imagekey zlib-level=9 -o "{dmg_path}"')
-            print(f"[Success] Created high-DPI macOS DMG installer with 128px large icons: {dmg_path}")
+                    # 6. Convert to compressed UDZO DMG
+                    run_cmd(f'hdiutil convert "{rw_dmg}" -format UDZO -imagekey zlib-level=9 -o "{dmg_path}"', check=False)
+                    if dmg_path.exists():
+                        print(f"[Success] Created high-DPI macOS DMG installer with 128px large icons: {dmg_path}")
+            
+            if not dmg_path.exists():
+                dmg_stage = root_dir / "dmg_stage"
+                if dmg_stage.exists():
+                    shutil.rmtree(dmg_stage)
+                dmg_stage.mkdir(parents=True, exist_ok=True)
+                shutil.copytree(app_bundle_dir, dmg_stage / "CopSight.app")
+                try:
+                    os.symlink("/Applications", dmg_stage / "Applications")
+                except Exception:
+                    pass
+                run_cmd(f'hdiutil create -volname "CopSight" -srcfolder "{dmg_stage}" -ov -format UDZO "{dmg_path}"', check=False)
+                if dmg_stage.exists():
+                    shutil.rmtree(dmg_stage)
         except Exception as e:
-            print(f"[Notice] Custom Finder DMG layout had notice: {e}. Falling back to standard UDZO DMG.")
-            dmg_stage = root_dir / "dmg_stage"
-            if dmg_stage.exists():
-                shutil.rmtree(dmg_stage)
-            dmg_stage.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(app_bundle_dir, dmg_stage / "CopSight.app")
-            try:
-                os.symlink("/Applications", dmg_stage / "Applications")
-            except Exception:
-                pass
-            run_cmd(f'hdiutil create -volname "CopSight" -srcfolder "{dmg_stage}" -ov -format UDZO "{dmg_path}"', check=False)
-            if dmg_stage.exists():
-                shutil.rmtree(dmg_stage)
+            print(f"[Notice] DMG packaging note: {e}")
         finally:
             if rw_dmg.exists():
-                rw_dmg.unlink()
+                try:
+                    rw_dmg.unlink()
+                except Exception:
+                    pass
     else:
         print("[Notice] hdiutil not found; CopSight.app & ZIP are fully ready.")
 

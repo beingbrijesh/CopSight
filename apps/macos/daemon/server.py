@@ -84,6 +84,25 @@ _MTK_PROCESS: Optional[subprocess.Popen] = None
 _MTK_LOG_FILE: Optional[Path] = None
 
 
+def _resolve_cases_base_dir() -> Path:
+    """Resolves an absolute, user-writable directory for case evidence storage."""
+    # 1. If running from UFDR workspace repo directory, use local ./cases
+    try:
+        local_cases = Path.cwd() / "cases"
+        local_cases.mkdir(parents=True, exist_ok=True)
+        probe_file = local_cases / ".probe_write"
+        probe_file.write_text("ok")
+        probe_file.unlink(missing_ok=True)
+        return local_cases
+    except Exception:
+        pass
+
+    # 2. Fallback to ~/Documents/CopSight/cases
+    user_cases = Path.home() / "Documents" / "CopSight" / "cases"
+    user_cases.mkdir(parents=True, exist_ok=True)
+    return user_cases
+
+
 async def health_endpoint(request: Request) -> JSONResponse:
     """Returns daemon health and USB subsystem state."""
     return JSONResponse({
@@ -217,7 +236,7 @@ async def cancel_acquire_endpoint(request: Request) -> JSONResponse:
 
 async def reports_endpoint(request: Request) -> JSONResponse:
     """Returns details of the latest output artifacts."""
-    case_dir = Path("cases")
+    case_dir = _resolve_cases_base_dir()
     reports = []
     if case_dir.exists():
         for p in case_dir.rglob("*.pdf"):
@@ -304,11 +323,12 @@ async def decrypt_whatsapp_endpoint(request: Request) -> JSONResponse:
         hex_key = data.get("hexKey")
         key_file_path = data.get("keyFilePath")
 
-        case_dir = Path("cases") / case_number / "adb_pull"
+        case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
+        case_dir.mkdir(parents=True, exist_ok=True)
         crypt_files = list(case_dir.glob("msgstore*.crypt14")) + list(case_dir.glob("msgstore*.crypt15")) + list(case_dir.glob("*.crypt14"))
 
         if not crypt_files:
-            return JSONResponse({"success": False, "message": "No encrypted WhatsApp databases found in case folder."}, status_code=404)
+            return JSONResponse({"success": False, "error": "No encrypted WhatsApp databases found in case folder."}, status_code=404)
 
         from forensixd.parsers.decryption_toolkit import WhatsAppDecryptionEngine
         target_db = crypt_files[0]
@@ -324,7 +344,7 @@ async def decrypt_whatsapp_endpoint(request: Request) -> JSONResponse:
             if sibling_key.exists():
                 decrypted_bytes = WhatsAppDecryptionEngine.decrypt_with_key_file(target_db, sibling_key)
             else:
-                return JSONResponse({"success": False, "message": "Missing key. Please provide 64-hex key or key file path."}, status_code=400)
+                return JSONResponse({"success": False, "error": "Missing key. Please provide 64-hex key or key file path."}, status_code=400)
 
         out_db.write_bytes(decrypted_bytes)
         
@@ -362,9 +382,18 @@ async def scrape_notifications_endpoint(request: Request) -> JSONResponse:
         from forensixd.extractors.android import _resolve_adb_command
         adb_cmd = _resolve_adb_command()
         records = AndroidNotificationScraper.scrape_notification_history(adb_cmd, adb_args)
+        if not records:
+            return JSONResponse({
+                "success": False,
+                "error": "No Android device connected via ADB or notification history is empty.",
+                "count": 0,
+                "capturedCount": 0,
+                "records": []
+            }, status_code=400)
         return JSONResponse({
             "success": True,
             "count": len(records),
+            "capturedCount": len(records),
             "records": records
         })
     except Exception as e:
@@ -376,11 +405,11 @@ async def verify_custody_endpoint(request: Request) -> JSONResponse:
     try:
         data = await _safe_get_json(request)
         case_number = data.get("caseNumber", "Demo")
-        case_dir = Path("cases") / case_number
+        case_dir = _resolve_cases_base_dir() / case_number
         files = list(case_dir.glob("*.audit.jsonl"))
 
         if not files:
-            return JSONResponse({"success": False, "message": "No audit logs found for case."}, status_code=404)
+            return JSONResponse({"success": False, "error": "No audit logs found for case."}, status_code=404)
 
         from forensixd.core.logger import AuditLogger
         results = []
@@ -405,9 +434,10 @@ async def open_folder_endpoint(request: Request) -> JSONResponse:
     try:
         data = await _safe_get_json(request)
         case_number = data.get("caseNumber", "Demo")
-        case_dir = Path("cases") / case_number
+        case_dir = _resolve_cases_base_dir() / case_number
         if not case_dir.exists():
-            case_dir = Path("cases")
+            case_dir = _resolve_cases_base_dir()
+        case_dir.mkdir(parents=True, exist_ok=True)
         subprocess.run(["open", str(case_dir.resolve())])
         return JSONResponse({"success": True, "message": f"Opened {case_dir} in Finder."})
     except Exception as e:
@@ -421,7 +451,7 @@ async def heap_dump_endpoint(request: Request) -> JSONResponse:
         case_number = data.get("caseNumber", "Demo")
         package_name = data.get("packageName", "com.whatsapp")
         adb_args = _resolve_adb_target_args(data)
-        case_dir = Path("cases") / case_number / "adb_pull"
+        case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
         case_dir.mkdir(parents=True, exist_ok=True)
 
         from forensixd.parsers.decryption_toolkit import MemoryHeapKeyScanner
@@ -454,7 +484,7 @@ async def physical_extract_endpoint(request: Request) -> JSONResponse:
         data = await _safe_get_json(request)
         case_number = data.get("caseNumber", "Demo")
         adb_args = _resolve_adb_target_args(data)
-        case_dir = Path("cases") / case_number / "adb_pull"
+        case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
         case_dir.mkdir(parents=True, exist_ok=True)
 
         from forensixd.parsers.decryption_toolkit import PhysicalBootTriageManager
@@ -465,6 +495,7 @@ async def physical_extract_endpoint(request: Request) -> JSONResponse:
         return JSONResponse(result)
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
 
 
 async def vendor_setup_endpoint(request: Request) -> JSONResponse:
@@ -488,7 +519,7 @@ async def mtk_extract_endpoint(request: Request) -> JSONResponse:
     try:
         data = await _safe_get_json(request)
         case_number = data.get("caseNumber", "Demo")
-        case_dir = Path("cases") / case_number / "physical_dump"
+        case_dir = _resolve_cases_base_dir() / case_number / "physical_dump"
         case_dir.mkdir(parents=True, exist_ok=True)
         
         log_file = case_dir / "mtkclient.log"
@@ -548,7 +579,7 @@ async def whatsapp_media_endpoint(request: Request) -> JSONResponse:
     try:
         data = await _safe_get_json(request)
         case_number = data.get("caseNumber", "Demo")
-        case_dir = Path("cases") / case_number / "adb_pull"
+        case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
         case_dir.mkdir(parents=True, exist_ok=True)
 
         from forensixd.parsers.decryption_toolkit import AndroidWhatsAppHarvester
@@ -567,7 +598,7 @@ async def whatsapp_ui_endpoint(request: Request) -> JSONResponse:
     try:
         data = await _safe_get_json(request)
         case_number = data.get("caseNumber", "Demo")
-        case_dir = Path("cases") / case_number / "adb_pull"
+        case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
         case_dir.mkdir(parents=True, exist_ok=True)
 
         from forensixd.parsers.decryption_toolkit import AndroidWhatsAppHarvester
@@ -595,7 +626,7 @@ async def case_local_status_endpoint(request: Request) -> JSONResponse:
     """Returns local extraction stats and upload status."""
     try:
         case_number = request.query_params.get("caseNumber", "Demo")
-        case_dir = Path("cases") / case_number / "adb_pull"
+        case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
         files = list(case_dir.glob("*.*")) if case_dir.exists() else []
 
         upload_flag = case_dir / ".uploaded_to_cloud"
@@ -618,10 +649,10 @@ async def upload_to_cloud_endpoint(request: Request) -> JSONResponse:
         data = await _safe_get_json(request)
         case_id = data.get("caseId", 1)
         case_number = data.get("caseNumber", "Demo")
-        case_dir = Path("cases") / case_number / "adb_pull"
+        case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
 
         if not case_dir.exists():
-            return JSONResponse({"success": False, "message": "No local case files found."}, status_code=404)
+            return JSONResponse({"success": False, "error": "No local case files found."}, status_code=404)
 
         # Look for extracted chats or CSV files
         uploaded_count = 0
@@ -695,7 +726,9 @@ if HAS_STARLETTE:
             Route("/api/decrypt/whatsapp", decrypt_whatsapp_endpoint, methods=["POST"]),
             Route("/api/acquire/notifications", scrape_notifications_endpoint, methods=["POST"]),
             Route("/api/acquire/whatsapp-media", whatsapp_media_endpoint, methods=["POST", "GET"]),
+            Route("/api/acquire/media-harvest", whatsapp_media_endpoint, methods=["POST", "GET"]),
             Route("/api/acquire/whatsapp-ui", whatsapp_ui_endpoint, methods=["POST", "GET"]),
+            Route("/api/acquire/live-ui", whatsapp_ui_endpoint, methods=["POST", "GET"]),
             Route("/api/acquire/whatsapp-ui/cancel", cancel_whatsapp_ui_endpoint, methods=["POST"]),
             Route("/api/acquire/heap", heap_dump_endpoint, methods=["POST"]),
             Route("/api/acquire/open-dev-settings", open_dev_settings_endpoint, methods=["POST", "GET"]),
@@ -786,7 +819,7 @@ else:
                     self._send_cors(200)
                     self.wfile.write(json.dumps({"success": True, "devices": [], "count": 0, "error": str(e)}).encode("utf-8"))
             elif path == "/api/reports":
-                case_dir = Path("cases")
+                case_dir = _resolve_cases_base_dir()
                 reports = []
                 if case_dir.exists():
                     for p in case_dir.rglob("*.pdf"):
@@ -796,7 +829,7 @@ else:
             elif path == "/api/cases/local-status":
                 query_params = urllib.parse.parse_qs(parsed.query)
                 case_number = query_params.get("caseNumber", ["Demo"])[0]
-                case_dir = Path("cases") / case_number / "adb_pull"
+                case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
                 files = list(case_dir.glob("*.*")) if case_dir.exists() else []
                 upload_flag = case_dir / ".uploaded_to_cloud"
                 is_uploaded = upload_flag.exists()
@@ -839,7 +872,7 @@ else:
                 device_id = data.get("device_id")
                 extraction_level = str(data.get("level", "logical")).lower()
                 profile = str(data.get("profile", "all")).lower()
-                output_dir = data.get("output_dir", "./cases")
+                output_dir = data.get("output_dir", str(_resolve_cases_base_dir()))
                 auth_token = data.get("token")
                 session_encryption_key = data.get("session_encryption_key")
                 stream_url = data.get("stream_url")
@@ -872,7 +905,7 @@ else:
 
             elif path == "/api/cases/upload-to-cloud":
                 case_number = data.get("caseNumber", "Demo")
-                case_dir = Path("cases") / case_number / "adb_pull"
+                case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
                 if case_dir.exists():
                     (case_dir / ".uploaded_to_cloud").write_text(datetime.now(timezone.utc).isoformat())
                 self._send_cors(200)
@@ -886,10 +919,10 @@ else:
                 case_number = data.get("caseNumber", "Demo")
                 hex_key = data.get("hexKey")
                 key_file_path = data.get("keyFilePath")
-                case_dir = Path("cases") / case_number / "adb_pull"
+                case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
                 crypt_files = list(case_dir.glob("msgstore*.crypt14")) + list(case_dir.glob("msgstore*.crypt15")) + list(case_dir.glob("*.crypt14"))
                 if not crypt_files:
-                    self._send_cors(200)
+                    self._send_cors(404)
                     self.wfile.write(json.dumps({
                         "success": False,
                         "error": "No encrypted WhatsApp databases (*.crypt14/*.crypt15) found in active case directory. Acquire or place database files first."
@@ -913,19 +946,19 @@ else:
                         self._send_cors(200)
                         self.wfile.write(json.dumps({"success": True, "message": f"Successfully decrypted {target_db.name} -> msgstore.db"}).encode("utf-8"))
                     except Exception as e:
-                        self._send_cors(200)
+                        self._send_cors(500)
                         self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
 
             elif path == "/api/acquire/heap":
                 case_number = data.get("caseNumber", "Demo")
                 package_name = data.get("packageName", "com.whatsapp")
                 adb_args = _resolve_adb_target_args(data)
-                case_dir = Path("cases") / case_number / "adb_pull"
+                case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
                 case_dir.mkdir(parents=True, exist_ok=True)
                 from forensixd.parsers.decryption_toolkit import MemoryHeapKeyScanner
                 adb_cmd = _resolve_adb_command()
                 res = MemoryHeapKeyScanner.dump_and_scan_app_heap(adb_cmd, adb_args, package_name, case_dir)
-                self._send_cors(200)
+                self._send_cors(200 if res.get("success") else 400)
                 self.wfile.write(json.dumps(res).encode("utf-8"))
 
             elif path == "/api/acquire/physical-inspect":
@@ -933,7 +966,7 @@ else:
                 from forensixd.parsers.decryption_toolkit import PhysicalBootTriageManager
                 adb_cmd = _resolve_adb_command()
                 res = PhysicalBootTriageManager.inspect_bootloader_and_fastboot(adb_cmd, adb_args)
-                self._send_cors(200)
+                self._send_cors(200 if res.get("success") else 400)
                 self.wfile.write(json.dumps(res).encode("utf-8"))
 
             elif path == "/api/acquire/notifications":
@@ -945,29 +978,29 @@ else:
                     self._send_cors(200)
                     self.wfile.write(json.dumps({"success": True, "capturedCount": len(records), "records": records}).encode("utf-8"))
                 else:
-                    self._send_cors(200)
+                    self._send_cors(400)
                     self.wfile.write(json.dumps({"success": False, "error": "No device connected via ADB or notification history is empty.", "capturedCount": 0}).encode("utf-8"))
 
-            elif path == "/api/acquire/whatsapp-media":
+            elif path in ("/api/acquire/whatsapp-media", "/api/acquire/media-harvest"):
                 case_number = data.get("caseNumber", "Demo")
-                case_dir = Path("cases") / case_number / "adb_pull"
+                case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
                 case_dir.mkdir(parents=True, exist_ok=True)
                 from forensixd.parsers.decryption_toolkit import AndroidWhatsAppHarvester
                 adb_cmd = _resolve_adb_command()
                 adb_args = _resolve_adb_target_args(data)
                 res = AndroidWhatsAppHarvester.harvest_whatsapp_media(adb_cmd, adb_args, case_dir)
-                self._send_cors(200)
+                self._send_cors(200 if res.get("success") else 400)
                 self.wfile.write(json.dumps(res).encode("utf-8"))
 
-            elif path == "/api/acquire/whatsapp-ui":
+            elif path in ("/api/acquire/whatsapp-ui", "/api/acquire/live-ui"):
                 case_number = data.get("caseNumber", "Demo")
-                case_dir = Path("cases") / case_number / "adb_pull"
+                case_dir = _resolve_cases_base_dir() / case_number / "adb_pull"
                 case_dir.mkdir(parents=True, exist_ok=True)
                 from forensixd.parsers.decryption_toolkit import AndroidWhatsAppHarvester
                 adb_cmd = _resolve_adb_command()
                 adb_args = _resolve_adb_target_args(data)
                 res = AndroidWhatsAppHarvester.scrape_deep_whatsapp_threads(adb_cmd, adb_args, case_dir)
-                self._send_cors(200)
+                self._send_cors(200 if res.get("success") else 400)
                 self.wfile.write(json.dumps(res).encode("utf-8"))
 
             elif path == "/api/logs/export":

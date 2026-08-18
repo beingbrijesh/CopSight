@@ -829,10 +829,19 @@ class AndroidWhatsAppHarvester:
                 _logger.warning("Error harvesting WhatsApp media: %s", e)
 
         files = list(target_media_dir.rglob("*.*"))
+        if not files:
+            return {
+                "success": False,
+                "error": "No unencrypted WhatsApp media files found in accessible device storage.",
+                "totalFiles": 0,
+                "recoveredCount": 0,
+                "outputDir": str(target_media_dir)
+            }
         return {
-            "success": len(files) > 0,
+            "success": True,
             "message": f"Harvested {len(files)} unencrypted WhatsApp voice notes, audio files, and documents.",
             "totalFiles": len(files),
+            "recoveredCount": len(files),
             "outputDir": str(target_media_dir)
         }
 
