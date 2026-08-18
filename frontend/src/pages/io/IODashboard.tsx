@@ -190,17 +190,22 @@ export const IODashboard = () => {
           </div>
         </div>
 
-        {/* Card 3: Assigned Forensic Cases (4 cols - Dark Bento Card) */}
-        <div className="md:col-span-12 xl:col-span-4 rounded-[2rem] p-6 sm:p-7 flex flex-col justify-between shadow-2xl bg-black/40 dark:bg-black/60 border border-white/15 backdrop-blur-2xl">
+        {/* Card 3: Assigned Forensic Cases (4 cols) */}
+        <div className="md:col-span-12 xl:col-span-4 glass-panel rounded-[2rem] p-6 sm:p-7 flex flex-col justify-between shadow-xl">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <FolderOpen className="w-4 h-4 text-[#FF7A59] dark:text-white" />
                 <h3 className="text-base font-bold text-white">Assigned Cases</h3>
               </div>
-              <span className="text-[10px] font-mono text-white/70">
-                {cases.length} Total
-              </span>
+              <button
+                type="button"
+                onClick={() => navigate('/io/cases')}
+                className="text-[11px] font-mono text-[#FF7A59] dark:text-white hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>View All ({cases.length})</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
 
             {loading ? (
@@ -244,9 +249,13 @@ export const IODashboard = () => {
           </div>
 
           <div className="pt-4">
-            <p className="text-[10px] text-center opacity-60 font-mono">
-              Click any case to enter investigative workspace
-            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/io/cases')}
+              className="w-full py-2 rounded-xl bg-white/10 hover:bg-white/15 text-[11px] text-center text-white font-mono transition cursor-pointer"
+            >
+              Browse All Cases in Docket →
+            </button>
           </div>
         </div>
 

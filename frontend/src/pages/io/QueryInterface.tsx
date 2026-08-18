@@ -40,12 +40,8 @@ export const QueryInterface = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages.length, loading]);
 
-  // Auto-expand response panel when a new result arrives
-  useEffect(() => {
-    if (latestResult) {
-      setActiveRightTab('response');
-    }
-  }, [latestResult]);
+  // Auto-expand removed so sidebar remains closed by default
+  // User can open it intentionally when clicking history/response
 
   const appendAssistantResult = (result: QueryResultPayload) => {
     addMessage(caseKey, {
@@ -101,7 +97,7 @@ export const QueryInterface = () => {
   };
 
   return (
-    <div className={`mx-auto grid max-w-7xl gap-6 transition-all duration-300 ${rightPanelOpen ? 'xl:grid-cols-[minmax(0,1fr)_360px]' : 'xl:grid-cols-[minmax(0,1fr)_64px]'}`}>
+    <div className={`mx-auto w-full grid gap-6 transition-all duration-300 ${rightPanelOpen ? 'xl:grid-cols-[minmax(0,1fr)_380px]' : 'xl:grid-cols-[minmax(0,1fr)_64px]'}`}>
       {/* ── Main chat panel ── */}
       <section className="flex flex-col rounded-2xl border border-gray-200 dark:border-white/10 glass-panel bg-white/70 dark:bg-white/5 backdrop-blur-xl shadow-sm dark:shadow-none overflow-hidden" style={{ height: 'calc(100vh - 8rem)', minHeight: '36rem' }}>
         {/* Header - Only show when no messages */}
