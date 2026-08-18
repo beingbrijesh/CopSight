@@ -26,7 +26,7 @@ export const ContextHeader: React.FC<ContextHeaderProps> = ({
   ];
 
   return (
-    <header className="min-h-16 py-2.5 px-6 glass-panel rounded-[2.5rem] flex flex-wrap items-center justify-between gap-4 z-30 select-none mx-auto max-w-[1750px] shadow-lg">
+    <div className="min-h-16 py-2.5 px-6 glass-panel rounded-[2.5rem] flex flex-wrap items-center justify-between gap-4 select-none mx-auto max-w-[1750px] shadow-2xl backdrop-blur-2xl">
       
       {/* Left: Brand with Official Frontend Logo */}
       <div className="flex items-center gap-3.5">
@@ -89,6 +89,6 @@ export const ContextHeader: React.FC<ContextHeaderProps> = ({
         </button>
       </div>
 
-    </header>
+    </div>
   );
 };

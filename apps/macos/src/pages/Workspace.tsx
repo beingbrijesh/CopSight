@@ -74,17 +74,20 @@ export const Workspace: React.FC = () => {
   const liveEvidenceCount = (caseStats.totalRecords || 0) + (totalArtifactsExtracted || 0);
 
   return (
-    <div className="min-h-screen w-full flex flex-col select-none overflow-y-auto pb-12 transition-colors duration-300">
+    <div className="min-h-screen w-full flex flex-col select-none transition-colors duration-300 relative">
       
-      {/* Top Floating Navigation Bar (Sticky with frosted glass so contents scroll upward behind it) */}
-      <div className="sticky top-0 z-40 pt-7 pb-2 px-4 sm:px-8 max-w-[1750px] mx-auto w-full transition-all">
-        <ContextHeader
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-        />
+      {/* Fixed Top Floating Navigation Bar (Pinned below window controls with comfortable pt-9 sm:pt-10 clearance) */}
+      <div className="fixed top-0 left-0 right-0 z-50 pt-9 sm:pt-10 pb-3 px-4 sm:px-8 max-w-[1750px] mx-auto w-full pointer-events-none">
+        <div className="pointer-events-auto">
+          <ContextHeader
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
+        </div>
       </div>
 
-      <main className="flex-1 px-4 sm:px-8 pt-6 max-w-[1750px] w-full mx-auto">
+      {/* Main Content Pane (Padded top so content starts below fixed menu bar and slides upward behind it) */}
+      <main className="flex-1 px-4 sm:px-8 pt-32 sm:pt-36 pb-16 max-w-[1750px] w-full mx-auto">
         
         {/* ========================================================================= */}
         {/* VIEW 1: SIMPLIFIED, INTUITIVE FORENSIC DASHBOARD                          */}
