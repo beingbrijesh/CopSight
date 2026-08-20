@@ -36,7 +36,6 @@ struct AdminDashboardView: View {
     @State private var totalCasesCount: Int = 14
     @State private var activeCasesCount: Int = 6
     @State private var isSyncing: Bool = false
-    @State private var isShowingAuditModal: Bool = false
     
     // Log Filters & Search
     @State private var logSearchText: String = ""
@@ -151,9 +150,6 @@ struct AdminDashboardView: View {
             .thinScrollable()
         }
         .scrollIndicators(.hidden)
-        .sheet(isPresented: $isShowingAuditModal) {
-            AdminSystemLogsDossierView()
-        }
     }
     
     // MARK: - Header Bar
@@ -306,7 +302,7 @@ struct AdminDashboardView: View {
                     }
                     
                     HStack(spacing: 8) {
-                        Button(action: { isShowingAuditModal = true }) {
+                        Button(action: { WindowManager.shared.openAdminLogsDossier() }) {
                             HStack(spacing: 6) {
                                 Image(systemName: "terminal.fill")
                                 Text("Launch System Event Chain & Logs Dossier")
@@ -322,21 +318,6 @@ struct AdminDashboardView: View {
                         .buttonStyle(.plain)
                         .focusable(false)
                         .focusEffectDisabled()
-                        
-                        Button(action: { WindowManager.shared.openAdminLogsDossier() }) {
-                            Image(systemName: "plus.rectangle.on.rectangle")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 9)
-                                .background(theme.insetFill(isDark: isDark))
-                                .clipShape(Capsule())
-                                .overlay(Capsule().strokeBorder(theme.insetBorder(isDark: isDark), lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
-                        .focusable(false)
-                        .focusEffectDisabled()
-                        .help("Open System Event Chain & Logs Dossier in an independent macOS window")
                     }
                 }
                 .padding(18)
