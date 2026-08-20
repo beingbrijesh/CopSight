@@ -7,7 +7,9 @@ on:
       - 'copsight-macos/**'
       - '.github/workflows/copsight-macos.yml'
     tags:
-      - 'v*'
+      - 'copsight-v*'
+      - 'copsight-ai-v*'
+      - 'v1.*'
   pull_request:
     branches: [ "main", "master" ]
     paths:
@@ -41,6 +43,10 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
             VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref }}" =~ ^refs/tags/copsight-ai-v ]]; then
+            VERSION="${GITHUB_REF#refs/tags/copsight-ai-v}"
+          elif [[ "${{ github.ref }}" =~ ^refs/tags/copsight-v ]]; then
+            VERSION="${GITHUB_REF#refs/tags/copsight-v}"
           elif [[ "${{ github.ref }}" =~ ^refs/tags/v ]]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
           else
@@ -70,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/copsight-') || startsWith(github.ref, 'refs/tags/v1.') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
@@ -89,7 +95,7 @@ jobs:
           if [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
           else
-            TAG="v${{ github.event.inputs.version || '1.0.0' }}"
+            TAG="copsight-v${{ github.event.inputs.version || '1.0.0' }}"
           fi
           echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
 

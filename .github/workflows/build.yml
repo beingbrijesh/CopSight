@@ -4,10 +4,16 @@ on:
   push:
     branches: [ "main", "master" ]
     tags:
-      - 'v*'
+      - 'forensixd-v*'
+      - 'v2.*'
   pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to release (e.g. 2.0.29)'
+        required: false
+        default: '2.0.29'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -78,7 +84,15 @@ jobs:
       id: extract_version
       shell: bash
       run: |
-        VERSION=$(grep '^version = ' pyproject.toml | cut -d '"' -f 2)
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        elif [[ "${{ github.ref }}" =~ ^refs/tags/forensixd-v ]]; then
+          VERSION="${GITHUB_REF#refs/tags/forensixd-v}"
+        elif [[ "${{ github.ref }}" =~ ^refs/tags/v ]]; then
+          VERSION="${GITHUB_REF#refs/tags/v}"
+        else
+          VERSION=$(grep '^version = ' pyproject.toml | cut -d '"' -f 2)
+        fi
         echo "APP_VERSION=v$VERSION" >> $GITHUB_ENV
 
     - name: Build with PyInstaller
@@ -95,6 +109,8 @@ jobs:
         elif [ "$RUNNER_OS" == "Windows" ]; then
           mv forensixd.exe forensixd-windows-amd64-$APP_VERSION.exe
         elif [ "$RUNNER_OS" == "macOS" ]; then
+          cp forensixd forensixd-macos-universal-$APP_VERSION
+          chmod +x forensixd-macos-universal-$APP_VERSION
           cd ..
           cd apps/macos && npm install
           cd ../..
@@ -108,14 +124,14 @@ jobs:
         name: forensixd-${{ runner.os }}-${{ env.APP_VERSION }}
         path: |
           dist/forensixd*
-          dist/CopSight*
+          dist/ForensixD*
 
   release:
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/forensixd-') || startsWith(github.ref, 'refs/tags/v2.') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -127,39 +143,54 @@ jobs:
       - name: List artifacts
         run: ls -R release-artifacts
 
+      - name: Determine Release Tag
+        id: rel_tag
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="forensixd-v${{ github.event.inputs.version || '2.0.29' }}"
+          fi
+          echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: CopSight ${{ github.ref_name }} — Standalone Forensic Workstation
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ForensixD Extractor & CLI ${{ env.RELEASE_TAG }} — Hardware Data Acquisition Tool
           generate_release_notes: true
           body: |
-            ## 🚀 CopSight Forensic Workstation ${{ github.ref_name }}
+            ## ⚡ ForensixD by CopSight — Hardware Data Extraction Tool & CLI ${{ env.RELEASE_TAG }}
 
-            ### ✨ Key Features & Improvements
-            - **Native Cocoa + WebKit Standalone App**: Built-in zero-redirect desktop interface for macOS with integrated live forensic telemetry.
-            - **High-DPI 128px DMG Installer**: Drag-and-drop installation into `/Applications` with large custom icons.
-            - **Resilient Zero-Dependency Engine**: Built-in standard library fallback supporting clean macOS systems without external pip packages.
-            - **Responsive UI Layout**: Dynamic grid reflow for multi-window sizing, dark mode background protection, and perfectly centered parameter badges.
-            - **Hardware Bus Radar**: Real-time USB probe supporting Android (ADB), MediaTek BROM/EDL, and iOS physical/logical triage.
+            ### ✨ Key Features & Capabilities
+            - **ForensixD macOS Extractor (GUI)**: Standalone zero-redirect field acquisition utility for Investigating Officers (IO).
+            - **ForensixD CLI by CopsightAI (Cross-Platform)**: High-performance command-line binary for Linux, Windows, and macOS automated ingestion pipelines.
+            - **Hardware Bus Radar**: Real-time USB probe supporting Android (ADB/EDL/Fastboot), MediaTek BROM, and iOS physical/logical triage.
+            - **Section 65B & DFXML Hash Generator**: Automated SHA-256 block-level verification with live waveform bitstream acquisition console.
+            - **Encrypted Evidence Vault**: Direct export of court-admissible UFDR containers and Section 65B compliance dossiers.
 
             ---
 
-            ### 📦 Download & Installation (macOS)
-            1. Download **`CopSight-macOS-${{ github.ref_name }}.dmg`** below.
-            2. Double-click the `.dmg` and drag **CopSight.app** to your **Applications** folder.
+            ### 📦 Download Packages
+
+            | Package | Target OS | Description | Asset Name |
+            |:---|:---|:---|:---|
+            | **ForensixD macOS Extractor** | macOS 11.0+ | Native Cocoa Desktop Application | `ForensixD-Extractor-macOS-${{ github.ref_name }}.dmg` / `.zip` |
+            | **ForensixD CLI (Linux)** | Linux x86_64 | Standalone CLI Binary | `forensixd-linux-amd64-${{ github.ref_name }}` |
+            | **ForensixD CLI (Windows)** | Windows x86_64 | Standalone CLI Executable | `forensixd-windows-amd64-${{ github.ref_name }}.exe` |
+            | **ForensixD CLI (macOS)** | macOS Universal | Standalone CLI Binary | `forensixd-macos-universal-${{ github.ref_name }}` |
+
+            ---
+
+            ### 🚀 macOS App Installation
+            1. Download **`ForensixD-Extractor-macOS-${{ github.ref_name }}.dmg`** below.
+            2. Double-click the `.dmg` and drag **ForensixD by CopSight.app** to your **Applications** folder.
             3. If macOS displays a Gatekeeper security prompt on first launch, open Terminal and run:
                ```bash
-               xattr -cr /Applications/CopSight.app
+               xattr -cr "/Applications/ForensixD by CopSight.app"
                ```
-            4. Launch **CopSight** directly from your Applications or Dock!
-
-            ---
-
-            ### 🛠️ Fixes in this Release
-            - Fixed forensic daemon connection state tracking (preventing transient WebSocket disconnects from marking HTTP engine offline).
-            - Fixed device card label overflow in Device Radar to prevent text spilling out of capsules.
-            - Fixed top floating menu bar vertical clearance below native macOS window traffic lights.
-            - Fixed acquisition step badge centering and responsive font sizing.
+            4. Launch **ForensixD** directly from your Applications or Dock!
           files: release-artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
