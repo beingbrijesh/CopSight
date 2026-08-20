@@ -87,12 +87,21 @@ export const authService = {
   },
   checkHealth: async (timeoutMs: number = 60000): Promise<{ isOnline: boolean; isWarmingUp?: boolean; message?: string }> => {
     try {
-      // Single probe request with 1-minute acknowledgement timeout
-      await apiClient.get('/auth/me', { timeout: timeoutMs });
-      return { isOnline: true };
+      // Use un-rate-limited ping/health endpoints to avoid consuming auth rate limits (HTTP 429)
+      try {
+        await apiClient.get('/ping', { timeout: timeoutMs });
+        return { isOnline: true };
+      } catch (err: any) {
+        if (err.response && err.response.status >= 200 && err.response.status < 500) {
+          return { isOnline: true };
+        }
+        // Fallback to /health on root host
+        const rootHealthUrl = getStreamBaseUrl() ? `${getStreamBaseUrl()}/health` : 'http://localhost:8080/health';
+        await axios.get(rootHealthUrl, { timeout: timeoutMs });
+        return { isOnline: true };
+      }
     } catch (e: any) {
-      if (e.response && (e.response.status === 401 || e.response.status === 200 || e.response.status === 404)) {
-        // Server replied with HTTP status code -> backend is active
+      if (e.response && e.response.status >= 200 && e.response.status < 500) {
         return { isOnline: true };
       }
       const isWarming = e.code === 'ECONNABORTED' || e.message?.includes('timeout') || e.code === 'ERR_NETWORK' || !e.response;

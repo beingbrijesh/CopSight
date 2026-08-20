@@ -27,6 +27,7 @@ export const AuthGate: React.FC = () => {
       setBackendStatus('checking');
     }
 
+    let isOnlineResult = false;
     try {
       // Single request with strict 60s (1 min) acknowledgement timeout
       const res = await authService.checkHealth(60000);
@@ -34,7 +35,7 @@ export const AuthGate: React.FC = () => {
 
       if (res.isOnline) {
         setBackendStatus('online');
-        // Server is acknowledged and online. Terminate further polling.
+        isOnlineResult = true;
         return;
       } else {
         setBackendStatus(res.isWarmingUp ? 'warming_up' : 'offline');
@@ -44,14 +45,15 @@ export const AuthGate: React.FC = () => {
       setBackendStatus('offline');
     } finally {
       isProbingRef.current = false;
-      // Schedule the next single probe only after the previous request has completed or timed out
-      if (isMountedRef.current) {
+      // CRITICAL: ONLY schedule a retry if the server is NOT online!
+      // Once online, terminate completely — zero further background requests.
+      if (isMountedRef.current && !isOnlineResult) {
         clearTimeout(retryTimerRef.current);
         retryTimerRef.current = setTimeout(() => {
           if (isMountedRef.current) {
             probeServer();
           }
-        }, 3000);
+        }, 5000);
       }
     }
   }, [backendStatus]);
