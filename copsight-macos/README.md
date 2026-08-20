@@ -7,8 +7,9 @@ CopSight AI is a native macOS digital forensics and intelligence analysis deskto
 ## 🛡️ Key Features
 
 - **Pure Credential-Based RBAC**: Direct login automatically routes Investigating Officers, Supervisors, and Root Administrators to their respective clearance dashboards.
+- **Native Multi-Window Workspace Support**: Open ForensixD Data Acquisition Studio, AI Forensic Analyst, Entity Network Graph, Supervisor Hub, and Admin System Logs Dossier in independent native macOS windows for multi-screen investigation setups.
+- **Administrator System Event Chain & Logs Dossier**: Complete chronological event timeline, hardware socket telemetry, auth logs, error diagnostics, and system misbehavior tracking with JSON/CSV export.
 - **Supervisor Intelligence Hub**: 4 audit modules for Chain of Custody SHA-256 seal verification, Examiner Activity telemetry stream, Case Allocation grid, and CJIS / ISO 27037 compliance.
-- **Administrator System Operations**: Real-time infrastructure performance monitors (CPU cluster load, unified RAM, Milvus vector QPS, NVMe I/O) and master system activity logs with JSON/CSV export.
 - **Searchable Case Docket Officer Assignment**: Search and assign lead officers with role badges when registering new case files.
 - **AI Forensic Analyst**: Semantic evidence interrogation chat utilizing full-canvas layout with timeline correlation and source citations.
 - **Interactive Forensic Network Graph**: Drag-and-drop entity topology canvas (Suspects, Crypto Wallets, Seized Devices, Geo-Pins, Databases) with encrypted relationship edges.

@@ -11,14 +11,15 @@
 The **CopSight AI / ForensixD** platform is a high-performance, native digital forensics and intelligence analysis ecosystem built for law enforcement and digital forensic examiners.
 
 ### Active App Modules:
-1. **Administrator Station Mode (`AdminDashboardView` & `AdminUserListView`)**:
+1. **Administrator Station Mode (`AdminDashboardView`, `AdminSystemLogsDossierView` & `AdminUserListView`)**:
    - **Dashboard**: 4 live infrastructure performance gauges (CPU cluster load, unified RAM, Milvus vector QPS, NVMe I/O), security profile card, master system activity & security logs stream (with severity & subsystem filters, search, and JSON/CSV export), 99.9% uptime gauge, database and API status.
+   - **System Event Chain & Logs Dossier (`AdminSystemLogsDossierView`)**: Comprehensive chronological audit timeline showing every system event, hardware socket connection, auth attempt, RPC latency spike, error diagnostic, and cryptographic HMAC SHA-256 seal.
    - **User Accounts & RBAC**: Full system user table with search, role filters (`Admin`, `Supervisor`, `Investigating Officer`), "Add System User" modal, "Edit Profile" modal, "Reset Password" modal, and account active/disabled toggle.
    - **Case Management**: Full case dossier list with exclusive authority to register and create new case dockets (`CreateCaseModalView`) with searchable lead officer dropdown.
    - **Station Settings**: Cryptographic keybags, hardware RPC daemon, and system configuration.
 2. **Supervisor Intelligence & Command Mode (`SupervisorAuditView`)**:
    - **Supervisor Hub**: 4 audit tabs: Chain of Custody SHA-256 seal verification, Examiner Activity telemetry stream, Case Allocation grid with re-assignment, CJIS/ISO 27037 report export.
-   - **Close Dossier Option**: Prominent, styled dismiss button in header for immediate return to dashboard.
+   - **Clean In-Page Dashboard**: Clean native header with "New Window" action and zero redundant modal close buttons.
    - **Case Dossiers**: Read-only investigation case access and dossier review (new case creation restricted to Admin).
    - **Cross-Case Intelligence**: Multi-FIR correlation engine detecting shared crypto wallets, burner phones, TAC IMEI series, and spatiotemporal dead-drop overlaps.
    - **Anomaly AI & Analyst**: Deep learning anomaly detection and full-canvas natural language forensic analyst chat.
@@ -27,7 +28,8 @@ The **CopSight AI / ForensixD** platform is a high-performance, native digital f
    - **Entity Network Graph (`NetworkGraphView`)**: Interactive 2D canvas with draggable forensic entities (Suspects, Seized Device, Crypto Wallets, Geo-Pins, Databases, Comms), relationship edges with encryption styles, search/filter pills, zoom/pan gesture controls, on-canvas HUD toolbar, node auto-centering traversal, and live entity inspector sidebar.
    - **AI Analyst Chat (`QueryInterfaceView`)**: Full-canvas expansion (100% available workspace geometry), auto-scrolling timeline correlation, and evidence source citations.
    - **ForensixD Extraction Studio**: Overview dashboard, device radar with high-contrast 85% sweep beam, 3-depth extraction wizard, live bitstream console, APFS/NVMe USB hardware explorer, decryption suite, and evidence viewer.
-4. **Authentication & Session Services**:
+4. **Multi-Window & Session Services**:
+   - **Multi-Window Engine (`WindowManager`)**: Native macOS multi-window support allowing examiners and admins to open ForensixD, AI Analyst, Network Graph, System Event Logs Dossier, Supervisor Hub, and Case Dossiers in independent native `NSWindow` instances with standard macOS traffic light controls.
    - **Authentication Gate (`AuthGateView`)**: Clean credential login without manual role buttons. Verifies officer credentials and automatically redirects to the respective role's dashboard (`/admin`, `/supervisor`, `/io`).
    - **Push Notification Service (`ForensicNotificationManager`)**: Native macOS `UserNotifications` integration with instant notifications for acquisition completions, cross-case hits, and custody events.
    - **Role-Based Access Control (`OfficerProfileManager`)**: 3-tier security clearance model (`admin`, `supervisor`, `investigating_officer`) strictly gating sensitive evidence management and audit features.
