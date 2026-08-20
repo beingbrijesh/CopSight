@@ -28,7 +28,7 @@ def main():
     app_bundle_dir = dist_dir / "ForensixD by CopSight.app"
     resources_dir = app_bundle_dir / "Contents" / "Resources"
 
-    version = "2.0.30"
+    version = "2.0.31"
     if len(sys.argv) > 1:
         version = sys.argv[1].lstrip('v')
 

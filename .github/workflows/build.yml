@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'ForensixD release version (e.g. 2.0.30)'
+        description: 'ForensixD release version (e.g. 2.0.31)'
         required: false
-        default: '2.0.30'
+        default: '2.0.31'
       copsight_version:
         description: 'CopSight AI release version (e.g. 1.0.0)'
         required: false
@@ -197,7 +197,7 @@ jobs:
           if [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
           else
-            TAG="v${{ github.event.inputs.version || '2.0.30' }}"
+            TAG="v${{ github.event.inputs.version || '2.0.31' }}"
           fi
           echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
 
@@ -220,10 +220,10 @@ jobs:
             | Application / Tool | Target OS & Architecture | Role & Description | Primary Asset | Archive Asset |
             |:---|:---|:---|:---|:---|
             | **CopSight AI Workstation** | macOS 14+ (Apple Silicon) | Native SwiftUI full forensic intelligence workstation with multi-role RBAC (IO, Supervisor, Admin), AI entity correlation, and case management. | **`CopSight-AI-macOS-v1.0.0.dmg`** | `CopSight-AI-macOS-v1.0.0.zip` |
-            | **ForensixD Extractor** | macOS 11+ (Intel & Apple Silicon) | Standalone hardware data extraction station for Investigating Officers (IO) with USB device radar and Section 65B hash digests. | **`ForensixD-Extractor-macOS-v2.0.30.dmg`** | `ForensixD-Extractor-macOS-v2.0.30.zip` |
-            | **ForensixD CLI (Linux)** | Linux x86_64 | High-performance standalone CLI binary for automated forensic acquisition pipelines. | **`forensixd-linux-amd64-v2.0.30`** | — |
-            | **ForensixD CLI (Windows)** | Windows x86_64 | High-performance standalone CLI executable for Windows forensic labs. | **`forensixd-windows-amd64-v2.0.30.exe`** | — |
-            | **ForensixD CLI (macOS)** | macOS Universal (Apple Silicon & Intel) | High-performance standalone CLI binary for scriptable macOS forensic workflows. | **`forensixd-macos-universal-v2.0.30`** | — |
+            | **ForensixD Extractor** | macOS 11+ (Intel & Apple Silicon) | Standalone hardware data extraction station for Investigating Officers (IO) with USB device radar and Section 65B hash digests. | **`ForensixD-Extractor-macOS-v2.0.31.dmg`** | `ForensixD-Extractor-macOS-v2.0.31.zip` |
+            | **ForensixD CLI (Linux)** | Linux x86_64 | High-performance standalone CLI binary for automated forensic acquisition pipelines. | **`forensixd-linux-amd64-v2.0.31`** | — |
+            | **ForensixD CLI (Windows)** | Windows x86_64 | High-performance standalone CLI executable for Windows forensic labs. | **`forensixd-windows-amd64-v2.0.31.exe`** | — |
+            | **ForensixD CLI (macOS)** | macOS Universal (Apple Silicon & Intel) | High-performance standalone CLI binary for scriptable macOS forensic workflows. | **`forensixd-macos-universal-v2.0.31`** | — |
 
             ---
 
