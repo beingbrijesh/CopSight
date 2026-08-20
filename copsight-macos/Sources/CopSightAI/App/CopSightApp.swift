@@ -17,13 +17,18 @@ struct CopSightApp: App {
         UserDefaults.standard.set("WhenScrolling", forKey: "AppleShowScrollBars")
         UserDefaults.standard.synchronize()
         
-        let whiteIconPath = "/Users/beingbrijesh/Desktop/Projects/UFDR/copsight-macos/Sources/CopSightAI/Resources/copsight_logo.png"
-        if FileManager.default.fileExists(atPath: whiteIconPath),
-           let img = NSImage(contentsOfFile: whiteIconPath) {
+        // Set solid white circular background Dock icon for high visibility on macOS Dock
+        if let bundleURL = Bundle.main.url(forResource: "copsight_dock_icon", withExtension: "png"),
+           let img = NSImage(contentsOf: bundleURL) {
             NSApplication.shared.applicationIconImage = img
         } else if let bundleURL = Bundle.main.url(forResource: "copsight_logo", withExtension: "png"),
                   let img = NSImage(contentsOf: bundleURL) {
             NSApplication.shared.applicationIconImage = img
+        } else {
+            let directPath = "/Users/beingbrijesh/Desktop/Projects/UFDR/copsight-macos/Sources/CopSightAI/Resources/copsight_dock_icon.png"
+            if let img = NSImage(contentsOfFile: directPath) {
+                NSApplication.shared.applicationIconImage = img
+            }
         }
     }
     
