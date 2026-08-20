@@ -12,7 +12,7 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 45000, // 45s timeout to support Render cold starts
+  timeout: 120000, // 120s (2m) timeout to comfortably support Render/cloud cold starts (1 - 1.5 min)
 });
 
 export const setBackendApiUrl = (url: string) => {
@@ -78,26 +78,28 @@ apiClient.interceptors.response.use(
 
 export const authService = {
   login: async (credentials: { username: string; password: string }) => {
-    const response = await apiClient.post('/auth/login', credentials);
+    const response = await apiClient.post('/auth/login', credentials, { timeout: 120000 });
     return response.data;
   },
   getCurrentOfficer: async () => {
-    const response = await apiClient.get('/auth/me');
+    const response = await apiClient.get('/auth/me', { timeout: 120000 });
     return response.data;
   },
-  checkHealth: async (): Promise<{ isOnline: boolean; message?: string }> => {
+  checkHealth: async (timeoutMs: number = 120000): Promise<{ isOnline: boolean; isWarmingUp?: boolean; message?: string }> => {
     try {
       // Test connectivity by querying auth endpoint
-      await apiClient.get('/auth/me', { timeout: 10000 });
+      await apiClient.get('/auth/me', { timeout: timeoutMs });
       return { isOnline: true };
     } catch (e: any) {
       if (e.response && (e.response.status === 401 || e.response.status === 200 || e.response.status === 404)) {
         // Server replied with HTTP status code -> backend is active
         return { isOnline: true };
       }
+      const isWarming = e.code === 'ECONNABORTED' || e.message?.includes('timeout') || e.code === 'ERR_NETWORK' || !e.response;
       return {
         isOnline: false,
-        message: e.message || 'Connection refused or server is warming up',
+        isWarmingUp: isWarming,
+        message: e.message || 'Server is warming up (1-1.5m cold start)',
       };
     }
   },
