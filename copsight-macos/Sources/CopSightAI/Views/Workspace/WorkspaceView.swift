@@ -294,7 +294,19 @@ struct WorkspaceView: View {
         HStack(spacing: 6) {
             ForEach(AdminTab.allCases) { tab in
                 let isSelected = adminTab == tab
-                Button(action: { adminTab = tab }) {
+                Button(action: {
+                    adminTab = tab
+                    switch tab {
+                    case .dashboard:
+                        break
+                    case .users:
+                        WindowManager.shared.openUserAccounts()
+                    case .cases:
+                        WindowManager.shared.openCaseDossiers()
+                    case .settings:
+                        WindowManager.shared.openStationSettings()
+                    }
+                }) {
                     HStack(spacing: 6) {
                         Image(systemName: tab.icon)
                             .font(.system(size: isCompact ? 13 : 11))
@@ -328,7 +340,23 @@ struct WorkspaceView: View {
         HStack(spacing: 6) {
             ForEach(SupervisorTab.allCases) { tab in
                 let isSelected = supervisorTab == tab
-                Button(action: { supervisorTab = tab }) {
+                Button(action: {
+                    supervisorTab = tab
+                    switch tab {
+                    case .dashboard:
+                        break
+                    case .cases:
+                        WindowManager.shared.openCaseDossiers()
+                    case .crossCase:
+                        WindowManager.shared.openCrossCase()
+                    case .anomaly:
+                        WindowManager.shared.openAnomalyDetection()
+                    case .queries:
+                        WindowManager.shared.openAIAnalyst()
+                    case .graph:
+                        WindowManager.shared.openNetworkGraph()
+                    }
+                }) {
                     HStack(spacing: 6) {
                         Image(systemName: tab.icon)
                             .font(.system(size: isCompact ? 13 : 11))
@@ -413,6 +441,20 @@ struct WorkspaceView: View {
                 let isSelected = copsightTab == tab
                 Button(action: {
                     copsightTab = tab
+                    switch tab {
+                    case .dashboard:
+                        break
+                    case .graph:
+                        WindowManager.shared.openNetworkGraph()
+                    case .cases:
+                        WindowManager.shared.openCaseDossiers()
+                    case .crossCase:
+                        WindowManager.shared.openCrossCase()
+                    case .anomaly:
+                        WindowManager.shared.openAnomalyDetection()
+                    case .queries:
+                        WindowManager.shared.openAIAnalyst()
+                    }
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: tab.icon)
@@ -447,6 +489,20 @@ struct WorkspaceView: View {
                 let isSelected = forensixdTab == tab
                 Button(action: {
                     forensixdTab = tab
+                    switch tab {
+                    case .dashboard:
+                        break
+                    case .devices:
+                        WindowManager.shared.openForensixDDevices()
+                    case .acquisition:
+                        WindowManager.shared.openForensixDStudio()
+                    case .evidence:
+                        WindowManager.shared.openForensixDEvidence()
+                    case .decryption:
+                        WindowManager.shared.openForensixDDecryption()
+                    case .settings:
+                        WindowManager.shared.openStationSettings()
+                    }
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: tab.icon)
