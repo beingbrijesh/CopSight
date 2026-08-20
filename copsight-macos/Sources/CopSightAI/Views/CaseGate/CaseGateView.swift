@@ -2,7 +2,6 @@ import SwiftUI
 
 struct CaseGateView: View {
     @State private var searchText = ""
-    @State private var isShowingSettingsSheet = false
     @State private var cases: [ForensicCase] = [
         ForensicCase(
             id: UUID().uuidString,
@@ -120,35 +119,6 @@ struct CaseGateView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .sheet(isPresented: $isShowingSettingsSheet) {
-            ZStack {
-                theme.canvasBg(isDark: isDark).ignoresSafeArea()
-                
-                VStack(spacing: 0) {
-                    HStack {
-                        Text("Station Settings & Configuration")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.white)
-                        Spacer()
-                        Button(action: { isShowingSettingsSheet = false }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 22))
-                                .foregroundColor(.white.opacity(0.7))
-                        }
-                        .buttonStyle(.plain)
-                        .focusable(false)
-                        .focusEffectDisabled()
-                    }
-                    .padding(20)
-                    
-                    ForensicSettingsView(onSwitchCase: {
-                        isShowingSettingsSheet = false
-                    })
-                    .padding(.horizontal, 20)
-                }
-            }
-            .frame(minWidth: 700, minHeight: 600)
-        }
     }
     
     private var headerBar: some View {
@@ -173,7 +143,9 @@ struct CaseGateView: View {
                 
                 // Integrated Profile & Settings Menu Button
                 OfficerProfileMenuButton(
-                    onOpenSettings: { isShowingSettingsSheet = true },
+                    onOpenSettings: {
+                        WindowManager.shared.openStationSettings()
+                    },
                     onSwitchCase: { },
                     onLockSession: {
                         withAnimation(.easeInOut(duration: 0.3)) {
