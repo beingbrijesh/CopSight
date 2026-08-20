@@ -136,6 +136,10 @@ jobs:
             ---
 
             ### 🚀 Installation (macOS)
-            1. Download **`CopSight-AI-macOS-${{ env.RELEASE_TAG }}.dmg`** below.
-            2. Double-click the DMG and drag **CopSight AI.app** to your **Applications** folder.
-            3. Launch **CopSight AI** from Launchpad or `/Applications`.
+            1. Download **`CopSight-AI-macOS-v${{ env.APP_VERSION || '1.0.0' }}.dmg`** below.
+            2. Double-click the DMG and drag the **CopSight AI** icon onto the **Applications** shortcut.
+            3. If macOS displays a Gatekeeper verification prompt on first launch, open Terminal and run:
+               ```bash
+               xattr -cr "/Applications/CopSight AI.app"
+               ```
+            4. Launch **CopSight AI** directly from Launchpad or `/Applications`.

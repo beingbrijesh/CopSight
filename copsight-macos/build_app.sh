@@ -61,10 +61,16 @@ cat > "$CONTENTS_DIR/Info.plist" <<EOF
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>$APP_NAME</string>
     <key>CFBundleExecutable</key>
     <string>$EXECUTABLE_NAME</string>
     <key>CFBundleIdentifier</key>
     <string>$BUNDLE_IDENTIFIER</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
     <key>CFBundleName</key>
     <string>$APP_NAME</string>
     <key>CFBundlePackageType</key>
@@ -74,18 +80,27 @@ cat > "$CONTENTS_DIR/Info.plist" <<EOF
     <key>CFBundleVersion</key>
     <string>$VERSION</string>
     <key>CFBundleIconFile</key>
-    <string>AppIcon</string>
+    <string>AppIcon.icns</string>
     <key>CFBundleIconName</key>
     <string>AppIcon</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>NSRequiresAquaSystemAppearance</key>
+    <false/>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
 </dict>
 </plist>
 EOF
+
+echo "==> Signing App Bundle (Ad-hoc signature)..."
+if command -v codesign &> /dev/null; then
+    codesign --force --deep -s - "$APP_DIR" || echo "Warning: codesign returned non-zero, continuing..."
+fi
 
 echo "==> Application bundle '$APP_DIR' successfully assembled."
 
@@ -98,17 +113,72 @@ if [ "$MODE" == "release" ]; then
     DMG_NAME="CopSight-AI-macOS-v${VERSION}.dmg"
     
     echo "==> Packaging ZIP: $DIST_DIR/$ZIP_NAME..."
+    rm -f "$DIST_DIR/$ZIP_NAME"
     ditto -c -k --sequesterRsrc --keepParent "$APP_DIR" "$DIST_DIR/$ZIP_NAME"
     
-    echo "==> Packaging DMG: $DIST_DIR/$DMG_NAME..."
-    DMG_TMP="dmg_tmp"
-    rm -rf "$DMG_TMP" "$DIST_DIR/$DMG_NAME"
-    mkdir -p "$DMG_TMP"
-    cp -R "$APP_DIR" "$DMG_TMP/"
-    ln -s /Applications "$DMG_TMP/Applications"
+    echo "==> Packaging high-DPI DMG with 128px drag-and-drop icons..."
+    RW_DMG="copsight_rw.dmg"
+    VOL_NAME="CopSight AI"
+    MOUNT_DIR="/Volumes/$VOL_NAME"
     
-    hdiutil create -volname "CopSight AI v$VERSION" -srcfolder "$DMG_TMP" -ov -format UDZO "$DIST_DIR/$DMG_NAME"
-    rm -rf "$DMG_TMP"
+    # Unmount any stale volume
+    hdiutil detach "$MOUNT_DIR" 2>/dev/null || true
+    rm -f "$RW_DMG" "$DIST_DIR/$DMG_NAME"
+    
+    if command -v hdiutil &> /dev/null; then
+        # Create temporary read-write HFS+ DMG
+        hdiutil create -size 350m -fs HFS+ -volname "$VOL_NAME" -ov "$RW_DMG" 2>/dev/null || true
+        
+        if [ -f "$RW_DMG" ]; then
+            hdiutil attach "$RW_DMG" -mountpoint "$MOUNT_DIR" 2>/dev/null || true
+            
+            if [ -d "$MOUNT_DIR" ]; then
+                cp -R "$APP_DIR" "$MOUNT_DIR/"
+                ln -s /Applications "$MOUNT_DIR/Applications" 2>/dev/null || true
+                
+                # AppleScript to set 128px icons and side-by-side positioning
+                if command -v osascript &> /dev/null; then
+                    osascript <<EOF || true
+tell application "Finder"
+    tell disk "$VOL_NAME"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set the bounds of container window to {300, 200, 860, 580}
+        set theViewOptions to the icon view options of container window
+        set icon size of theViewOptions to 128
+        set text size of theViewOptions to 14
+        set arrangement of theViewOptions to not arranged
+        set position of item "$APP_NAME.app" of container window to {140, 175}
+        set position of item "Applications" of container window to {410, 175}
+        update without registering applications
+        delay 1
+        close
+    end tell
+end tell
+EOF
+                fi
+                
+                sleep 1
+                hdiutil detach "$MOUNT_DIR" 2>/dev/null || hdiutil detach "$MOUNT_DIR" -force 2>/dev/null || true
+                hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$DIST_DIR/$DMG_NAME" 2>/dev/null || true
+                rm -f "$RW_DMG"
+            fi
+        fi
+    fi
+    
+    # Fallback to standard DMG if advanced styling didn't produce the file
+    if [ ! -f "$DIST_DIR/$DMG_NAME" ]; then
+        echo "==> Fallback standard DMG creation..."
+        DMG_TMP="dmg_tmp"
+        rm -rf "$DMG_TMP" "$DIST_DIR/$DMG_NAME"
+        mkdir -p "$DMG_TMP"
+        cp -R "$APP_DIR" "$DMG_TMP/"
+        ln -s /Applications "$DMG_TMP/Applications"
+        hdiutil create -volname "$VOL_NAME" -srcfolder "$DMG_TMP" -ov -format UDZO "$DIST_DIR/$DMG_NAME"
+        rm -rf "$DMG_TMP"
+    fi
     
     echo "=================================================="
     echo " Release artifacts ready in $DIST_DIR/:"
