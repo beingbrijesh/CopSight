@@ -52,6 +52,10 @@ Thumbs.db
 dist/
 build/
 *.tsbuildinfo
+copsight-macos/.build/
+copsight-macos/*.app/
+*.xcodeproj
+*.xcworkspace
 
 # Testing
 coverage/
