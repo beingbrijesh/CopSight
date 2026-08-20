@@ -162,6 +162,9 @@ final class WindowManager: NSObject, NSWindowDelegate {
     }
     
     func openSupervisorHub() {
+        guard OfficerProfileManager.shared.isSupervisor || OfficerProfileManager.shared.isAdmin else {
+            return
+        }
         openWindow(id: "copsight-supervisor", title: "CopSight — Supervisor Command & Audit Hub", minWidth: 980, minHeight: 680) {
             SupervisorAuditView()
                 .padding(.horizontal, 20)
@@ -170,6 +173,9 @@ final class WindowManager: NSObject, NSWindowDelegate {
     }
     
     func openAdminLogsDossier() {
+        guard OfficerProfileManager.shared.isAdmin else {
+            return
+        }
         openWindow(id: "copsight-admin-logs", title: "CopSight — System Event Chain & Logs Dossier", minWidth: 1050, minHeight: 720) {
             AdminSystemLogsDossierView()
                 .padding(.horizontal, 20)
@@ -178,6 +184,9 @@ final class WindowManager: NSObject, NSWindowDelegate {
     }
     
     func openUserAccounts() {
+        guard OfficerProfileManager.shared.isAdmin else {
+            return
+        }
         openWindow(id: "copsight-users", title: "CopSight — User Accounts & Clearance Management") {
             AdminUserListView()
                 .padding(.horizontal, 20)
