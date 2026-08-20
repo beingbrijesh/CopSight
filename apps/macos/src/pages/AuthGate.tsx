@@ -95,10 +95,11 @@ export const AuthGate: React.FC = () => {
           {/* Logo & Header */}
           <div className="flex flex-col items-center text-center mb-7">
             <div className="w-16 h-16 rounded-full bg-white p-1.5 flex items-center justify-center shadow-xl ring-4 ring-white/30 mb-3.5 overflow-hidden">
-              <img src={logoImg} alt="CopSight Logo" className="w-full h-full object-contain rounded-full" />
+              <img src={logoImg} alt="ForensixD Logo" className="w-full h-full object-contain rounded-full" />
             </div>
-            <h1 className="text-2xl font-extrabold text-white tracking-wide uppercase">CopSight AI</h1>
-            <p className="text-xs font-mono text-white opacity-75 mt-1">Digital Forensic Acquisition Station</p>
+            <h1 className="text-2xl font-extrabold text-white tracking-wide uppercase">ForensixD</h1>
+            <p className="text-xs font-mono text-[#FF7A59] dark:text-white/90 font-bold mt-0.5">by CopSight AI</p>
+            <p className="text-[11px] font-mono text-white opacity-75 mt-1">Forensic Data Extraction Station</p>
           </div>
 
           {/* Error Message */}
@@ -121,7 +122,7 @@ export const AuthGate: React.FC = () => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g. admin or officer_username"
+                  placeholder="e.g. io_officer or badge_id"
                   required
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-black/30 dark:bg-black/50 border border-white/20 text-xs font-mono text-white placeholder:text-white/40 focus:border-[#FF7A59] focus:outline-none transition-colors"
                 />

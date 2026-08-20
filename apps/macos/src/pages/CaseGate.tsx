@@ -64,11 +64,11 @@ export const CaseGate: React.FC = () => {
       <header className="glass-panel rounded-[2.5rem] p-3 sm:px-6 flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-8 shadow-lg">
         <div className="flex items-center gap-2.5 no-drag">
           <div className="w-8 h-8 rounded-full bg-white p-1 flex items-center justify-center shadow-md ring-2 ring-white/40 overflow-hidden flex-shrink-0">
-            <img src={logoImg} alt="CopSight Logo" className="w-full h-full object-contain rounded-full" />
+            <img src={logoImg} alt="ForensixD Logo" className="w-full h-full object-contain rounded-full" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-sm font-extrabold text-white uppercase tracking-tight">CopSight AI</h1>
+              <h1 className="text-sm font-extrabold text-white uppercase tracking-tight">ForensixD by CopSight</h1>
               <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-white/20 text-white font-bold">
                 STAGE 2: CASE SELECTION
               </span>

@@ -6,7 +6,6 @@ import { LiveConsole } from '../components/LiveConsole';
 import { EvidenceViewer } from '../components/EvidenceViewer';
 import { DecryptionToolkit } from '../components/DecryptionToolkit';
 import { SettingsView } from '../components/SettingsView';
-import { AdminAuditModal } from '../components/AdminAuditModal';
 import { daemonClient } from '../lib/daemonClient';
 import { caseService } from '../lib/api';
 import { loggerService } from '../lib/loggerService';
@@ -34,7 +33,6 @@ export const Workspace: React.FC = () => {
   } = useDaemonStore();
 
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('dashboard');
-  const [isAdminAuditOpen, setIsAdminAuditOpen] = useState(false);
   const [caseStats, setCaseStats] = useState<{ totalRecords: number; totalChats: number; totalEntities: number }>({
     totalRecords: 0,
     totalChats: 0,
@@ -95,19 +93,12 @@ export const Workspace: React.FC = () => {
   return (
     <div className="min-h-screen w-full flex flex-col transition-colors duration-300 relative">
       
-      {/* Administrator Diagnostic & Audit Modal */}
-      <AdminAuditModal
-        isOpen={isAdminAuditOpen}
-        onClose={() => setIsAdminAuditOpen(false)}
-      />
-
       {/* Fixed Top Floating Navigation Bar (Pinned below window controls with comfortable pt-9 sm:pt-10 clearance) */}
       <div className="fixed top-0 left-0 right-0 z-50 pt-9 sm:pt-10 pb-3 px-4 sm:px-8 max-w-[1750px] mx-auto w-full pointer-events-none">
         <div className="pointer-events-auto">
           <ContextHeader
             activeTab={activeTab}
             setActiveTab={handleTabChange}
-            onOpenAdminAudit={() => setIsAdminAuditOpen(true)}
           />
         </div>
       </div>
@@ -134,7 +125,7 @@ export const Workspace: React.FC = () => {
                       {selectedCase?.caseNumber || (selectedCase as any)?.fir_number || 'Demo Case'}
                     </span>
                   </div>
-                  <span className="text-xs opacity-75 text-white">CopSight AI Digital Forensics Station</span>
+                  <span className="text-xs opacity-75 text-white">ForensixD by CopSight • Forensic Data Extraction Station</span>
                 </div>
               </div>
 
@@ -439,7 +430,6 @@ export const Workspace: React.FC = () => {
         {activeTab === 'settings' && (
           <SettingsView
             onSwitchCase={clearSelection}
-            onOpenAdminAudit={() => setIsAdminAuditOpen(true)}
           />
         )}
 

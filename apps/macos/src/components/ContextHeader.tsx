@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { User, ShieldAlert } from 'lucide-react';
+import React from 'react';
+import { User } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import { loggerService } from '../lib/loggerService';
 import logoImg from '../assets/logo.jpeg';
 
 export type WorkspaceTab = 'dashboard' | 'devices' | 'acquisition' | 'evidence' | 'decryption' | 'settings';
@@ -9,23 +8,13 @@ export type WorkspaceTab = 'dashboard' | 'devices' | 'acquisition' | 'evidence' 
 interface ContextHeaderProps {
   activeTab: WorkspaceTab;
   setActiveTab: (tab: WorkspaceTab) => void;
-  onOpenAdminAudit?: () => void;
 }
 
 export const ContextHeader: React.FC<ContextHeaderProps> = ({
   activeTab,
   setActiveTab,
-  onOpenAdminAudit,
 }) => {
   const { officer } = useAuthStore();
-  const [errorCount, setErrorCount] = useState(0);
-
-  useEffect(() => {
-    const unsubscribe = loggerService.subscribeLogs((logs) => {
-      setErrorCount(logs.filter((l) => l.level === 'ERROR').length);
-    });
-    return unsubscribe;
-  }, []);
 
   const navTabs: { id: WorkspaceTab; label: string }[] = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -39,18 +28,18 @@ export const ContextHeader: React.FC<ContextHeaderProps> = ({
   return (
     <div className="min-h-16 py-2.5 px-6 glass-panel rounded-[2.5rem] flex flex-wrap items-center justify-between gap-4 select-none mx-auto max-w-[1750px] shadow-2xl backdrop-blur-2xl">
       
-      {/* Left: Brand with Official Frontend Logo */}
+      {/* Left: Brand with Official Logo */}
       <div className="flex items-center gap-3.5">
         <div className="w-10 h-10 rounded-full bg-white p-1 flex items-center justify-center shrink-0 shadow-md ring-2 ring-white/40 overflow-hidden">
           <img
             src={logoImg}
-            alt="CopSight Logo"
+            alt="ForensixD Logo"
             className="w-full h-full object-contain rounded-full"
           />
         </div>
         <div>
-          <span className="text-base font-extrabold tracking-tight uppercase text-white block">CopSight AI</span>
-          <p className="text-[10px] uppercase tracking-widest opacity-75 text-white">Forensic OS</p>
+          <span className="text-base font-extrabold tracking-tight uppercase text-white block">ForensixD</span>
+          <p className="text-[10px] uppercase tracking-widest opacity-75 text-white">by CopSight AI</p>
         </div>
       </div>
 
@@ -74,26 +63,8 @@ export const ContextHeader: React.FC<ContextHeaderProps> = ({
         })}
       </nav>
 
-      {/* Right: Quick Officer Profile Avatar & Admin Diagnostic Button */}
+      {/* Right: Quick Officer Profile Avatar */}
       <div className="flex items-center gap-3">
-        {/* Admin Diagnostic Center Button (Exclusive to Admin accounts) */}
-        {onOpenAdminAudit && officer?.role === 'admin' && (
-          <button
-            type="button"
-            onClick={onOpenAdminAudit}
-            className="px-3.5 py-1.5 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
-            title="Open Administrator Diagnostics & System Error Logs"
-          >
-            <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
-            <span>Admin Diagnostics</span>
-            {errorCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[9px] font-bold">
-                {errorCount}
-              </span>
-            )}
-          </button>
-        )}
-
         <button
           onClick={() => setActiveTab('settings')}
           className="flex items-center gap-3 cursor-pointer group"

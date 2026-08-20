@@ -20,10 +20,9 @@ import { loggerService } from '../lib/loggerService';
 
 interface SettingsViewProps {
   onSwitchCase: () => void;
-  onOpenAdminAudit?: () => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase, onOpenAdminAudit }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase }) => {
   const { officer, updateOfficer, logout } = useAuthStore();
   const { selectedCase } = useCaseStore();
   const { isDaemonConnected, isScanning } = useDaemonStore();
@@ -282,7 +281,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase, onOpen
               className="w-full py-3.5 px-4 rounded-2xl btn-danger text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
             >
               <LogOut className="w-4 h-4" />
-              <span>Sign Out of CopSight Station</span>
+              <span>Sign Out of ForensixD Station</span>
             </button>
           </div>
         </div>
@@ -487,16 +486,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSwitchCase, onOpen
                 <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
                 <span>Probe USB Bus</span>
               </button>
-              {onOpenAdminAudit && officer?.role === 'admin' && (
-                <button
-                  type="button"
-                  onClick={onOpenAdminAudit}
-                  className="py-2.5 px-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-mono font-bold flex items-center justify-center gap-2 border border-red-500/30 transition-all cursor-pointer shadow-sm"
-                  title="Open Diagnostic Log Dossier"
-                >
-                  <span>Diagnostic Logs</span>
-                </button>
-              )}
             </div>
           </div>
 
