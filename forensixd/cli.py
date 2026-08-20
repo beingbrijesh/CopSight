@@ -11,9 +11,9 @@ console = Console()
 
 @click.group(invoke_without_command=True)
 @click.pass_context
-@click.version_option("2.0.27", prog_name="forensixd CLI by CopSight AI")
+@click.version_option("2.0.29", prog_name="forensixd CLI by CopsightAI")
 def main(ctx):
-    """forensixd CLI by CopSight AI — Forensic Data Extraction for Law Enforcement."""
+    """forensixd CLI by CopsightAI — Forensic Data Extraction for Law Enforcement."""
     if ctx.invoked_subcommand is None:
         import os
         if sys.stdout.isatty():
@@ -33,9 +33,9 @@ def main(ctx):
             console.print("[cyan]  \\_____\\___/| .__/|_____/|_|\\__, |_| |_|\\__|[/cyan]")
             console.print("[cyan]             | |              __/ |         [/cyan]")
             console.print("[cyan]             |_|             |___/          [/cyan]\n")
-            console.print("[cyan][bold]forensixd CLI[/bold] by [bold]CopSight AI[/bold] — Forensic Data Extraction Terminal[/cyan]\n")
+            console.print("[cyan][bold]forensixd CLI[/bold] by [bold]CopsightAI[/bold] — Forensic Data Extraction Terminal[/cyan]\n")
         else:
-            console.print("[cyan][bold]forensixd CLI[/bold] by CopSight AI — Forensic Data Extraction[/cyan]\n")
+            console.print("[cyan][bold]forensixd CLI[/bold] by CopsightAI — Forensic Data Extraction[/cyan]\n")
         interactive_mode()
 
 @main.command()
