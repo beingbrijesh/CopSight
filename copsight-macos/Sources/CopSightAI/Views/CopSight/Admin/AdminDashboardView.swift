@@ -152,7 +152,7 @@ struct AdminDashboardView: View {
         }
         .scrollIndicators(.hidden)
         .sheet(isPresented: $isShowingAuditModal) {
-            SupervisorAuditView()
+            AdminSystemLogsDossierView()
         }
     }
     
@@ -305,22 +305,39 @@ struct AdminDashboardView: View {
                         ProfileInfoRow(label: "Active Sessions", value: "E2EE Protected", color: CopSightTheme.emerald)
                     }
                     
-                    Button(action: { isShowingAuditModal = true }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "exclamationmark.shield.fill")
-                            Text("Launch Master Forensic Audit Dossier")
+                    HStack(spacing: 8) {
+                        Button(action: { isShowingAuditModal = true }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "terminal.fill")
+                                Text("Launch System Event Chain & Logs Dossier")
+                            }
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 9)
+                            .background(Color(hex: "a855f7").opacity(0.35))
+                            .clipShape(Capsule())
+                            .overlay(Capsule().strokeBorder(Color(hex: "a855f7").opacity(0.6), lineWidth: 1))
                         }
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background(CopSightTheme.red.opacity(0.3))
-                        .clipShape(Capsule())
-                        .overlay(Capsule().strokeBorder(CopSightTheme.red.opacity(0.5), lineWidth: 1))
+                        .buttonStyle(.plain)
+                        .focusable(false)
+                        .focusEffectDisabled()
+                        
+                        Button(action: { WindowManager.shared.openAdminLogsDossier() }) {
+                            Image(systemName: "plus.rectangle.on.rectangle")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 9)
+                                .background(theme.insetFill(isDark: isDark))
+                                .clipShape(Capsule())
+                                .overlay(Capsule().strokeBorder(theme.insetBorder(isDark: isDark), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                        .focusable(false)
+                        .focusEffectDisabled()
+                        .help("Open System Event Chain & Logs Dossier in an independent macOS window")
                     }
-                    .buttonStyle(.plain)
-                    .focusable(false)
-                    .focusEffectDisabled()
                 }
                 .padding(18)
             }
