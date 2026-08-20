@@ -85,9 +85,9 @@ export const authService = {
     const response = await apiClient.get('/auth/me', { timeout: 120000 });
     return response.data;
   },
-  checkHealth: async (timeoutMs: number = 120000): Promise<{ isOnline: boolean; isWarmingUp?: boolean; message?: string }> => {
+  checkHealth: async (timeoutMs: number = 60000): Promise<{ isOnline: boolean; isWarmingUp?: boolean; message?: string }> => {
     try {
-      // Test connectivity by querying auth endpoint
+      // Single probe request with 1-minute acknowledgement timeout
       await apiClient.get('/auth/me', { timeout: timeoutMs });
       return { isOnline: true };
     } catch (e: any) {
@@ -99,7 +99,7 @@ export const authService = {
       return {
         isOnline: false,
         isWarmingUp: isWarming,
-        message: e.message || 'Server is warming up (1-1.5m cold start)',
+        message: e.message || 'Server is warming up (awaiting response within 1 min)',
       };
     }
   },

@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { User, Lock, AlertCircle, ArrowRight, RefreshCw, Settings, Check, Globe } from 'lucide-react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { User, Lock, AlertCircle, ArrowRight, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import { authService, getBackendApiUrl, setBackendApiUrl } from '../lib/api';
+import { authService } from '../lib/api';
 import logoImg from '../assets/logo.jpeg';
 
 export const AuthGate: React.FC = () => {
@@ -11,55 +11,60 @@ export const AuthGate: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Verifying Credentials...');
   const [backendStatus, setBackendStatus] = useState<'checking' | 'warming_up' | 'online' | 'offline'>('checking');
-  const [showConfig, setShowConfig] = useState(false);
-  const [customUrl, setCustomUrl] = useState(getBackendApiUrl());
-  const [urlSaved, setUrlSaved] = useState(false);
 
   const { login } = useAuthStore();
-  const pollTimerRef = useRef<any>(null);
+  const isProbingRef = useRef<boolean>(false);
+  const isMountedRef = useRef<boolean>(true);
+  const retryTimerRef = useRef<any>(null);
 
-  useEffect(() => {
-    checkServerHealth();
+  // Sequential health probe: waits for acknowledgement of old request before hitting any new one.
+  // If no acknowledgement is received within 1 min (60s), times out and retries.
+  const probeServer = useCallback(async (manual = false) => {
+    if (isProbingRef.current || !isMountedRef.current) return;
+    isProbingRef.current = true;
 
-    // Auto-poll server health every 4s to catch server cold starts (1 - 1.5m)
-    pollTimerRef.current = setInterval(() => {
-      checkServerHealth(true);
-    }, 4000);
-
-    return () => {
-      if (pollTimerRef.current) {
-        clearInterval(pollTimerRef.current);
-      }
-    };
-  }, []);
-
-  const checkServerHealth = async (isBackgroundPoll = false) => {
-    if (!isBackgroundPoll) {
+    if (manual || backendStatus === 'offline') {
       setBackendStatus('checking');
     }
+
     try {
-      const res = await authService.checkHealth(120000);
+      // Single request with strict 60s (1 min) acknowledgement timeout
+      const res = await authService.checkHealth(60000);
+      if (!isMountedRef.current) return;
+
       if (res.isOnline) {
         setBackendStatus('online');
-      } else if (res.isWarmingUp) {
-        setBackendStatus('warming_up');
+        // Server is acknowledged and online. Terminate further polling.
+        return;
       } else {
-        setBackendStatus('offline');
+        setBackendStatus(res.isWarmingUp ? 'warming_up' : 'offline');
       }
     } catch {
-      setBackendStatus('warming_up');
+      if (!isMountedRef.current) return;
+      setBackendStatus('offline');
+    } finally {
+      isProbingRef.current = false;
+      // Schedule the next single probe only after the previous request has completed or timed out
+      if (isMountedRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            probeServer();
+          }
+        }, 3000);
+      }
     }
-  };
+  }, [backendStatus]);
 
-  const handleSaveUrl = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (customUrl.trim()) {
-      setBackendApiUrl(customUrl.trim());
-      setUrlSaved(true);
-      setTimeout(() => setUrlSaved(false), 2000);
-      checkServerHealth();
-    }
-  };
+  useEffect(() => {
+    isMountedRef.current = true;
+    probeServer();
+
+    return () => {
+      isMountedRef.current = false;
+      clearTimeout(retryTimerRef.current);
+    };
+  }, [probeServer]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,9 +72,9 @@ export const AuthGate: React.FC = () => {
     setIsLoading(true);
     setLoadingMessage('Verifying Credentials...');
 
-    // If server takes longer than 3s, show cold-start message
+    // If server takes longer than 3.5s, update indicator to inform officer of cold start
     const msgTimer = setTimeout(() => {
-      setLoadingMessage('Waking up server instance (may take 1-1.5m on cold start)...');
+      setLoadingMessage('Waking up server instance (cold start in progress)...');
     }, 3500);
 
     try {
@@ -86,7 +91,7 @@ export const AuthGate: React.FC = () => {
         setError(err.response.data?.message || `Authentication failed: ${err.response.statusText}`);
       } else {
         setError(
-          `Unable to connect to CopSight backend (${getBackendApiUrl()}). The server may still be warming up or unreachable.`
+          `Unable to connect to CopSight backend. Please ensure the server is online and accessible.`
         );
         setBackendStatus('warming_up');
       }
@@ -104,87 +109,51 @@ export const AuthGate: React.FC = () => {
         <div className="glass-panel rounded-[2.5rem] p-7 sm:p-9 shadow-2xl border border-white/20">
           
           {/* Top Status Bar */}
-          <div className="flex items-center justify-between mb-6 gap-2">
+          <div className="flex items-center justify-between mb-6">
             <span className="text-[10px] font-mono uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full bg-white/10 text-white border border-white/15">
               Stage 1: Authorization
             </span>
 
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => checkServerHealth()}
-                title="Click to check connection to server"
-                className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/20 dark:bg-white/10 border border-white/15 text-[11px] font-mono hover:bg-white/15 transition-all cursor-pointer"
-              >
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    backendStatus === 'online'
-                      ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
-                      : backendStatus === 'warming_up' || backendStatus === 'checking'
-                      ? 'bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.8)]'
-                      : 'bg-[#EF4444] dark:bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]'
-                  }`}
-                />
-                <span className="text-white opacity-70">Server:</span>
-                <span
-                  className={`font-bold ${
-                    backendStatus === 'online'
-                      ? 'text-emerald-400'
-                      : backendStatus === 'warming_up'
-                      ? 'text-amber-300'
-                      : backendStatus === 'checking'
-                      ? 'text-cyan-300'
-                      : 'text-rose-300'
-                  }`}
-                >
-                  {backendStatus === 'online'
-                    ? 'ONLINE'
-                    : backendStatus === 'warming_up'
-                    ? 'WAKING UP...'
-                    : backendStatus === 'checking'
-                    ? 'CHECKING...'
-                    : 'OFFLINE'}
-                </span>
-                <RefreshCw className={`w-3 h-3 text-white/50 ${backendStatus === 'checking' ? 'animate-spin' : ''}`} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowConfig(!showConfig)}
-                title="Configure Backend Server URL"
-                className="p-1.5 rounded-full bg-black/20 dark:bg-white/10 border border-white/15 text-white/70 hover:text-white transition-all cursor-pointer"
-              >
-                <Settings className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Config URL Drawer */}
-          {showConfig && (
-            <form onSubmit={handleSaveUrl} className="mb-6 p-4 rounded-2xl bg-black/40 border border-white/15 space-y-2.5 animate-fadeIn text-xs font-mono">
-              <div className="flex items-center gap-1.5 text-white/80 font-bold">
-                <Globe className="w-3.5 h-3.5 text-[#FF7A59]" />
-                <span>Backend Server Endpoint</span>
-              </div>
-              <input
-                type="text"
-                value={customUrl}
-                onChange={(e) => setCustomUrl(e.target.value)}
-                placeholder="https://your-backend.onrender.com/api"
-                className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/20 text-xs font-mono text-white placeholder:text-white/40 focus:border-[#FF7A59] focus:outline-none"
+            <button
+              type="button"
+              onClick={() => probeServer(true)}
+              title="Click to probe backend connectivity"
+              className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/20 dark:bg-white/10 border border-white/15 text-[11px] font-mono hover:bg-white/15 transition-all cursor-pointer"
+            >
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  backendStatus === 'online'
+                    ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
+                    : backendStatus === 'warming_up' || backendStatus === 'checking'
+                    ? 'bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.8)]'
+                    : 'bg-[#EF4444] dark:bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]'
+                }`}
               />
-              <div className="flex justify-between items-center pt-1">
-                <span className="text-[10px] text-white/50">Supports 1-1.5m Render cold starts</span>
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 rounded-lg bg-[#FF7A59] text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer hover:bg-[#ff6540]"
-                >
-                  {urlSaved ? <Check className="w-3.5 h-3.5" /> : null}
-                  <span>{urlSaved ? 'Saved' : 'Save & Probe'}</span>
-                </button>
-              </div>
-            </form>
-          )}
+              <span className="text-white opacity-70">Server:</span>
+              <span
+                className={`font-bold ${
+                  backendStatus === 'online'
+                    ? 'text-emerald-400'
+                    : backendStatus === 'warming_up'
+                    ? 'text-amber-300'
+                    : backendStatus === 'checking'
+                    ? 'text-cyan-300'
+                    : 'text-rose-300'
+                }`}
+              >
+                {backendStatus === 'online'
+                  ? 'ONLINE'
+                  : backendStatus === 'warming_up'
+                  ? 'WAKING UP...'
+                  : backendStatus === 'checking'
+                  ? 'CHECKING...'
+                  : 'OFFLINE'}
+              </span>
+              {backendStatus === 'checking' && (
+                <RefreshCw className="w-3 h-3 text-white/50 animate-spin" />
+              )}
+            </button>
+          </div>
 
           {/* Logo & Header */}
           <div className="flex flex-col items-center text-center mb-7">
@@ -196,11 +165,11 @@ export const AuthGate: React.FC = () => {
             <p className="text-[11px] font-mono text-white opacity-75 mt-1">Forensic Data Extraction Station</p>
           </div>
 
-          {/* Server Cold-Start Warning Banner */}
+          {/* Server Cold-Start Notice */}
           {backendStatus === 'warming_up' && (
             <div className="mb-5 p-3 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-200 text-[11px] font-mono flex items-center gap-2">
               <RefreshCw className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
-              <span>Server instance is spinning up (free-tier cold start). Auto-connecting...</span>
+              <span>Server instance is spinning up (cold start). Awaiting acknowledgement...</span>
             </div>
           )}
 
