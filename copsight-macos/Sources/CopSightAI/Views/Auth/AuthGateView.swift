@@ -59,6 +59,9 @@ struct AuthGateView: View {
                                     .textFieldStyle(.plain)
                                     .font(.system(size: 12.5, design: .monospaced))
                                     .foregroundColor(.white)
+                                    .onSubmit {
+                                        authenticateAndRedirect()
+                                    }
                             }
                             .padding(11)
                             .background(theme.insetFill(isDark: isDark))
@@ -81,6 +84,9 @@ struct AuthGateView: View {
                                     .textFieldStyle(.plain)
                                     .font(.system(size: 12.5, design: .monospaced))
                                     .foregroundColor(.white)
+                                    .onSubmit {
+                                        authenticateAndRedirect()
+                                    }
                             }
                             .padding(11)
                             .background(theme.insetFill(isDark: isDark))
@@ -111,6 +117,7 @@ struct AuthGateView: View {
                         .shadow(color: theme.primaryAccent(isDark: isDark).opacity(0.35), radius: 8)
                     }
                     .buttonStyle(.plain)
+                    .keyboardShortcut(.defaultAction)
                     .focusable(false)
                     .focusEffectDisabled()
                     
