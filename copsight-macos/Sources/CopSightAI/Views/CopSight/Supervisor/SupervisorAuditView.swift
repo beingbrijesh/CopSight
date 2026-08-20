@@ -274,24 +274,6 @@ struct SupervisorAuditView: View {
             }
             
             Spacer()
-            
-            Button(action: { WindowManager.shared.openSupervisorHub() }) {
-                HStack(spacing: 5) {
-                    Image(systemName: "plus.rectangle.on.rectangle")
-                    Text("New Window")
-                }
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundColor(.white.opacity(0.85))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(theme.insetFill(isDark: isDark))
-                .clipShape(Capsule())
-                .overlay(Capsule().strokeBorder(theme.insetBorder(isDark: isDark), lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .focusable(false)
-            .focusEffectDisabled()
-            .help("Open Supervisor Hub in an independent macOS window")
         }
         .padding(.bottom, 16)
     }
