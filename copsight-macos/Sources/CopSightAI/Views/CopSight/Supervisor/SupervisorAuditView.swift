@@ -252,7 +252,7 @@ struct SupervisorAuditView: View {
             
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
-                    Text("Supervisor & Admin Audit Dossier")
+                    Text("Supervisor Intelligence & Audit Hub")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.white)
                     
@@ -275,23 +275,23 @@ struct SupervisorAuditView: View {
             
             Spacer()
             
-            Button(action: { dismiss() }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Close Dossier")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+            Button(action: { WindowManager.shared.openSupervisorHub() }) {
+                HStack(spacing: 5) {
+                    Image(systemName: "plus.rectangle.on.rectangle")
+                    Text("New Window")
                 }
-                .foregroundColor(.white)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
-                .background(Color.white.opacity(0.12))
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundColor(.white.opacity(0.85))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(theme.insetFill(isDark: isDark))
                 .clipShape(Capsule())
-                .overlay(Capsule().strokeBorder(Color.white.opacity(0.25), lineWidth: 1))
+                .overlay(Capsule().strokeBorder(theme.insetBorder(isDark: isDark), lineWidth: 1))
             }
             .buttonStyle(.plain)
             .focusable(false)
             .focusEffectDisabled()
+            .help("Open Supervisor Hub in an independent macOS window")
         }
         .padding(.bottom, 16)
     }
