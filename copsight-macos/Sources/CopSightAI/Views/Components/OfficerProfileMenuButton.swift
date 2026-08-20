@@ -225,23 +225,36 @@ struct OfficerProfileMenuButton: View {
                 
                 // Action Links
                 VStack(spacing: 6) {
-                    if profile.canAccessSupervisorHub {
+                    if profile.isAdmin {
+                        MenuActionButton(icon: "server.rack", title: "Station Governance & System Settings", subtitle: "Infrastructure, keybags & daemon config") {
+                            isShowingMenu = false
+                            onOpenSettings?()
+                        }
+                    } else if profile.isSupervisor {
                         MenuActionButton(
                             icon: "shield.checkered",
-                            title: "Supervisor Audit & Custody Dossier",
+                            title: "Supervisor Intelligence & Audit Hub",
                             subtitle: "Chain of custody & examiner telemetry"
                         ) {
                             isShowingMenu = false
                             onOpenSupervisorHub?()
                         }
-                    }
-                    
-                    MenuActionButton(icon: "gearshape.fill", title: "Station Settings & Hardware RPC", subtitle: "Daemon & examiner configuration") {
-                        isShowingMenu = false
-                        onOpenSettings?()
-                    }
-                    
-                    if profile.isIO || profile.isSupervisor {
+                        
+                        MenuActionButton(icon: "gearshape.fill", title: "Supervisor Compliance Settings", subtitle: "Audit rules & evidence hash policy") {
+                            isShowingMenu = false
+                            onOpenSettings?()
+                        }
+                        
+                        MenuActionButton(icon: "arrow.triangle.swap", title: "Switch Active Case", subtitle: "Active: \(profile.activeCaseNumber)") {
+                            isShowingMenu = false
+                            onSwitchCase?()
+                        }
+                    } else {
+                        MenuActionButton(icon: "gearshape.fill", title: "Investigator Station Settings", subtitle: "Device drivers & workspace cache") {
+                            isShowingMenu = false
+                            onOpenSettings?()
+                        }
+                        
                         MenuActionButton(icon: "arrow.triangle.swap", title: "Switch Active Case", subtitle: "Active: \(profile.activeCaseNumber)") {
                             isShowingMenu = false
                             onSwitchCase?()
