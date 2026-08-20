@@ -145,7 +145,7 @@ tell application "Finder"
         set current view of container window to icon view
         set toolbar visible of container window to false
         set statusbar visible of container window to false
-        set the bounds of container window to {300, 200, 860, 580}
+        set the bounds of container window to {100, 100, 960, 680}
         set theViewOptions to the icon view options of container window
         set icon size of theViewOptions to 128
         set text size of theViewOptions to 14
@@ -153,13 +153,14 @@ tell application "Finder"
         set position of item "$APP_NAME.app" of container window to {140, 175}
         set position of item "Applications" of container window to {410, 175}
         update without registering applications
-        delay 1
+        delay 2
         close
     end tell
 end tell
 EOF
                 fi
                 
+                sync
                 sleep 1
                 hdiutil detach "$MOUNT_DIR" 2>/dev/null || hdiutil detach "$MOUNT_DIR" -force 2>/dev/null || true
                 hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$DIST_DIR/$DMG_NAME" 2>/dev/null || true

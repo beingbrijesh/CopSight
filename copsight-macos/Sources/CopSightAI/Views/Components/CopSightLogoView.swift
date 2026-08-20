@@ -2,9 +2,8 @@ import SwiftUI
 import AppKit
 
 /// CopSight AI & ForensixD Official Brand Logo View
-/// Displays the official logo centered inside a pure white circular disc
-/// surrounded by a dark grey circular boundary with proportional breathing space
-/// matching the exact design specification.
+/// Matches the exact circular white element, padding, inner logo, subtle translucent white ring,
+/// and soft shadow from the ForensixD macOS extractor app in native SwiftUI.
 struct CopSightLogoView: View {
     let size: CGFloat
     
@@ -13,23 +12,30 @@ struct CopSightLogoView: View {
     }
     
     private var logoImage: NSImage? {
-        // 1. Try bundle resource
+        // 1. Check App Bundle resources
+        if let bundleURL = Bundle.main.url(forResource: "logo", withExtension: "jpeg"),
+           let img = NSImage(contentsOf: bundleURL) {
+            return img
+        }
+        if let bundleURL = Bundle.main.url(forResource: "logo", withExtension: "png"),
+           let img = NSImage(contentsOf: bundleURL) {
+            return img
+        }
         if let bundleURL = Bundle.main.url(forResource: "copsight_logo", withExtension: "png"),
            let img = NSImage(contentsOf: bundleURL) {
             return img
         }
         
-        // 2. Try direct source path fallback
-        let sourcePath = "/Users/beingbrijesh/Desktop/Projects/UFDR/copsight-macos/Sources/CopSightAI/Resources/copsight_logo.png"
-        if FileManager.default.fileExists(atPath: sourcePath),
-           let img = NSImage(contentsOfFile: sourcePath) {
+        // 2. Direct fallback for local development & preview
+        let sourceJpeg = "/Users/beingbrijesh/Desktop/Projects/UFDR/logo.jpeg"
+        if FileManager.default.fileExists(atPath: sourceJpeg),
+           let img = NSImage(contentsOfFile: sourceJpeg) {
             return img
         }
         
-        // 3. Try Desktop Projects path fallback
-        let desktopPath = "/Users/beingbrijesh/Desktop/Projects/copsight-logo.jpeg"
-        if FileManager.default.fileExists(atPath: desktopPath),
-           let img = NSImage(contentsOfFile: desktopPath) {
+        let sourcePng = "/Users/beingbrijesh/Desktop/Projects/UFDR/copsight-macos/Sources/CopSightAI/Resources/logo.png"
+        if FileManager.default.fileExists(atPath: sourcePng),
+           let img = NSImage(contentsOfFile: sourcePng) {
             return img
         }
         
@@ -38,18 +44,18 @@ struct CopSightLogoView: View {
     
     var body: some View {
         ZStack {
-            // Pure White Circular Background
+            // 1. Pure White Circular Base with soft shadow
             Circle()
                 .fill(Color.white)
-                .frame(width: size, height: size)
+                .shadow(color: Color.black.opacity(0.22), radius: max(2, size * 0.08), x: 0, y: max(1, size * 0.03))
             
-            // Official Logo Artwork: Scaled to 73% of the badge diameter
-            // providing clean breathing space around the shield nodes
+            // 2. Official Circular Logo Image with matching proportional padding
             if let image = logoImage {
                 Image(nsImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: size * 0.73, height: size * 0.73)
+                    .clipShape(Circle())
+                    .padding(max(1.5, size * 0.07))
             } else {
                 Image(systemName: "shield.checkerboard")
                     .font(.system(size: size * 0.45, weight: .bold))
@@ -58,9 +64,10 @@ struct CopSightLogoView: View {
         }
         .frame(width: size, height: size)
         .overlay(
-            // Dark grey circular boundary ring matching the reference screenshot
+            // 3. Subtle Translucent White Outer Ring (matching ring-4 ring-white/30)
             Circle()
-                .strokeBorder(Color(hex: "5C5C5C"), lineWidth: max(1.5, size * 0.055))
+                .strokeBorder(Color.white.opacity(0.35), lineWidth: max(1.5, size * 0.05))
         )
+        .clipShape(Circle())
     }
 }
