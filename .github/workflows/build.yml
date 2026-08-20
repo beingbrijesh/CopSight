@@ -11,9 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag to release (e.g. 2.0.29)'
+        description: 'Version tag to release (e.g. 2.0.30)'
         required: false
-        default: '2.0.29'
+        default: '2.0.30'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -150,7 +150,7 @@ jobs:
           if [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
           else
-            TAG="forensixd-v${{ github.event.inputs.version || '2.0.29' }}"
+            TAG="forensixd-v${{ github.event.inputs.version || '2.0.30' }}"
           fi
           echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
 
@@ -161,14 +161,9 @@ jobs:
           name: ForensixD Extractor & CLI ${{ env.RELEASE_TAG }} — Hardware Data Acquisition Tool
           generate_release_notes: true
           body: |
-            ## ⚡ ForensixD by CopSight — Hardware Data Extraction Tool & CLI ${{ env.RELEASE_TAG }}
+            ## ⚡ ForensixD by CopSight — Hardware Data Extraction Tool & CLI (${{ env.RELEASE_TAG }})
 
-            ### ✨ Key Features & Capabilities
-            - **ForensixD macOS Extractor (GUI)**: Standalone zero-redirect field acquisition utility for Investigating Officers (IO).
-            - **ForensixD CLI by CopsightAI (Cross-Platform)**: High-performance command-line binary for Linux, Windows, and macOS automated ingestion pipelines.
-            - **Hardware Bus Radar**: Real-time USB probe supporting Android (ADB/EDL/Fastboot), MediaTek BROM, and iOS physical/logical triage.
-            - **Section 65B & DFXML Hash Generator**: Automated SHA-256 block-level verification with live waveform bitstream acquisition console.
-            - **Encrypted Evidence Vault**: Direct export of court-admissible UFDR containers and Section 65B compliance dossiers.
+            This release provides the standalone **ForensixD by CopSight** extraction station for macOS and the **ForensixD CLI by CopsightAI** cross-platform forensic engine for Linux, Windows, and macOS.
 
             ---
 
@@ -176,15 +171,32 @@ jobs:
 
             | Package | Target OS | Description | Asset Name |
             |:---|:---|:---|:---|
-            | **ForensixD macOS Extractor** | macOS 11.0+ | Native Cocoa Desktop Application | `ForensixD-Extractor-macOS-${{ github.ref_name }}.dmg` / `.zip` |
-            | **ForensixD CLI (Linux)** | Linux x86_64 | Standalone CLI Binary | `forensixd-linux-amd64-${{ github.ref_name }}` |
-            | **ForensixD CLI (Windows)** | Windows x86_64 | Standalone CLI Executable | `forensixd-windows-amd64-${{ github.ref_name }}.exe` |
-            | **ForensixD CLI (macOS)** | macOS Universal | Standalone CLI Binary | `forensixd-macos-universal-${{ github.ref_name }}` |
+            | **ForensixD macOS Extractor** | macOS 11.0+ | Native Cocoa GUI Acquisition Station | `ForensixD-Extractor-macOS-v2.0.30.dmg` / `.zip` |
+            | **ForensixD CLI (Linux)** | Linux x86_64 | Standalone CLI Ingestion Binary | `forensixd-linux-amd64-v2.0.30` |
+            | **ForensixD CLI (Windows)** | Windows x86_64 | Standalone CLI Ingestion Executable | `forensixd-windows-amd64-v2.0.30.exe` |
+            | **ForensixD CLI (macOS)** | macOS Universal | Standalone CLI Ingestion Binary | `forensixd-macos-universal-v2.0.30` |
+
+            ---
+
+            ### 🖥️ ForensixD macOS Extractor Changelog
+            - **Rebranding & Identity**: Rebranded bundle to `ForensixD by CopSight.app` with native Cocoa menus and high-DPI 128px icon layout.
+            - **IO Clearance Scope Enforcement**: Removed out-of-scope administrator diagnostics and log dossiers from the field extraction station to preserve operational focus for Investigating Officers (IO).
+            - **Hardware Bus Radar**: Real-time USB probe supporting Android (ADB/EDL/Fastboot), MediaTek BROM, and iOS physical/logical triage.
+            - **Section 65B & DFXML Hash Verification**: Automated SHA-256 block-level verification with live waveform bitstream acquisition console.
+            - **Encrypted Evidence Vault**: Direct export of court-admissible UFDR containers and Section 65B compliance dossiers.
+
+            ---
+
+            ### ⚙️ ForensixD CLI Tool Changelog
+            - **Identity & Terminal Shell**: Rebranded binary CLI to `forensixd CLI by CopsightAI` with updated `--version` metadata (`v2.0.30`) and interactive terminal banner.
+            - **Cross-Platform Standalone Binaries**: Pre-compiled standalone executables for Linux (x86_64), Windows (x86_64), and macOS (Universal).
+            - **Automated Ingestion Pipelines**: Direct support for headless logical, filesystem, and physical acquisition workflows.
+            - **Self-Contained Platform Tools**: Bundled with embedded platform-tools for zero-dependency execution.
 
             ---
 
             ### 🚀 macOS App Installation
-            1. Download **`ForensixD-Extractor-macOS-${{ github.ref_name }}.dmg`** below.
+            1. Download **`ForensixD-Extractor-macOS-v2.0.30.dmg`** below.
             2. Double-click the `.dmg` and drag **ForensixD by CopSight.app** to your **Applications** folder.
             3. If macOS displays a Gatekeeper security prompt on first launch, open Terminal and run:
                ```bash
