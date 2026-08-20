@@ -26,13 +26,13 @@
 
     // App Menu
     NSMenuItem *appMenuItem = [[NSMenuItem alloc] init];
-    NSMenu *appMenu = [[NSMenu alloc] initWithTitle:@"CopSight"];
-    [appMenu addItemWithTitle:@"About CopSight" action:@selector(orderFrontStandardAboutPanel:) keyEquivalent:@""];
+    NSMenu *appMenu = [[NSMenu alloc] initWithTitle:@"ForensixD by CopSight"];
+    [appMenu addItemWithTitle:@"About ForensixD by CopSight" action:@selector(orderFrontStandardAboutPanel:) keyEquivalent:@""];
     [appMenu addItem:[NSMenuItem separatorItem]];
-    [appMenu addItemWithTitle:@"Hide CopSight" action:@selector(hide:) keyEquivalent:@"h"];
+    [appMenu addItemWithTitle:@"Hide ForensixD" action:@selector(hide:) keyEquivalent:@"h"];
     [appMenu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"h"];
     [appMenu addItem:[NSMenuItem separatorItem]];
-    [appMenu addItemWithTitle:@"Quit CopSight" action:@selector(terminate:) keyEquivalent:@"q"];
+    [appMenu addItemWithTitle:@"Quit ForensixD" action:@selector(terminate:) keyEquivalent:@"q"];
     appMenuItem.submenu = appMenu;
     [mainMenu addItem:appMenuItem];
 
@@ -70,7 +70,7 @@
                                                          NSWindowStyleMaskFullSizeContentView)
                                                 backing:NSBackingStoreBuffered
                                                   defer:NO];
-    self.window.title = @"CopSight Forensic Workstation";
+    self.window.title = @"ForensixD by CopSight — Forensic Data Extraction Station";
     self.window.titlebarAppearsTransparent = YES;
     self.window.titleVisibility = NSWindowTitleHidden;
     self.window.minSize = NSMakeSize(500, 360);

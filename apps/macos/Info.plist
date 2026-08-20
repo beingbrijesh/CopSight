@@ -5,7 +5,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>forensixd by CopSight AI</string>
+    <string>ForensixD by CopSight</string>
     <key>CFBundleExecutable</key>
     <string>forensixd</string>
     <key>CFBundleIconFile</key>
@@ -15,13 +15,13 @@
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>forensixd by CopSight AI</string>
+    <string>ForensixD by CopSight</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>2.0.27</string>
+    <string>2.0.29</string>
     <key>CFBundleVersion</key>
-    <string>2.0.27</string>
+    <string>2.0.29</string>
     <key>LSMinimumSystemVersion</key>
     <string>11.0</string>
     <key>NSHighResolutionCapable</key>
@@ -31,16 +31,16 @@
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
     <key>NSUSBUsageDescription</key>
-    <string>CopSight requires access to USB interfaces for forensic acquisition of mobile and storage devices.</string>
+    <string>ForensixD requires access to USB interfaces for forensic acquisition of mobile and storage devices.</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>com.copsight.forensics</string>
+            <string>com.copsight.forensixd</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>copsight</string>
                 <string>forensixd</string>
+                <string>copsight</string>
             </array>
         </dict>
     </array>

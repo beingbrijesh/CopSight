@@ -25,14 +25,14 @@ def main():
     root_dir = Path(__file__).resolve().parent.parent.parent.parent
     macos_app_dir = root_dir / "apps" / "macos"
     dist_dir = root_dir / "dist"
-    app_bundle_dir = dist_dir / "CopSight.app"
+    app_bundle_dir = dist_dir / "ForensixD by CopSight.app"
     resources_dir = app_bundle_dir / "Contents" / "Resources"
 
-    version = "2.0.28"
+    version = "2.0.29"
     if len(sys.argv) > 1:
         version = sys.argv[1].lstrip('v')
 
-    print(f"=== Building CopSight macOS Desktop App v{version} ===")
+    print(f"=== Building ForensixD by CopSight macOS Desktop App v{version} ===")
 
     # 1. Build Frontend
     print("[1/5] Compiling React desktop UI...")
@@ -49,7 +49,7 @@ def main():
     resources_dir.mkdir(parents=True, exist_ok=True)
 
     main_m_src = macos_app_dir / "scripts" / "main.m"
-    target_bin = macos_dir / "CopSight"
+    target_bin = macos_dir / "forensixd"
     run_cmd(f'clang -framework Cocoa -framework WebKit -O2 "{main_m_src}" -o "{target_bin}"')
     target_bin.chmod(0o755)
 
@@ -82,10 +82,10 @@ pkill -f "http.server 5174" 2>/dev/null || true
 sleep 0.3
 
 # 2. Daemon start on port 54322
-cd "$ROOT_DIR" && nohup "$PYTHON_BIN" "$ROOT_DIR/apps/macos/daemon/server.py" --port 54322 </dev/null >/tmp/copsight_daemon.log 2>&1 &
+cd "$ROOT_DIR" && nohup "$PYTHON_BIN" "$ROOT_DIR/apps/macos/daemon/server.py" --port 54322 </dev/null >/tmp/forensixd_daemon.log 2>&1 &
 
 # 3. UI start on port 5174
-cd "$UI_DIR" && nohup "$PYTHON_BIN" -m http.server 5174 </dev/null >/tmp/copsight_ui.log 2>&1 &
+cd "$UI_DIR" && nohup "$PYTHON_BIN" -m http.server 5174 </dev/null >/tmp/forensixd_ui.log 2>&1 &
 
 exit 0
 """
@@ -124,17 +124,17 @@ exit 0
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>CopSight</string>
+    <string>ForensixD by CopSight</string>
     <key>CFBundleExecutable</key>
-    <string>CopSight</string>
+    <string>forensixd</string>
     <key>CFBundleIconFile</key>
     <string>logo</string>
     <key>CFBundleIdentifier</key>
-    <string>com.copsight.forensics.macos</string>
+    <string>com.copsight.forensixd.macos</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>CopSight</string>
+    <string>ForensixD by CopSight</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -150,14 +150,26 @@ exit 0
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
     <key>NSUSBUsageDescription</key>
-    <string>CopSight requires access to USB interfaces for forensic acquisition of mobile and storage devices.</string>
+    <string>ForensixD requires access to USB interfaces for forensic acquisition of mobile and storage devices.</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.copsight.forensixd</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>forensixd</string>
+                <string>copsight</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>
 """
     with open(plist_path, "w") as f:
         f.write(plist_content)
 
-    print(f"[Success] Native CopSight.app bundle created at: {app_bundle_dir}")
+    print(f"[Success] Native ForensixD by CopSight.app bundle created at: {app_bundle_dir}")
 
     # 5. Ad-Hoc Code Signing
     print("[5/6] Applying ad-hoc cryptographic signature to bundle...")
@@ -167,15 +179,15 @@ exit 0
 
     # 6. Build ZIP Release Asset
     print("[6/6] Packaging ZIP and DMG distribution assets...")
-    zip_path = dist_dir / f"CopSight-macOS-v{version}.zip"
+    zip_path = dist_dir / f"ForensixD-Extractor-macOS-v{version}.zip"
     if zip_path.exists():
         zip_path.unlink()
     
-    run_cmd(f'zip -r -y "{zip_path}" CopSight.app', cwd=str(dist_dir))
+    run_cmd(f'zip -r -y "{zip_path}" "ForensixD by CopSight.app"', cwd=str(dist_dir))
     print(f"[Success] Created macOS ZIP bundle: {zip_path}")
 
-    dmg_path = dist_dir / f"CopSight-macOS-v{version}.dmg"
-    rw_dmg = root_dir / "copsight_rw.dmg"
+    dmg_path = dist_dir / f"ForensixD-Extractor-macOS-v{version}.dmg"
+    rw_dmg = root_dir / "forensixd_rw.dmg"
 
     if shutil.which("hdiutil"):
         if rw_dmg.exists():
@@ -185,26 +197,27 @@ exit 0
 
         try:
             # Unmount any stale volume
-            subprocess.run(["hdiutil", "detach", "/Volumes/CopSight"], capture_output=True)
+            subprocess.run(["hdiutil", "detach", "/Volumes/ForensixD by CopSight"], capture_output=True)
 
             # 1. Create temporary read-write HFS+ DMG
-            rc = run_cmd(f'hdiutil create -size 350m -fs HFS+ -volname "CopSight" -ov "{rw_dmg}"', check=False)
+            rc = run_cmd(f'hdiutil create -size 350m -fs HFS+ -volname "ForensixD by CopSight" -ov "{rw_dmg}"', check=False)
             if rc == 0:
                 # 2. Mount it
-                run_cmd(f'hdiutil attach "{rw_dmg}" -mountpoint /Volumes/CopSight', check=False)
+                run_cmd(f'hdiutil attach "{rw_dmg}" -mountpoint "/Volumes/ForensixD by CopSight"', check=False)
 
                 # 3. Copy files & create Applications shortcut
-                if Path("/Volumes/CopSight").exists():
-                    shutil.copytree(app_bundle_dir, "/Volumes/CopSight/CopSight.app", dirs_exist_ok=True)
+                vol_path = Path("/Volumes/ForensixD by CopSight")
+                if vol_path.exists():
+                    shutil.copytree(app_bundle_dir, vol_path / "ForensixD by CopSight.app", dirs_exist_ok=True)
                     try:
-                        os.symlink("/Applications", "/Volumes/CopSight/Applications")
+                        os.symlink("/Applications", vol_path / "Applications")
                     except Exception:
                         pass
 
                     # 4. AppleScript to set 128px icons and side-by-side position
                     as_finder_layout = '''
 tell application "Finder"
-    tell disk "CopSight"
+    tell disk "ForensixD by CopSight"
         open
         set current view of container window to icon view
         set toolbar visible of container window to false
@@ -214,7 +227,7 @@ tell application "Finder"
         set icon size of theViewOptions to 128
         set text size of theViewOptions to 14
         set arrangement of theViewOptions to not arranged
-        set position of item "CopSight.app" of container window to {135, 170}
+        set position of item "ForensixD by CopSight.app" of container window to {135, 170}
         set position of item "Applications" of container window to {405, 170}
         update without registering applications
         delay 1
@@ -227,7 +240,7 @@ end tell
                     time.sleep(1)
 
                     # 5. Detach read-write DMG
-                    subprocess.run(["hdiutil", "detach", "/Volumes/CopSight"], check=False)
+                    subprocess.run(["hdiutil", "detach", "/Volumes/ForensixD by CopSight"], check=False)
 
                     # 6. Convert to compressed UDZO DMG
                     run_cmd(f'hdiutil convert "{rw_dmg}" -format UDZO -imagekey zlib-level=9 -o "{dmg_path}"', check=False)
@@ -239,12 +252,12 @@ end tell
                 if dmg_stage.exists():
                     shutil.rmtree(dmg_stage)
                 dmg_stage.mkdir(parents=True, exist_ok=True)
-                shutil.copytree(app_bundle_dir, dmg_stage / "CopSight.app")
+                shutil.copytree(app_bundle_dir, dmg_stage / "ForensixD by CopSight.app")
                 try:
                     os.symlink("/Applications", dmg_stage / "Applications")
                 except Exception:
                     pass
-                run_cmd(f'hdiutil create -volname "CopSight" -srcfolder "{dmg_stage}" -ov -format UDZO "{dmg_path}"', check=False)
+                run_cmd(f'hdiutil create -volname "ForensixD by CopSight" -srcfolder "{dmg_stage}" -ov -format UDZO "{dmg_path}"', check=False)
                 if dmg_stage.exists():
                     shutil.rmtree(dmg_stage)
         except Exception as e:
@@ -256,7 +269,7 @@ end tell
                 except Exception:
                     pass
     else:
-        print("[Notice] hdiutil not found; CopSight.app & ZIP are fully ready.")
+        print("[Notice] hdiutil not found; ForensixD by CopSight.app & ZIP are fully ready.")
 
 
 if __name__ == "__main__":
