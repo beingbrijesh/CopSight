@@ -295,10 +295,9 @@ struct WorkspaceView: View {
             ForEach(AdminTab.allCases) { tab in
                 let isSelected = adminTab == tab
                 Button(action: {
-                    adminTab = tab
                     switch tab {
                     case .dashboard:
-                        break
+                        adminTab = .dashboard
                     case .users:
                         WindowManager.shared.openUserAccounts()
                     case .cases:
@@ -341,10 +340,9 @@ struct WorkspaceView: View {
             ForEach(SupervisorTab.allCases) { tab in
                 let isSelected = supervisorTab == tab
                 Button(action: {
-                    supervisorTab = tab
                     switch tab {
                     case .dashboard:
-                        break
+                        supervisorTab = .dashboard
                     case .cases:
                         WindowManager.shared.openCaseDossiers()
                     case .crossCase:
@@ -440,10 +438,9 @@ struct WorkspaceView: View {
             ForEach(CopSightTab.allCases) { tab in
                 let isSelected = copsightTab == tab
                 Button(action: {
-                    copsightTab = tab
                     switch tab {
                     case .dashboard:
-                        break
+                        copsightTab = .dashboard
                     case .graph:
                         WindowManager.shared.openNetworkGraph()
                     case .cases:
@@ -488,10 +485,9 @@ struct WorkspaceView: View {
             ForEach(ForensixDTab.allCases.filter { $0 != .settings }) { tab in
                 let isSelected = forensixdTab == tab
                 Button(action: {
-                    forensixdTab = tab
                     switch tab {
                     case .dashboard:
-                        break
+                        forensixdTab = .dashboard
                     case .devices:
                         WindowManager.shared.openForensixDDevices()
                     case .acquisition:
