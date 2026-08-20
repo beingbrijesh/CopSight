@@ -1,28 +1,34 @@
 import SwiftUI
 import AppKit
 
-/// Central Window Management Service for Multi-Window Support in CopSight AI
-/// Enables opening any forensic tool, intelligence tab, or administrative dossier in an independent macOS window
-final class WindowManager {
+/// Central Window Management Service for Native macOS Multi-Window Support in CopSight AI
+/// Enables opening any forensic tool, intelligence tab, or administrative dossier in an independent native NSWindow
+final class WindowManager: NSObject, NSWindowDelegate {
     static let shared = WindowManager()
     
     private var windowControllers: [String: NSWindowController] = [:]
+    private var windowIdsByWindow: [NSWindow: String] = [:]
     
-    private init() {}
+    private override init() {
+        super.init()
+    }
     
-    // MARK: - Generic Window Opener
+    // MARK: - Generic Native Window Opener
     
     func openWindow<Content: View>(
         id: String,
         title: String,
-        minWidth: CGFloat = 850,
-        minHeight: CGFloat = 600,
-        defaultWidth: CGFloat = 1100,
-        defaultHeight: CGFloat = 750,
+        minWidth: CGFloat = 900,
+        minHeight: CGFloat = 620,
+        defaultWidth: CGFloat = 1150,
+        defaultHeight: CGFloat = 780,
         @ViewBuilder content: () -> Content
     ) {
-        // If window is already open, bring to front and focus
-        if let existing = windowControllers[id], let window = existing.window, window.isVisible {
+        // If window is already open, bring to front, un-minimize if needed, and focus
+        if let existing = windowControllers[id], let window = existing.window {
+            if window.isMiniaturized {
+                window.deminiaturize(nil)
+            }
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
@@ -31,9 +37,17 @@ final class WindowManager {
         let themedContent = ZStack {
             ThemeManager.shared.canvasBg(isDark: ThemeManager.shared.isDark(systemScheme: .dark))
                 .ignoresSafeArea()
-            content()
-                .environment(ThemeManager.shared)
+            
+            VStack(spacing: 0) {
+                // Native Window Top Padding to accommodate traffic lights cleanly
+                Color.clear
+                    .frame(height: 28)
+                
+                content()
+                    .environment(ThemeManager.shared)
+            }
         }
+        .focusEffectDisabled()
         
         let hostingController = NSHostingController(rootView: themedContent)
         
@@ -50,14 +64,27 @@ final class WindowManager {
         window.isReleasedWhenClosed = false
         window.minSize = NSSize(width: minWidth, height: minHeight)
         window.contentViewController = hostingController
+        window.delegate = self
+        window.collectionBehavior = [.fullScreenPrimary, .participatesInCycle]
         window.center()
         
         let controller = NSWindowController(window: window)
         windowControllers[id] = controller
+        windowIdsByWindow[window] = id
         
         controller.showWindow(nil)
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+    
+    // MARK: - NSWindowDelegate
+    
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        if let id = windowIdsByWindow[window] {
+            windowControllers.removeValue(forKey: id)
+            windowIdsByWindow.removeValue(forKey: window)
+        }
     }
     
     // MARK: - Specialized Window Launchers
@@ -65,91 +92,104 @@ final class WindowManager {
     func openForensixDStudio() {
         openWindow(id: "forensixd-studio", title: "ForensixD — Acquisition Studio") {
             ForensixDAcquisitionStudioView()
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
     
     func openForensixDDevices() {
         openWindow(id: "forensixd-devices", title: "ForensixD — USB Hardware & Devices") {
             ForensixDDevicesView()
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
     
     func openForensixDEvidence() {
         openWindow(id: "forensixd-evidence", title: "ForensixD — Evidence Center") {
             EvidenceViewerView()
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
     
     func openForensixDDecryption() {
         openWindow(id: "forensixd-decryption", title: "ForensixD — Decryption & Exploitation Suite") {
             DecryptionToolkitView()
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
     
     func openNetworkGraph() {
-        openWindow(id: "copsight-graph", title: "CopSight AI — Forensic Entity Network Graph", minWidth: 950, minHeight: 650) {
+        openWindow(id: "copsight-graph", title: "CopSight AI — Forensic Entity Network Graph", minWidth: 980, minHeight: 680) {
             NetworkGraphView()
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
     
     func openAIAnalyst() {
-        openWindow(id: "copsight-analyst", title: "CopSight AI — Forensic Analyst Assistant", minWidth: 800, minHeight: 600) {
+        openWindow(id: "copsight-analyst", title: "CopSight AI — Forensic Analyst Assistant", minWidth: 850, minHeight: 620) {
             QueryInterfaceView()
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
     
     func openAnomalyDetection() {
         openWindow(id: "copsight-anomaly", title: "CopSight AI — Multi-Model Anomaly Detection") {
             AnomalyDetectionView()
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
     
     func openCrossCase() {
         openWindow(id: "copsight-crosscase", title: "CopSight AI — Cross-Case Correlations") {
             CrossCaseConnectionsView()
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
     
     func openCaseDossiers() {
         openWindow(id: "copsight-cases", title: "CopSight AI — Case Dossiers") {
             CopSightCasesView()
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
     
     func openSupervisorHub() {
-        openWindow(id: "copsight-supervisor", title: "CopSight — Supervisor Command & Audit Hub", minWidth: 950, minHeight: 650) {
+        openWindow(id: "copsight-supervisor", title: "CopSight — Supervisor Command & Audit Hub", minWidth: 980, minHeight: 680) {
             SupervisorAuditView()
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
     
     func openAdminLogsDossier() {
-        openWindow(id: "copsight-admin-logs", title: "CopSight — System Event Chain & Logs Dossier", minWidth: 1000, minHeight: 700) {
+        openWindow(id: "copsight-admin-logs", title: "CopSight — System Event Chain & Logs Dossier", minWidth: 1050, minHeight: 720) {
             AdminSystemLogsDossierView()
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
     
     func openUserAccounts() {
         openWindow(id: "copsight-users", title: "CopSight — User Accounts & Clearance Management") {
             AdminUserListView()
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
     
     func openStationSettings(onSwitchCase: (() -> Void)? = nil) {
         openWindow(id: "copsight-settings", title: "CopSight — Station Configuration & Keybags") {
             ForensicSettingsView(onSwitchCase: onSwitchCase)
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
     }
 }
