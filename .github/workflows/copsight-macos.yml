@@ -1,4 +1,4 @@
-name: Build & Release CopSight AI (macOS)
+name: CI CopSight AI (macOS)
 
 on:
   push:
@@ -6,27 +6,18 @@ on:
     paths:
       - 'copsight-macos/**'
       - '.github/workflows/copsight-macos.yml'
-    tags:
-      - 'copsight-v*'
-      - 'copsight-ai-v*'
-      - 'v1.*'
   pull_request:
     branches: [ "main", "master" ]
     paths:
       - 'copsight-macos/**'
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version tag to release (e.g. 1.0.0)'
-        required: false
-        default: '1.0.0'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-copsight-macos:
-    name: Build CopSight AI (macOS)
+    name: Build & Verify CopSight AI (macOS)
     runs-on: macos-14
     steps:
       - name: Checkout repository
@@ -37,109 +28,17 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Determine Application Version
-        id: version
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          elif [[ "${{ github.ref }}" =~ ^refs/tags/copsight-ai-v ]]; then
-            VERSION="${GITHUB_REF#refs/tags/copsight-ai-v}"
-          elif [[ "${{ github.ref }}" =~ ^refs/tags/copsight-v ]]; then
-            VERSION="${GITHUB_REF#refs/tags/copsight-v}"
-          elif [[ "${{ github.ref }}" =~ ^refs/tags/v ]]; then
-            VERSION="${GITHUB_REF#refs/tags/v}"
-          else
-            VERSION="1.0.0"
-          fi
-          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Determined Version: $VERSION"
-
-      - name: Build & Package CopSight AI Application Bundle
+      - name: Build CopSight AI Application Bundle
         shell: bash
         run: |
           cd copsight-macos
           chmod +x build_app.sh
-          ./build_app.sh --release "${{ env.APP_VERSION }}"
+          ./build_app.sh --release "1.0.0"
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CopSight-AI-macOS-v${{ env.APP_VERSION }}
+          name: CopSight-AI-macOS-CI
           path: |
             copsight-macos/dist/CopSight-AI-macOS-*.dmg
             copsight-macos/dist/CopSight-AI-macOS-*.zip
-
-  release-copsight-macos:
-    name: Publish CopSight AI GitHub Release
-    needs: build-copsight-macos
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    if: startsWith(github.ref, 'refs/tags/copsight-') || startsWith(github.ref, 'refs/tags/v1.') || github.event_name == 'workflow_dispatch'
-    steps:
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: release-assets
-          pattern: CopSight-AI-macOS-*
-          merge-multiple: true
-
-      - name: List Release Assets
-        run: ls -la release-assets
-
-      - name: Determine Release Tag
-        id: rel_tag
-        shell: bash
-        run: |
-          if [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
-            TAG="${GITHUB_REF#refs/tags/}"
-          else
-            TAG="copsight-v${{ github.event.inputs.version || '1.0.0' }}"
-          fi
-          echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
-
-      - name: Create or Update GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          name: CopSight AI ${{ env.RELEASE_TAG }} — Unified Native Forensic Workstation
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          files: |
-            release-assets/CopSight-AI-macOS-*.dmg
-            release-assets/CopSight-AI-macOS-*.zip
-          body: |
-            ## 🛡️ CopSight AI Forensic Workstation — ${{ env.RELEASE_TAG }}
-
-            ### 📦 Software Tier & Package Differentiation Guide
-            To help examiners and administrators identify the right artifact for their workflow:
-
-            | Application / Tool | Target Platform | Description & Role | Artifact Format |
-            |:---|:---|:---|:---|
-            | **CopSight AI macOS Workstation** | macOS 14+ (Apple Silicon) | Full native SwiftUI forensic intelligence desktop app with multi-role RBAC (IO, Supervisor, Admin), AI entity correlation, anomaly detection, case dockets, and audit dossiers. | `CopSight-AI-macOS-v*.dmg` / `.zip` |
-            | **ForensixD macOS Extractor** | macOS 10.15+ (Intel / Apple Silicon) | Standalone hardware data extraction & bitstream acquisition GUI tool with write-blocker controls. | `ForensixD-Extractor-macOS-v*.dmg` |
-            | **ForensixD CLI Engine** | Linux, macOS, Windows | High-performance command-line binary for automated scriptable forensic ingestion pipelines. | `forensixd-linux/windows/macos` |
-
-            ---
-
-            ### ✨ What's New in CopSight AI ${{ env.RELEASE_TAG }}
-            - **Native macOS SwiftUI Desktop Suite**: Ultra-fast, zero-latency desktop client designed for police and intelligence digital forensic units.
-            - **Pure Credential-Based RBAC**: Intelligent credential authentication automatically routing users to their assigned clearance tier (Investigating Officer, Supervisor, Root Administrator).
-            - **Supervisor Hub & Audit Dossier**: Integrated chain of custody seals, examiner telemetry stream, investigator workload allocation, and ISO/IEC 27037 compliance.
-            - **Full-Canvas AI Natural Language Analyst**: Semantic evidence query engine with auto-scrolling timeline correlation and evidence source citations.
-            - **Searchable Case Docket Officer Assignment**: Real-time officer search and role badge selector when registering new case files.
-            - **Global Ultra-Thin Scrollbars**: Floating 4px slim overlay scroll indicators styled inside the right margin across all pages and profiles.
-            - **System Operations & Infrastructure Telemetry**: Root administrator hardware metrics (CPU core balance, unified RAM, Milvus vector QPS, NVMe I/O) and audit log export (JSON/CSV).
-
-            ---
-
-            ### 🚀 Installation (macOS)
-            1. Download **`CopSight-AI-macOS-v${{ env.APP_VERSION || '1.0.0' }}.dmg`** below.
-            2. Double-click the DMG and drag the **CopSight AI** icon onto the **Applications** shortcut.
-            3. If macOS displays a Gatekeeper verification prompt on first launch, open Terminal and run:
-               ```bash
-               xattr -cr "/Applications/CopSight AI.app"
-               ```
-            4. Launch **CopSight AI** directly from Launchpad or `/Applications`.
