@@ -238,9 +238,6 @@ struct WorkspaceView: View {
                 
                 Spacer(minLength: 8)
                 
-                // Multi-Window Launcher Menu
-                multiWindowLauncherMenu(isCompact: isCompact)
-                
                 // Integrated Profile & Settings Menu Button
                 OfficerProfileMenuButton(
                     onOpenSettings: {
@@ -291,83 +288,6 @@ struct WorkspaceView: View {
         }
     }
     
-    // MARK: - Multi-Window Launcher Menu
-    
-    private func multiWindowLauncherMenu(isCompact: Bool) -> some View {
-        Menu {
-            Section("ForensixD Acquisition Tools") {
-                Button(action: { WindowManager.shared.openForensixDStudio() }) {
-                    Label("Acquisition Studio", systemImage: "waveform.path.ecg")
-                }
-                Button(action: { WindowManager.shared.openForensixDDevices() }) {
-                    Label("USB Hardware & Radar", systemImage: "iphone")
-                }
-                Button(action: { WindowManager.shared.openForensixDEvidence() }) {
-                    Label("Evidence Center", systemImage: "doc.zipper")
-                }
-                Button(action: { WindowManager.shared.openForensixDDecryption() }) {
-                    Label("Decryption & Exploitation Suite", systemImage: "key.fill")
-                }
-            }
-            
-            Section("CopSight Intelligence Tools") {
-                Button(action: { WindowManager.shared.openNetworkGraph() }) {
-                    Label("Forensic Network Graph", systemImage: "point.3.connected.trianglepath.dotted")
-                }
-                Button(action: { WindowManager.shared.openAIAnalyst() }) {
-                    Label("AI Forensic Analyst", systemImage: "sparkles")
-                }
-                Button(action: { WindowManager.shared.openAnomalyDetection() }) {
-                    Label("Anomaly AI Engine", systemImage: "brain.head.profile")
-                }
-                Button(action: { WindowManager.shared.openCrossCase() }) {
-                    Label("Cross-Case Correlations", systemImage: "link.badge.plus")
-                }
-                Button(action: { WindowManager.shared.openCaseDossiers() }) {
-                    Label("Case Dossiers", systemImage: "folder.badge.gearshape")
-                }
-            }
-            
-            if profile.isSupervisor || profile.isAdmin {
-                Section("Supervisor Command") {
-                    Button(action: { WindowManager.shared.openSupervisorHub() }) {
-                        Label("Supervisor Intelligence Hub", systemImage: "shield.checkered")
-                    }
-                }
-            }
-            
-            if profile.isAdmin {
-                Section("Root Admin SecOps") {
-                    Button(action: { WindowManager.shared.openAdminLogsDossier() }) {
-                        Label("System Event Chain & Logs Dossier", systemImage: "server.rack")
-                    }
-                    Button(action: { WindowManager.shared.openUserAccounts() }) {
-                        Label("User Accounts Management", systemImage: "person.2.fill")
-                    }
-                }
-            }
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: "plus.rectangle.on.rectangle")
-                    .font(.system(size: 11, weight: .bold))
-                if !isCompact {
-                    Text("New Window")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                }
-            }
-            .foregroundColor(.white.opacity(0.9))
-            .padding(.horizontal, isCompact ? 10 : 12)
-            .padding(.vertical, 7)
-            .background(theme.insetFill(isDark: isDark))
-            .clipShape(Capsule())
-            .overlay(Capsule().strokeBorder(theme.insetBorder(isDark: isDark), lineWidth: 1))
-        }
-        .menuStyle(.borderlessButton)
-        .focusable(false)
-        .focusEffectDisabled()
-        .help("Open any forensic tool or dossier in an independent macOS window")
-    }
-    
     // MARK: - Admin Navigation Tabs
     
     private func adminNavTabs(isCompact: Bool) -> some View {
@@ -398,11 +318,6 @@ struct WorkspaceView: View {
                 .focusable(false)
                 .focusEffectDisabled()
                 .help(tab.title)
-                .contextMenu {
-                    Button(action: { openAdminTabInNewWindow(tab) }) {
-                        Label("Open \(tab.title) in New Window", systemImage: "plus.rectangle.on.rectangle")
-                    }
-                }
             }
         }
     }
@@ -437,11 +352,6 @@ struct WorkspaceView: View {
                 .focusable(false)
                 .focusEffectDisabled()
                 .help(tab.title)
-                .contextMenu {
-                    Button(action: { openSupervisorTabInNewWindow(tab) }) {
-                        Label("Open \(tab.title) in New Window", systemImage: "plus.rectangle.on.rectangle")
-                    }
-                }
             }
         }
     }
@@ -527,11 +437,6 @@ struct WorkspaceView: View {
                 .focusable(false)
                 .focusEffectDisabled()
                 .help(tab.title)
-                .contextMenu {
-                    Button(action: { openCopSightTabInNewWindow(tab) }) {
-                        Label("Open \(tab.title) in New Window", systemImage: "plus.rectangle.on.rectangle")
-                    }
-                }
             }
         }
     }
@@ -566,86 +471,7 @@ struct WorkspaceView: View {
                 .focusable(false)
                 .focusEffectDisabled()
                 .help(tab.title)
-                .contextMenu {
-                    Button(action: { openForensixDTabInNewWindow(tab) }) {
-                        Label("Open \(tab.title) in New Window", systemImage: "plus.rectangle.on.rectangle")
-                    }
-                }
             }
-        }
-    }
-    
-    // MARK: - Multi-Window Dispatch Helpers
-    
-    private func openAdminTabInNewWindow(_ tab: AdminTab) {
-        switch tab {
-        case .dashboard:
-            WindowManager.shared.openAdminLogsDossier()
-        case .users:
-            WindowManager.shared.openUserAccounts()
-        case .cases:
-            WindowManager.shared.openCaseDossiers()
-        case .settings:
-            WindowManager.shared.openStationSettings(onSwitchCase: {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    appState = .caseSelection
-                }
-            })
-        }
-    }
-    
-    private func openSupervisorTabInNewWindow(_ tab: SupervisorTab) {
-        switch tab {
-        case .dashboard:
-            WindowManager.shared.openSupervisorHub()
-        case .cases:
-            WindowManager.shared.openCaseDossiers()
-        case .crossCase:
-            WindowManager.shared.openCrossCase()
-        case .anomaly:
-            WindowManager.shared.openAnomalyDetection()
-        case .queries:
-            WindowManager.shared.openAIAnalyst()
-        case .graph:
-            WindowManager.shared.openNetworkGraph()
-        }
-    }
-    
-    private func openCopSightTabInNewWindow(_ tab: CopSightTab) {
-        switch tab {
-        case .dashboard:
-            break
-        case .graph:
-            WindowManager.shared.openNetworkGraph()
-        case .cases:
-            WindowManager.shared.openCaseDossiers()
-        case .crossCase:
-            WindowManager.shared.openCrossCase()
-        case .anomaly:
-            WindowManager.shared.openAnomalyDetection()
-        case .queries:
-            WindowManager.shared.openAIAnalyst()
-        }
-    }
-    
-    private func openForensixDTabInNewWindow(_ tab: ForensixDTab) {
-        switch tab {
-        case .dashboard:
-            break
-        case .devices:
-            WindowManager.shared.openForensixDDevices()
-        case .acquisition:
-            WindowManager.shared.openForensixDStudio()
-        case .evidence:
-            WindowManager.shared.openForensixDEvidence()
-        case .decryption:
-            WindowManager.shared.openForensixDDecryption()
-        case .settings:
-            WindowManager.shared.openStationSettings(onSwitchCase: {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    appState = .caseSelection
-                }
-            })
         }
     }
     
